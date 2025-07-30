@@ -18,7 +18,43 @@ class GeminiClient:
             # API Key ile çalışan Gemini modelleri
             gemini_models = [
                 {
-                    'name': 'gemini-1.5-flash',
+                    'name': 'gemini-2.5-flash',
+                    'display_name': 'Gemini 2.5 Flash',
+                    'supports_embedding': True,
+                    'supports_chat': True
+                },
+                {
+                    'name': 'gemini-2.5-pro',
+                    'display_name': 'Gemini 2.5 Pro',
+                    'supports_embedding': True,
+                    'supports_chat': True
+                },
+                {
+                    'name': 'gemini-2.5-flash-lite',
+                    'display_name': 'Gemini 2.5 Flash Lite',
+                    'supports_embedding': True,
+                    'supports_chat': True
+                },
+                {
+                    'name': 'gemini-2.0-flash-001',
+                    'display_name': 'Gemini 2.0 Flash',
+                    'supports_embedding': True,
+                    'supports_chat': True
+                },
+                {
+                    'name': 'gemini-2.0-flash-lite-001',
+                    'display_name': 'Gemini 2.0 Flash Lite',
+                    'supports_embedding': True,
+                    'supports_chat': True
+                },
+                {
+                    'name': 'gemini-1.5-pro-002',
+                    'display_name': 'Gemini 1.5 Pro',
+                    'supports_embedding': True,
+                    'supports_chat': True
+                },
+                {
+                    'name': 'gemini-1.5-flash-002',
                     'display_name': 'Gemini 1.5 Flash',
                     'supports_embedding': True,
                     'supports_chat': True
@@ -39,9 +75,9 @@ class GeminiClient:
     async def generate_response(self, model_name: str, prompt: str, citizen_name: str = None, temperature: float = 0.7, top_p: float = 0.9, repetition_penalty: float = 1.2) -> Dict[str, Any]:
         """Generate response from Gemini model"""
         try:
-            if not self.api_key:
+            if not self.api_key or self.api_key == "your_gemini_api_key_here":
                 return {
-                    'response_text': "Error: GEMINI_API_KEY not configured",
+                    'response_text': "Error: GEMINI_API_KEY not configured or invalid",
                     'latency_ms': 0,
                     'success': False
                 }
@@ -121,8 +157,13 @@ Toplam metin 80 ‑ 180 kelime arası olmalı; üç‑dört kısa paragrafı ge�
                     }
                 }
                 
-                # Gemini API endpoint
-                model_endpoint = f"https://generativelanguage.googleapis.com/v1beta/models/{model_name}:generateContent"
+                # Gemini API endpoint - gemini-pro için v1, diğerleri için v1beta
+                if model_name == "gemini-pro":
+                    api_version = "v1"
+                else:
+                    api_version = "v1beta"
+                
+                model_endpoint = f"https://generativelanguage.googleapis.com/{api_version}/models/{model_name}:generateContent"
                 
                 # Debug: API key ve endpoint bilgileri
                 print(f"DEBUG: Using API key: {self.api_key[:10]}...")
@@ -140,7 +181,10 @@ Toplam metin 80 ‑ 180 kelime arası olmalı; üç‑dört kısa paragrafı ge�
                 
                 if response.status_code == 200:
                     data = response.json()
+                    print(f"DEBUG: Response data: {data}")
+                    
                     response_text = data.get('candidates', [{}])[0].get('content', {}).get('parts', [{}])[0].get('text', '')
+                    print(f"DEBUG: Extracted response text: '{response_text}'")
                     
                     return {
                         'response_text': response_text,
@@ -149,6 +193,7 @@ Toplam metin 80 ‑ 180 kelime arası olmalı; üç‑dört kısa paragrafı ge�
                     }
                 else:
                     error_text = f"HTTP {response.status_code}: {response.text}"
+                    print(f"DEBUG: Error response: {error_text}")
                     return {
                         'response_text': error_text,
                         'latency_ms': latency_ms,
