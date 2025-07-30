@@ -139,7 +139,9 @@ def main():
     
     with col_title:
         st.title("AI Yardımcı - Bursa Nilüfer Belediyesi")
-        st.markdown("Vatandaş taleplerine resmi yanıtlar hazırlayın")
+    
+    # Açıklama yazısı başlığın altında
+    st.markdown("<div style='text-align: center; color: #333; font-size: 16px; font-weight: bold; margin: 10px 0;'>Vatandaş taleplerine resmi yanıtlar hazırlayın</div>", unsafe_allow_html=True)
     
     # Session state başlatma
     if 'responses' not in st.session_state:
@@ -164,22 +166,6 @@ def main():
             <small>⏱️ Süre: {latency_ms:.0f}ms | 📅 {created_at}</small>
         </div>
         """, unsafe_allow_html=True)
-        
-        # Önceki yanıtlar (küçültülmüş)
-        if len(st.session_state.responses) > 1:
-            st.markdown("---")
-            st.subheader("📚 Önceki Yanıtlar")
-            
-            for i, resp in enumerate(st.session_state.responses[:-1]):  # Son yanıt hariç
-                with st.expander(f"Yanıt #{i+1} - {resp.get('created_at', '')}"):
-                    st.write(resp.get('response_text', ''))
-                    st.caption(f"⏱️ {resp.get('latency_ms', 0):.0f}ms")
-                    
-                    # Eski yanıtlar için de seç butonu
-                    if st.button(f"✅ Seç ve Kopyala #{i+1}", key=f"select_old_{i}"):
-                        st.write("Yanıt panoya kopyalandı ve seçildi!")
-                        update_response_feedback(resp['id'], is_selected=True, copied=True)
-                        st.success(f"Yanıt #{i+1} seçildi ve kopyalandı!")
         
         # Alternatif yanıtlar ve aksiyonlar (üstte)
         if st.session_state.current_response:
@@ -223,6 +209,22 @@ def main():
                     st.write("Yanıt panoya kopyalandı ve seçildi!")
                     update_response_feedback(st.session_state.current_response['id'], is_selected=True, copied=True)
                     st.success("Yanıt seçildi ve kopyalandı!")
+        
+        # Önceki yanıtlar (alternatif yanıtların altında)
+        if len(st.session_state.responses) > 1:
+            st.markdown("---")
+            st.subheader("📚 Önceki Yanıtlar")
+            
+            for i, resp in enumerate(st.session_state.responses[:-1]):  # Son yanıt hariç
+                with st.expander(f"Yanıt #{i+1} - {resp.get('created_at', '')}"):
+                    st.write(resp.get('response_text', ''))
+                    st.caption(f"⏱️ {resp.get('latency_ms', 0):.0f}ms")
+                    
+                    # Eski yanıtlar için de seç butonu
+                    if st.button(f"✅ Seç ve Kopyala #{i+1}", key=f"select_old_{i}"):
+                        st.write("Yanıt panoya kopyalandı ve seçildi!")
+                        update_response_feedback(resp['id'], is_selected=True, copied=True)
+                        st.success(f"Yanıt #{i+1} seçildi ve kopyalandı!")
     
     # İki sütunlu layout
     col1, col2 = st.columns(2)
