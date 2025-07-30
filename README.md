@@ -222,16 +222,12 @@ docker-compose up -d
 
 Bu proje MIT lisansı altında lisanslanmıştır.
 
-## 👨‍💻 Geliştirici
-
-**Zafer Turan**
-- GitHub: [@Zaferturan](https://github.com/Zaferturan)
-- Email: zaferturan@gmail.com
-
 ## 📞 İletişim
 
-- **GitHub Issues**: [Proje Issues](https://github.com/Zaferturan/ai_helper/issues)
-- **Email**: zaferturan@gmail.com
+* **Proje Sahibi**: Zafer TURAN
+* **E-posta**: zaferturan@gmail.com
+* **GitHub**: @Zaferturan
+* **Issues**: GitHub Issues
 
 ## 🔄 Güncellemeler
 
