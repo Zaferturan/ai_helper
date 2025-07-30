@@ -11,6 +11,10 @@ class GeminiClient:
     async def get_models(self) -> List[Dict[str, Any]]:
         """Get list of available Gemini models"""
         try:
+            if not self.api_key:
+                print("Warning: GEMINI_API_KEY not set")
+                return []
+            
             # For now, return static Gemini models for testing
             # TODO: Implement actual API call when API key is valid
             gemini_models = [
