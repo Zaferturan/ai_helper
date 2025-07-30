@@ -4,8 +4,8 @@ Vatandaş taleplerine cevaplarınızı hazırlayın. İstek ve önerilere uygun,
 
 ## ✨ Özellikler
 
-- **AI Destekli Metin Düzenleme**: Ollama LLM modelleri ile metinleri daha kibar ve anlaşılır hale getirin
-- **Dinamik Model Seçimi**: Ollama'dan mevcut modelleri otomatik olarak alır
+- **AI Destekli Metin Düzenleme**: Ollama ve Gemini LLM modelleri ile metinleri daha kibar ve anlaşılır hale getirin
+- **Dinamik Model Seçimi**: Ollama ve Gemini'dan mevcut modelleri otomatik olarak alır
 - **İki Farklı Mod**: 
   - İstek/öneri metninden cevap üretme
   - Kendi yazdığınız cevabı iyileştirme
@@ -19,6 +19,7 @@ Vatandaş taleplerine cevaplarınızı hazırlayın. İstek ve önerilere uygun,
 - **SQLAlchemy**: ORM ile veritabanı yönetimi
 - **MySQL**: Ana veritabanı
 - **Ollama**: Yerel LLM entegrasyonu
+- **Gemini API**: Google Gemini LLM entegrasyonu
 - **Pydantic**: Veri doğrulama ve serileştirme
 
 ### Frontend
@@ -66,6 +67,10 @@ REDIS_HOST=localhost
 REDIS_PORT=6379
 
 OLLAMA_HOST=http://localhost:11434
+
+# Gemini API (İsteğe bağlı)
+GEMINI_API_KEY=your_gemini_api_key_here
+GEMINI_API_URL=https://generativelanguage.googleapis.com/v1beta/models
 ```
 
 ### 5. Veritabanını Oluşturun
@@ -119,8 +124,10 @@ ai_helper/
 ├── api_models.py         # Pydantic modelleri
 ├── endpoints.py          # API endpoint'leri
 ├── ollama_client.py      # Ollama entegrasyonu
+├── gemini_client.py      # Gemini API entegrasyonu
 ├── requirements.txt      # Python bağımlılıkları
 ├── .env                  # Ortam değişkenleri
+├── .gitignore           # Git ignore kuralları
 ├── README.md            # Bu dosya
 └── ROADMAP.md           # Geliştirme yol haritası
 ```
@@ -131,6 +138,7 @@ ai_helper/
 - ✅ FastAPI ile modern REST API
 - ✅ SQLAlchemy ORM ile veritabanı yönetimi
 - ✅ Ollama entegrasyonu
+- ✅ Gemini API entegrasyonu
 - ✅ Pydantic ile veri doğrulama
 - ✅ Asenkron HTTP istekleri
 - ✅ Hata yönetimi ve logging
@@ -226,6 +234,12 @@ Bu proje MIT lisansı altında lisanslanmıştır.
 - **Email**: zaferturan@gmail.com
 
 ## 🔄 Güncellemeler
+
+### v1.1.0
+- ✅ Gemini API entegrasyonu
+- ✅ Çoklu model desteği (Ollama + Gemini)
+- ✅ Gelişmiş model seçimi
+- ✅ API key yönetimi
 
 ### v1.0.0
 - ✅ Temel FastAPI backend
