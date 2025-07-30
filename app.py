@@ -1,100 +1,70 @@
 import streamlit as st
 import requests
 import json
+import os
 from datetime import datetime
-
-# Sayfa konfigürasyonu
-st.set_page_config(
-    page_title="AI Helper",
-    page_icon="🤖",
-    layout="centered"
-)
-
-# CSS stilleri - toolbar'ı eski haline getir
-st.markdown("""
-<style>
-    .main {
-        max-width: 800px;
-        margin: 0 auto;
-    }
-    .stTextArea {
-        font-size: 16px;
-    }
-    .stButton > button {
-        width: 100%;
-        height: 50px;
-        font-size: 18px;
-    }
-    .response-box {
-        background-color: #f0f2f6;
-        padding: 20px;
-        border-radius: 10px;
-        border-left: 4px solid #1f77b4;
-    }
-    .stats-container {
-        display: flex;
-        justify-content: space-between;
-        margin-top: 20px;
-        padding-top: 15px;
-        border-top: 1px solid #ddd;
-    }
-    .stat-item {
-        text-align: center;
-        flex: 1;
-    }
-    
-    /* Debug paneli stilleri */
-    .debug-panel {
-        background-color: #f8f9fa;
-        border: 1px solid #dee2e6;
-        border-radius: 5px;
-        padding: 10px;
-        margin: 10px 0;
-        font-family: monospace;
-        font-size: 12px;
-    }
-</style>
-""", unsafe_allow_html=True)
-
-# Başlık
-st.title("🤖 AI Helper")
-st.markdown("**Vatandaş taleplerine cevaplarınızı hazırlayın**")
-st.caption("İstek ve önerilere uygun, resmi ve anlaşılır cevaplar oluşturun")
 
 # Backend URL
 BACKEND_URL = "http://localhost:3200/api/v1"
 
-# Debug paneli
-with st.expander("🔧 Debug Paneli", expanded=False):
-    st.write("**Backend Durumu:**")
-    try:
-        response = requests.get(f"{BACKEND_URL.replace('/api/v1', '')}")
-        st.success(f"✅ Backend çalışıyor: {response.status_code}")
-    except Exception as e:
-        st.error(f"❌ Backend hatası: {e}")
-    
-    st.write("**Modeller:**")
-    try:
-        models_response = requests.get(f"{BACKEND_URL}/models")
-        if models_response.status_code == 200:
-            models = models_response.json()
-            st.success(f"✅ {len(models)} model yüklendi")
-            for model in models[:3]:  # İlk 3 modeli göster
-                st.write(f"- {model['name']}")
-        else:
-            st.error(f"❌ Modeller yüklenemedi: {models_response.status_code}")
-    except Exception as e:
-        st.error(f"❌ Model hatası: {e}")
-    
-    st.write("**Son Hata:**")
-    if 'last_error' in st.session_state:
-        st.error(st.session_state.last_error)
-    else:
-        st.info("Henüz hata yok")
+# Sayfa konfigürasyonu
+st.set_page_config(
+    page_title="AI Helper - Bursa Nilüfer Belediyesi",
+    page_icon="icon.ico",
+    layout="wide"
+)
 
-# Modelleri getir
-@st.cache_data(ttl=300)  # 5 dakika cache
+# CSS stilleri
+st.markdown("""
+<style>
+    .main .block-container {
+        padding-top: 2rem;
+        padding-bottom: 2rem;
+    }
+    .stButton > button {
+        width: 100%;
+        margin-top: 1rem;
+        background-color: #50c2eb !important;
+        border-color: #50c2eb !important;
+    }
+    .stButton > button:hover {
+        background-color: #3ba8d1 !important;
+        border-color: #3ba8d1 !important;
+    }
+    .response-box {
+        background-color: #f0f2f6;
+        padding: 1rem;
+        border-radius: 0.5rem;
+        margin: 1rem 0;
+    }
+    .alternative-response {
+        background-color: #e8f4fd;
+        padding: 0.5rem;
+        border-radius: 0.25rem;
+        margin: 0.5rem 0;
+        cursor: pointer;
+        border-left: 4px solid #1f77b4;
+    }
+    .selected-response {
+        background-color: #d4edda;
+        border-left: 4px solid #28a745;
+    }
+    .logo-container {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+        margin-bottom: 2rem;
+    }
+    .logo-image {
+        width: 60px;
+        height: 60px;
+        object-fit: contain;
+    }
+</style>
+""", unsafe_allow_html=True)
+
 def get_models():
+    """Get available models from backend"""
     try:
         response = requests.get(f"{BACKEND_URL}/models")
         if response.status_code == 200:
@@ -103,102 +73,192 @@ def get_models():
             st.error("Modeller yüklenemedi")
             return []
     except Exception as e:
-        st.error(f"Backend bağlantı hatası: {e}")
+        st.error(f"Bağlantı hatası: {e}")
         return []
 
-# Ana fonksiyon
+def create_request(original_text, response_type):
+    """Create a new request"""
+    try:
+        data = {
+            "original_text": original_text,
+            "response_type": response_type
+        }
+        response = requests.post(f"{BACKEND_URL}/requests", json=data)
+        if response.status_code == 200:
+            return response.json()["id"]
+        else:
+            st.error("Request oluşturulamadı")
+            return None
+    except Exception as e:
+        st.error(f"Bağlantı hatası: {e}")
+        return None
+
+def generate_response(request_id, custom_input, citizen_name, temperature, top_p, repetition_penalty):
+    """Generate response using LLM"""
+    try:
+        data = {
+            "request_id": request_id,
+            "model_name": "gemini-2.5-flash-lite",  # Sabit model
+            "custom_input": custom_input,
+            "citizen_name": citizen_name,
+            "temperature": temperature,
+            "top_p": top_p,
+            "repetition_penalty": repetition_penalty
+        }
+        response = requests.post(f"{BACKEND_URL}/generate", json=data)
+        if response.status_code == 200:
+            return response.json()
+        else:
+            st.error("Yanıt üretilirken hata oluştu")
+            return None
+    except Exception as e:
+        st.error(f"Bağlantı hatası: {e}")
+        return None
+
+def update_response_feedback(response_id, is_selected=False, copied=False):
+    """Update response feedback"""
+    try:
+        data = {
+            "response_id": response_id,
+            "is_selected": is_selected,
+            "copied": copied
+        }
+        response = requests.post(f"{BACKEND_URL}/responses/feedback", json=data)
+        return response.status_code == 200
+    except Exception as e:
+        st.error(f"Geri bildirim güncellenemedi: {e}")
+        return False
+
+# Ana uygulama
 def main():
-    # Modelleri al
-    models = get_models()
+    # Logo ve başlık
+    col_logo, col_title = st.columns([1, 4])
     
-    st.header("📝 Vatandaş Talebi ve Cevap Hazırlama")
+    with col_logo:
+        st.image("logo.png", width=60)
     
-    # Ad Soyad girişi
+    with col_title:
+        st.title("AI Yardımcı - Bursa Nilüfer Belediyesi")
+        st.markdown("Vatandaş taleplerine resmi yanıtlar hazırlayın")
+    
+    # Session state başlatma
+    if 'responses' not in st.session_state:
+        st.session_state.responses = []
+    if 'current_response' not in st.session_state:
+        st.session_state.current_response = None
+    
+    # Son üretilen yanıt gösterimi (başlığın hemen altında)
+    if 'generated_response' in st.session_state and st.session_state.generated_response:
+        st.markdown("---")
+        st.subheader("✅ Son Üretilen Yanıt")
+        
+        response = st.session_state.generated_response
+        response_text = response.get('response_text', '')
+        latency_ms = response.get('latency_ms', 0)
+        created_at = response.get('created_at', '')
+        
+        # Yanıt kutusu
+        st.markdown(f"""
+        <div class="response-box">
+            <p>{response_text.replace(chr(10), '<br>')}</p>
+            <small>⏱️ Süre: {latency_ms:.0f}ms | 📅 {created_at}</small>
+        </div>
+        """, unsafe_allow_html=True)
+        
+        # Önceki yanıtlar (küçültülmüş)
+        if len(st.session_state.responses) > 1:
+            st.markdown("---")
+            st.subheader("📚 Önceki Yanıtlar")
+            
+            for i, resp in enumerate(st.session_state.responses[:-1]):  # Son yanıt hariç
+                with st.expander(f"Yanıt #{i+1} - {resp.get('created_at', '')}"):
+                    st.write(resp.get('response_text', ''))
+                    st.caption(f"⏱️ {resp.get('latency_ms', 0):.0f}ms")
+                    
+                    # Eski yanıtlar için de seç butonu
+                    if st.button(f"✅ Seç ve Kopyala #{i+1}", key=f"select_old_{i}"):
+                        st.write("Yanıt panoya kopyalandı ve seçildi!")
+                        update_response_feedback(resp['id'], is_selected=True, copied=True)
+                        st.success(f"Yanıt #{i+1} seçildi ve kopyalandı!")
+        
+        # Alternatif yanıtlar ve aksiyonlar (üstte)
+        if st.session_state.current_response:
+            st.markdown("---")
+            st.subheader("🔄 Alternatif Yanıtlar")
+            
+            # Aksiyon butonları
+            col_alt, col_select = st.columns(2)
+            
+            with col_alt:
+                if st.button("🔄 Alternatif Üret") and len(st.session_state.responses) < 5:
+                    st.info("Alternatif yanıt üretiliyor...")
+                    # Yeni alternatif üret - tüm değişkenleri session_state'den al
+                    if ('last_custom_input' in st.session_state and 
+                        'last_citizen_name' in st.session_state and
+                        'last_temperature' in st.session_state and
+                        'last_top_p' in st.session_state and
+                        'last_repetition_penalty' in st.session_state):
+                        
+                        new_response = generate_response(
+                            st.session_state.current_response['request_id'], 
+                            st.session_state.last_custom_input, 
+                            st.session_state.last_citizen_name,
+                            st.session_state.last_temperature,
+                            st.session_state.last_top_p,
+                            st.session_state.last_repetition_penalty
+                        )
+                        if new_response:
+                            st.session_state.responses.append(new_response)
+                            st.session_state.current_response = new_response
+                            st.session_state.generated_response = new_response
+                            st.rerun()
+                    else:
+                        st.error("Önce bir yanıt üretin")
+                elif len(st.session_state.responses) >= 5:
+                    st.warning("Maksimum 5 alternatif üretildi")
+            
+            with col_select:
+                if st.button("✅ Seç ve Kopyala"):
+                    # Yanıtı panoya kopyala
+                    st.write("Yanıt panoya kopyalandı ve seçildi!")
+                    update_response_feedback(st.session_state.current_response['id'], is_selected=True, copied=True)
+                    st.success("Yanıt seçildi ve kopyalandı!")
+    
+    # İki sütunlu layout
     col1, col2 = st.columns(2)
+    
     with col1:
-        citizen_name = st.text_input(
-            "Vatandaşın Adı Soyadı:",
-            placeholder="Adı Soyadı (boş bırakılırsa 'Değerli Vatandaşımız' kullanılır)"
+        st.subheader("📝 Gelen İstek/Öneri")
+        original_text = st.text_area(
+            "Gelen istek/öneri metnini buraya yapıştırın:",
+            value="Bursa Nilüfer'de bir dükkanım var ve yönetim planından tahsisli otoparkımda bulunan dubaları, belediye ekipleri mafyavari şekilde tahsisli alanımdan alıp götürebiliyor. Geri aradığımda ise belediye zabıtası, görevliyi mahkemeye vermemi söylüyor. Bu nasıl bir hizmet anlayışı? Benim tahsisli alanımdan eşyamı alıyorsunuz, buna ne denir? Herkes biliyordur. Bir yeri koruduğunu zannedip başka bir yeri mağdur etmek mi belediyecilik?",
+            height=200
         )
+        
+        citizen_name = st.text_input("Adı Soyadı", value="Zafer Turan")
     
     with col2:
-        # Geri dönüş tipi
+        st.subheader("✍️ Hazırladığınız Cevap")
+        custom_input = st.text_area(
+            "Hazırladığınız cevap taslağını buraya yazın:",
+            value="Orası size tahsis edilmiş bir yer değil. Nilüfer halkının ortak kullanım alanı. Kaldırımlar da öyle.",
+            height=200
+        )
+        
         response_type = st.selectbox(
-            "Geri Dönüş Tipi:",
+            "Geri Dönüş Tipi",
             ["positive", "negative", "informative", "other"],
             format_func=lambda x: {
-                "positive": "Pozitif",
-                "negative": "Negatif", 
+                "positive": "Olumlu",
+                "negative": "Olumsuz", 
                 "informative": "Bilgilendirici",
                 "other": "Diğer"
             }[x]
         )
     
-    # Model seçimi
-    if models:
-        model_names = [model["name"] for model in models]
-        selected_model = st.selectbox(
-            "Model:",
-            model_names,
-            format_func=lambda x: next((m["display_name"] for m in models if m["name"] == x), x)
-        )
-    else:
-        selected_model = st.selectbox(
-            "Model:",
-            ["llama3:latest", "mistral:latest", "gemma:latest"],
-            disabled=True
-        )
-    
-    # Sistem promptu düzenlenebilir alan
-    st.subheader("🔧 Sistem Promptu (Debug)")
-    default_system_prompt = """Sen Bursa Nilüfer Belediyesi çalışanısın. Vatandaşlara resmi, kibar ve anlaşılır yanıtlar veriyorsun.
-Sen Bursa Nilüfer Belediyesi'nde çalışan bir memursun.
-
-Görevin, vatandaşlardan gelen talepleri dikkatle okuyarak onlara resmi, anlaşılır, kibar ve Türkçe bir dille yazılı yanıtlar oluşturmaktır.
-
-Yanıtın yapısı şu şekilde olmalıdır:
-1. "Sayın Ad Soyad," ifadesiyle başlamalıdır. Eğer ad girilmemişse "Değerli vatandaşımız," olarak başlamalıdır.
-2. Vatandaşın ilettiği konuyu resmi bir şekilde özetlemelisin.
-3. Personelin hazırladığı cevabı daha uygun, nezaketli ve açıklayıcı bir dile dönüştürmelisin.
-4. Geri dönüş tipi (olumlu, olumsuz, bilgilendirici vb.) ifadesine göre tonlama yapmalısın.
-5. Metni "Saygılarımızla, Bursa Nilüfer Belediyesi" ifadesiyle bitirmelisin."""
-
-    # Kaydedilmiş prompt dosyasını kontrol et
-    import os
-    prompt_file = "saved_system_prompt.txt"
-    
-    # Session state'den sistem promptunu al veya dosyadan oku
-    if 'system_prompt' not in st.session_state:
-        if os.path.exists(prompt_file):
-            try:
-                with open(prompt_file, 'r', encoding='utf-8') as f:
-                    st.session_state.system_prompt = f.read()
-            except:
-                st.session_state.system_prompt = default_system_prompt
-        else:
-            st.session_state.system_prompt = default_system_prompt
-
-    system_prompt = st.text_area(
-        "Sistem Promptu (LLM'e gönderilen talimat):",
-        value=st.session_state.system_prompt,
-        height=100,
-        help="Bu prompt LLM'e gönderilir. Değiştirerek farklı yanıt stilleri deneyebilirsiniz. Ctrl+Enter ile kaydedin."
-    )
-    
-    # Prompt değiştiğinde session state'i ve dosyayı güncelle
-    if system_prompt != st.session_state.system_prompt:
-        st.session_state.system_prompt = system_prompt
-        try:
-            with open(prompt_file, 'w', encoding='utf-8') as f:
-                f.write(system_prompt)
-            st.success("✅ Sistem promptu kalıcı olarak kaydedildi!")
-        except Exception as e:
-            st.error(f"❌ Kaydetme hatası: {e}")
-    
-    # LLM Ayar Slider'ları
+    # LLM parametreleri - tam genişlik (kolonların dışında)
+    st.markdown("---")
     with st.expander("🎚️ Yanıt Ayarları", expanded=False):
-        st.subheader("LLM Parametreleri")
-        
         # LLM parametrelerini kaydetme dosyası
         llm_params_file = "saved_llm_params.json"
         
@@ -210,7 +270,6 @@ Yanıtın yapısı şu şekilde olmalıdır:
         }
         
         # Kaydedilmiş parametreleri yükle
-        import json
         if os.path.exists(llm_params_file):
             try:
                 with open(llm_params_file, 'r', encoding='utf-8') as f:
@@ -224,37 +283,14 @@ Yanıtın yapısı şu şekilde olmalıdır:
         else:
             saved_params = default_params
         
-        col_temp, col_top, col_rep = st.columns(3)
+        col_temp, col_topp, col_rep = st.columns(3)
         
         with col_temp:
-            temperature = st.slider(
-                "🔥 Temperature",
-                min_value=0.1,
-                max_value=1.5,
-                value=saved_params["temperature"],
-                step=0.1,
-                help="Yaratıcılık seviyesi. Düşük değerler daha tutarlı, yüksek değerler daha yaratıcı yanıtlar üretir."
-            )
-        
-        with col_top:
-            top_p = st.slider(
-                "🎯 Top-p",
-                min_value=0.1,
-                max_value=1.0,
-                value=saved_params["top_p"],
-                step=0.05,
-                help="Kelime seçimi çeşitliliği. Düşük değerler daha odaklı, yüksek değerler daha çeşitli yanıtlar üretir."
-            )
-        
+            temperature = st.slider("Temperature", 0.1, 1.5, saved_params["temperature"], 0.1)
+        with col_topp:
+            top_p = st.slider("Top-p", 0.1, 1.0, saved_params["top_p"], 0.05)
         with col_rep:
-            repetition_penalty = st.slider(
-                "🚫 Repetition Penalty",
-                min_value=1.0,
-                max_value=2.0,
-                value=saved_params["repetition_penalty"],
-                step=0.1,
-                help="Tekrar cezası. Yüksek değerler tekrarları azaltır."
-            )
+            repetition_penalty = st.slider("Repetition Penalty", 1.0, 2.0, saved_params["repetition_penalty"], 0.1)
         
         # Parametreler değiştiğinde kaydet
         current_params = {
@@ -267,167 +303,43 @@ Yanıtın yapısı şu şekilde olmalıdır:
             try:
                 with open(llm_params_file, 'w', encoding='utf-8') as f:
                     json.dump(current_params, f, indent=2)
-                st.success("✅ LLM parametreleri kalıcı olarak kaydedildi!")
+                st.success("✅ Ayarlar kaydedildi!")
             except Exception as e:
-                st.error(f"❌ Parametre kaydetme hatası: {e}")
-    
-    # İki sütunlu layout
-    col1, col2 = st.columns(2)
-    
-    with col1:
-        st.subheader("📋 Gelen İstek/Öneri")
-        
-        # Debug için varsayılan değer
-        default_citizen_request = """Bursa Nilüfer'de bir dükkanım var ve yönetim planından tahsisli otoparkımda bulunan dubaları, belediye ekipleri mafyavari şekilde tahsisli alanımdan alıp götürebiliyor. Geri aradığımda ise belediye zabıtası, görevliyi mahkemeye vermemi söylüyor. Bu nasıl bir hizmet anlayışı? Benim tahsisli alanımdan eşyamı alıyorsunuz, buna ne denir? Herkes biliyordur. Bir yeri koruduğunu zannedip başka bir yeri mağdur etmek mi belediyecilik?"""
-        
-        # Vatandaş isteği metni
-        citizen_request = st.text_area(
-            "Gelen istek/öneri metnini buraya yapıştırın:",
-            value=default_citizen_request,
-            height=200,
-            placeholder="Vatandaşın gönderdiği şikayet, istek veya öneri metnini buraya yapıştırın..."
-        )
-    
-    with col2:
-        st.subheader("✍️ Hazırladığınız Cevap")
-        
-        # Debug için varsayılan değer
-        default_prepared_response = """Orası size tahsis edilmiş bir yer değil. Nilüfer halkının ortak kullanım alanı. Kaldırımlar da öyle."""
-        
-        # Kendi hazırladığı cevap
-        prepared_response = st.text_area(
-            "Hazırladığınız cevabı buraya yazın:",
-            value=default_prepared_response,
-            height=200,
-            placeholder="Vatandaşa vereceğiniz cevabı buraya yazın..."
-        )
+                st.error(f"❌ Kaydetme hatası: {e}")
     
     # Yanıt üret butonu
-    if st.button("🤖 Yanıt Üret", type="primary", use_container_width=True):
-        if not citizen_request.strip():
-            st.error("Lütfen vatandaşın istek/öneri metnini girin")
-        elif not prepared_response.strip():
-            st.error("Lütfen hazırladığınız cevabı girin")
-        else:
+    if st.button("🚀 Yanıt Üret", type="primary"):
+        if original_text and custom_input:
             with st.spinner("Yanıt üretiliyor..."):
-                try:
-                    # Prompt oluştur - Sistem promptu backend'de dinamik olarak oluşturulacak
-                    prompt = f"""VATANDAŞ BİLGİLERİ:
-- Vatandaşın isteği/önerisi: {citizen_request}
-
-PERSONEL CEVABI:
-- Hazırladığınız cevabı: {prepared_response}
-
-DİĞER BİLGİLER:
-- Geri dönüş tipi: {response_type}
-
-Lütfen bu bilgileri kullanarak resmi, kibar ve anlaşılır bir yanıt oluşturun. 
-Yanıt Türkçe olarak, resmi bir dille yazılmalı ve "Saygılarımızla, Bursa Nilüfer Belediyesi" ile bitmelidir."""
+                # Request oluştur
+                request_id = create_request(original_text, response_type)
+                
+                if request_id:
+                    # Değişkenleri session_state'e kaydet
+                    st.session_state.last_custom_input = custom_input
+                    st.session_state.last_citizen_name = citizen_name
+                    st.session_state.last_temperature = temperature
+                    st.session_state.last_top_p = top_p
+                    st.session_state.last_repetition_penalty = repetition_penalty
                     
-                    # Debug için prompt'u göster
-                    with st.expander("🔍 Gönderilen Prompt", expanded=False):
-                        st.code(prompt, language="text")
+                    # Yanıt üret
+                    response_data = generate_response(
+                        request_id, custom_input, citizen_name, 
+                        temperature, top_p, repetition_penalty
+                    )
                     
-                    # İstek oluştur
-                    request_data = {
-                        "original_text": f"Vatandaş İsteği: {citizen_request}\n\nHazırlanan Cevap: {prepared_response}",
-                        "response_type": response_type
-                    }
-                    
-                    # Debug için request data'yı göster
-                    with st.expander("📤 Gönderilen Request Data", expanded=False):
-                        st.json(request_data)
-                    
-                    request_response = requests.post(f"{BACKEND_URL}/requests", json=request_data)
-                    
-                    if request_response.status_code == 200:
-                        request_id = request_response.json()["id"]
-                        st.success(f"✅ İstek oluşturuldu (ID: {request_id})")
-                        
-                        # Yanıt üret
-                        generate_data = {
-                            "request_id": request_id,
-                            "model_name": selected_model,
-                            "custom_input": prompt,
-                            "citizen_name": citizen_name.strip() if citizen_name else None,
-                            "temperature": temperature,
-                            "top_p": top_p,
-                            "repetition_penalty": repetition_penalty
-                        }
-                        
-                        # Debug: citizen_name kontrolü
-                        st.write(f"🔍 DEBUG: citizen_name = '{citizen_name}'")
-                        st.write(f"🔍 DEBUG: citizen_name.strip() = '{citizen_name.strip() if citizen_name else 'None'}'")
-                        st.write(f"🔍 DEBUG: generate_data['citizen_name'] = '{generate_data['citizen_name']}'")
-                        
-                        # Debug için generate data'yı göster
-                        with st.expander("🤖 Gönderilen Generate Data", expanded=False):
-                            st.json(generate_data)
-                        
-                        generate_response = requests.post(f"{BACKEND_URL}/generate", json=generate_data)
-                        
-                        # Debug için response'u göster
-                        with st.expander("📥 Gelen Response", expanded=False):
-                            st.write(f"Status Code: {generate_response.status_code}")
-                            st.write(f"Response Text: {generate_response.text}")
-                        
-                        if generate_response.status_code == 200:
-                            response_data = generate_response.json()
-                            st.session_state.ai_response = response_data
-                            st.success("Yanıt başarıyla üretildi!")
-                            st.session_state.last_error = None
-                        else:
-                            error_msg = f"Yanıt üretilirken hata oluştu: {generate_response.status_code} - {generate_response.text}"
-                            st.error(error_msg)
-                            st.session_state.last_error = error_msg
+                    if response_data:
+                        st.session_state.current_response = response_data
+                        st.session_state.responses.append(response_data)
+                        st.session_state.generated_response = response_data
+                        st.success("✅ Yanıt başarıyla üretildi!")
+                        st.rerun()
                     else:
-                        error_msg = f"İstek oluşturulurken hata oluştu: {request_response.status_code} - {request_response.text}"
-                        st.error(error_msg)
-                        st.session_state.last_error = error_msg
-                except Exception as e:
-                    error_msg = f"Hata: {e}"
-                    st.error(error_msg)
-                    st.session_state.last_error = error_msg
-    
-    # Yanıtları göster
-    st.markdown("---")
-    
-    # AI Yanıtı
-    if hasattr(st.session_state, 'ai_response') and st.session_state.ai_response:
-        st.header("🤖 Oluşturulan Yanıt")
-        
-        response_data = st.session_state.ai_response
-        
-        # Yanıt metni
-        st.markdown(f"""
-        <div class="response-box">
-            {response_data['response_text']}
-        </div>
-        """, unsafe_allow_html=True)
-        
-        # İstatistikler
-        col1, col2, col3, col4 = st.columns(4)
-        with col1:
-            st.metric("Süre", f"{response_data['latency_ms']:.0f}ms")
-        with col2:
-            st.metric("Model", response_data['model_name'])
-        with col3:
-            st.metric("Karakter", len(response_data['response_text']))
-        with col4:
-            created_at = datetime.fromisoformat(response_data['created_at'].replace('Z', '+00:00'))
-            st.metric("Tarih", created_at.strftime("%d.%m.%Y"))
-        
-        # Butonlar
-        col1, col2, col3 = st.columns(3)
-        with col1:
-            if st.button("📋 Kopyala", use_container_width=True):
-                st.write("Kopyalandı!")
-        with col2:
-            if st.button("✅ Seç", use_container_width=True):
-                st.write("Seçildi!")
-        with col3:
-            if st.button("🔄 Alternatif", use_container_width=True):
-                st.rerun()
+                        st.error("❌ Yanıt üretilemedi")
+                else:
+                    st.error("❌ Request oluşturulamadı")
+        else:
+            st.warning("⚠️ Lütfen gerekli alanları doldurun")
 
 if __name__ == "__main__":
     main() 
