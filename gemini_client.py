@@ -15,8 +15,7 @@ class GeminiClient:
                 print("Warning: GEMINI_API_KEY not set")
                 return []
             
-            # For now, return static Gemini models for testing
-            # TODO: Implement actual API call when API key is valid
+            # API Key ile çalışan Gemini modelleri
             gemini_models = [
                 {
                     'name': 'gemini-1.5-flash',
@@ -25,14 +24,8 @@ class GeminiClient:
                     'supports_chat': True
                 },
                 {
-                    'name': 'gemini-1.5-pro',
-                    'display_name': 'Gemini 1.5 Pro',
-                    'supports_embedding': True,
-                    'supports_chat': True
-                },
-                {
-                    'name': 'gemini-1.0-pro',
-                    'display_name': 'Gemini 1.0 Pro',
+                    'name': 'gemini-pro',
+                    'display_name': 'Gemini Pro',
                     'supports_embedding': True,
                     'supports_chat': True
                 }
@@ -107,7 +100,7 @@ Toplam metin 80 ‑ 180 kelime arası olmalı; üç‑dört kısa paragrafı ge�
             
             async with httpx.AsyncClient() as client:
                 headers = {
-                    "Authorization": f"Bearer {self.api_key}",
+                    "X-Goog-Api-Key": self.api_key,
                     "Content-Type": "application/json"
                 }
                 
@@ -131,7 +124,16 @@ Toplam metin 80 ‑ 180 kelime arası olmalı; üç‑dört kısa paragrafı ge�
                 # Gemini API endpoint
                 model_endpoint = f"https://generativelanguage.googleapis.com/v1beta/models/{model_name}:generateContent"
                 
+                # Debug: API key ve endpoint bilgileri
+                print(f"DEBUG: Using API key: {self.api_key[:10]}...")
+                print(f"DEBUG: Model endpoint: {model_endpoint}")
+                print(f"DEBUG: Headers: {headers}")
+                
                 response = await client.post(model_endpoint, json=payload, headers=headers, timeout=300.0)
+                
+                # Debug: Response bilgileri
+                print(f"DEBUG: Response status: {response.status_code}")
+                print(f"DEBUG: Response text: {response.text[:200]}...")
                 
                 end_time = time.time()
                 latency_ms = (end_time - start_time) * 1000
