@@ -26,16 +26,19 @@ st.markdown("""
         margin-top: 1rem;
         background-color: #50c2eb !important;
         border-color: #50c2eb !important;
+        box-shadow: 0 4px 8px rgba(0,0,0,0.1) !important;
     }
     .stButton > button:hover {
         background-color: #3ba8d1 !important;
         border-color: #3ba8d1 !important;
+        box-shadow: 0 6px 12px rgba(0,0,0,0.15) !important;
     }
     .response-box {
         background-color: #f0f2f6;
         padding: 1rem;
         border-radius: 0.5rem;
         margin: 1rem 0;
+        box-shadow: 0 4px 8px rgba(0,0,0,0.1);
     }
     .alternative-response {
         background-color: #e8f4fd;
@@ -44,10 +47,12 @@ st.markdown("""
         margin: 0.5rem 0;
         cursor: pointer;
         border-left: 4px solid #1f77b4;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
     }
     .selected-response {
         background-color: #d4edda;
         border-left: 4px solid #28a745;
+        box-shadow: 0 4px 8px rgba(0,0,0,0.15);
     }
     .logo-container {
         display: flex;
@@ -59,6 +64,59 @@ st.markdown("""
         width: 60px;
         height: 60px;
         object-fit: contain;
+    }
+    /* Tüm elementlere gölge */
+    .stTextInput > div > div > input {
+        box-shadow: 0 4px 8px rgba(0,0,0,0.15) !important;
+        border-radius: 4px !important;
+    }
+    .stTextArea > div > div > textarea {
+        box-shadow: 0 4px 8px rgba(0,0,0,0.15) !important;
+        border-radius: 4px !important;
+    }
+    .stSelectbox > div > div > div {
+        box-shadow: 0 4px 8px rgba(0,0,0,0.15) !important;
+        border-radius: 4px !important;
+    }
+    .stSlider > div > div > div {
+        box-shadow: 0 4px 8px rgba(0,0,0,0.15) !important;
+    }
+    .stExpander > div > div {
+        box-shadow: 0 4px 8px rgba(0,0,0,0.15) !important;
+        border-radius: 4px !important;
+    }
+    /* Textbox'lar için özel gölge */
+    .stTextInput > div, .stTextArea > div, .stSelectbox > div {
+        box-shadow: 0 4px 8px rgba(0,0,0,0.15) !important;
+        border-radius: 4px !important;
+    }
+    /* Yanıt ayarları expander için özel gölge */
+    .stExpander > div {
+        box-shadow: 0 6px 12px rgba(0,0,0,0.2) !important;
+        border-radius: 8px !important;
+    }
+    /* Text area'lar için daha güçlü gölge */
+    .stTextArea > div > div > textarea {
+        box-shadow: 0 6px 12px rgba(0,0,0,0.2) !important;
+        border-radius: 6px !important;
+    }
+    /* Text area container'ları için gölge */
+    .stTextArea > div {
+        box-shadow: 0 6px 12px rgba(0,0,0,0.2) !important;
+        border-radius: 6px !important;
+    }
+    /* Expander için daha spesifik gölge */
+    .stExpander > div > div {
+        box-shadow: 0 6px 12px rgba(0,0,0,0.2) !important;
+        border-radius: 8px !important;
+    }
+    /* Başlık ve alt başlıklara gölge */
+    h1, h2, h3 {
+        text-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+    /* Logo gölgesi */
+    .stImage > img {
+        box-shadow: 0 4px 8px rgba(0,0,0,0.15) !important;
     }
 </style>
 """, unsafe_allow_html=True)
@@ -237,7 +295,8 @@ def main():
             height=200
         )
         
-        citizen_name = st.text_input("Adı Soyadı", value="Zafer Turan")
+        st.subheader("👤 Adı Soyadı")
+        citizen_name = st.text_input("Vatandaşın adı ve soyadını girin:", value="Zafer Turan")
     
     with col2:
         st.subheader("✍️ Hazırladığınız Cevap")
@@ -247,8 +306,9 @@ def main():
             height=200
         )
         
+        st.subheader("📋 Geri Dönüş Tipi")
         response_type = st.selectbox(
-            "Geri Dönüş Tipi",
+            "Yanıt tipini seçin:",
             ["positive", "negative", "informative", "other"],
             format_func=lambda x: {
                 "positive": "Olumlu",
