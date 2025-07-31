@@ -5,7 +5,7 @@ import os
 from datetime import datetime
 
 # Backend URL
-BACKEND_URL = "http://localhost:3200/api/v1"
+BACKEND_URL = "http://localhost:8000/api/v1"
 
 # Sayfa konfigürasyonu
 st.set_page_config(
@@ -65,52 +65,43 @@ st.markdown("""
         height: 60px;
         object-fit: contain;
     }
-    /* Tüm elementlere gölge */
+    /* Text input gölgeleri */
     .stTextInput > div > div > input {
         box-shadow: 0 4px 8px rgba(0,0,0,0.15) !important;
         border-radius: 4px !important;
     }
-    .stTextArea > div > div > textarea {
-        box-shadow: 0 4px 8px rgba(0,0,0,0.15) !important;
-        border-radius: 4px !important;
-    }
-    .stSelectbox > div > div > div {
-        box-shadow: 0 4px 8px rgba(0,0,0,0.15) !important;
-        border-radius: 4px !important;
-    }
-    .stSlider > div > div > div {
-        box-shadow: 0 4px 8px rgba(0,0,0,0.15) !important;
-    }
-    .stExpander > div > div {
-        box-shadow: 0 4px 8px rgba(0,0,0,0.15) !important;
-        border-radius: 4px !important;
-    }
-    /* Textbox'lar için özel gölge */
-    .stTextInput > div, .stTextArea > div, .stSelectbox > div {
-        box-shadow: 0 4px 8px rgba(0,0,0,0.15) !important;
-        border-radius: 4px !important;
-    }
-    /* Yanıt ayarları expander için özel gölge */
-    .stExpander > div {
-        box-shadow: 0 6px 12px rgba(0,0,0,0.2) !important;
-        border-radius: 8px !important;
-    }
-    /* Text area'lar için daha güçlü gölge */
-    .stTextArea > div > div > textarea {
+    /* Text area gölgeleri - daha spesifik */
+    .stTextArea textarea {
         box-shadow: 0 6px 12px rgba(0,0,0,0.2) !important;
         border-radius: 6px !important;
+        padding: 12px !important;
     }
     /* Text area container'ları için gölge */
     .stTextArea > div {
         box-shadow: 0 6px 12px rgba(0,0,0,0.2) !important;
         border-radius: 6px !important;
     }
-    /* Expander için daha spesifik gölge */
-    .stExpander > div > div {
+    /* Text area'lar için ek gölge */
+    .stTextArea > div > div > textarea {
+        box-shadow: 0 6px 12px rgba(0,0,0,0.2) !important;
+        border-radius: 6px !important;
+    }
+    /* Selectbox gölgeleri */
+    .stSelectbox > div > div > div {
+        box-shadow: 0 4px 8px rgba(0,0,0,0.15) !important;
+        border-radius: 4px !important;
+    }
+    /* Slider gölgeleri */
+    .stSlider > div > div > div {
+        box-shadow: 0 4px 8px rgba(0,0,0,0.15) !important;
+    }
+    /* Expander gölgeleri - daha spesifik */
+    .stExpander {
         box-shadow: 0 6px 12px rgba(0,0,0,0.2) !important;
         border-radius: 8px !important;
+        padding: 8px !important;
     }
-    /* Başlık ve alt başlıklara gölge */
+    /* Başlık gölgeleri */
     h1, h2, h3 {
         text-shadow: 0 2px 4px rgba(0,0,0,0.1);
     }
@@ -310,6 +301,7 @@ def main():
         response_type = st.selectbox(
             "Yanıt tipini seçin:",
             ["positive", "negative", "informative", "other"],
+            index=2,  # informative varsayılan
             format_func=lambda x: {
                 "positive": "Olumlu",
                 "negative": "Olumsuz", 
@@ -326,9 +318,9 @@ def main():
         
         # Varsayılan değerler
         default_params = {
-            "temperature": 0.7,
-            "top_p": 0.9,
-            "repetition_penalty": 1.2
+            "temperature": 0.5,
+            "top_p": 0.4,
+            "repetition_penalty": 2.0
         }
         
         # Kaydedilmiş parametreleri yükle

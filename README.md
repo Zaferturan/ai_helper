@@ -4,8 +4,8 @@ Vatandaş taleplerine cevaplarınızı hazırlayın. İstek ve önerilere uygun,
 
 ## ✨ Özellikler
 
-- **AI Destekli Metin Düzenleme**: Ollama ve Gemini LLM modelleri ile metinleri daha kibar ve anlaşılır hale getirin
-- **Dinamik Model Seçimi**: Ollama ve Gemini'dan mevcut modelleri otomatik olarak alır
+- **AI Destekli Metin Düzenleme**: Ollama LLM modelleri ile metinleri daha kibar ve anlaşılır hale getirin
+- **Dinamik Model Seçimi**: Ollama'dan mevcut modelleri otomatik olarak alır
 - **İki Farklı Mod**: 
   - İstek/öneri metninden cevap üretme
   - Kendi yazdığınız cevabı iyileştirme
@@ -19,7 +19,6 @@ Vatandaş taleplerine cevaplarınızı hazırlayın. İstek ve önerilere uygun,
 - **SQLAlchemy**: ORM ile veritabanı yönetimi
 - **MySQL**: Ana veritabanı
 - **Ollama**: Yerel LLM entegrasyonu
-- **Gemini API**: Google Gemini LLM entegrasyonu
 - **Pydantic**: Veri doğrulama ve serileştirme
 
 ### Frontend
@@ -67,10 +66,6 @@ REDIS_HOST=localhost
 REDIS_PORT=6379
 
 OLLAMA_HOST=http://localhost:11434
-
-# Gemini API (İsteğe bağlı)
-GEMINI_API_KEY=your_gemini_api_key_here
-GEMINI_API_URL=https://generativelanguage.googleapis.com/v1beta/models
 ```
 
 ### 5. Veritabanını Oluşturun
@@ -124,7 +119,6 @@ ai_helper/
 ├── api_models.py         # Pydantic modelleri
 ├── endpoints.py          # API endpoint'leri
 ├── ollama_client.py      # Ollama entegrasyonu
-├── gemini_client.py      # Gemini API entegrasyonu
 ├── requirements.txt      # Python bağımlılıkları
 ├── .env                  # Ortam değişkenleri
 ├── .gitignore           # Git ignore kuralları
@@ -138,7 +132,6 @@ ai_helper/
 - ✅ FastAPI ile modern REST API
 - ✅ SQLAlchemy ORM ile veritabanı yönetimi
 - ✅ Ollama entegrasyonu
-- ✅ Gemini API entegrasyonu
 - ✅ Pydantic ile veri doğrulama
 - ✅ Asenkron HTTP istekleri
 - ✅ Hata yönetimi ve logging
@@ -204,10 +197,11 @@ python -c "from connection import engine; from models import Base; Base.metadata
 3. **Veritabanı**: MySQL production sunucusu
 4. **Ollama**: Production sunucusunda Ollama kurulumu
 
-### Docker (Gelecek)
+### Docker
 ```bash
-# Docker Compose ile tüm servisleri başlat
-docker-compose up -d
+# Docker ile çalıştır
+docker build -t ai-helper .
+docker run -d --name ai-helper-container --restart always -p 8500:8500 -p 8000:8000 ai-helper
 ```
 
 ## 🤝 Katkıda Bulunma
@@ -231,11 +225,16 @@ Bu proje MIT lisansı altında lisanslanmıştır.
 
 ## 🔄 Güncellemeler
 
+### v1.2.0
+- ✅ Docker containerization
+- ✅ Always restart policy
+- ✅ Varsayılan ayarlar güncellendi
+- ✅ Environment variables düzeltildi
+
 ### v1.1.0
-- ✅ Gemini API entegrasyonu
-- ✅ Çoklu model desteği (Ollama + Gemini)
+- ✅ Ollama entegrasyonu
+- ✅ Çoklu model desteği
 - ✅ Gelişmiş model seçimi
-- ✅ API key yönetimi
 
 ### v1.0.0
 - ✅ Temel FastAPI backend
@@ -247,7 +246,6 @@ Bu proje MIT lisansı altında lisanslanmıştır.
 ### Gelecek Sürümler
 - 🔄 Authentication sistemi
 - 🔄 Gelişmiş metrikler
-- 🔄 Docker containerization
 - 🔄 CI/CD pipeline
 - 🔄 API rate limiting
 
