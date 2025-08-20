@@ -72,10 +72,10 @@ class GeminiClient:
             print(f"Error getting Gemini models: {e}")
             return []
     
-    async def generate_response(self, model_name: str, prompt: str, citizen_name: str = None, temperature: float = 0.7, top_p: float = 0.9, repetition_penalty: float = 1.2) -> Dict[str, Any]:
+    async def generate_response(self, model_name: str, prompt: str, temperature: float = 0.7, top_p: float = 0.9, repetition_penalty: float = 1.2, system_prompt: str = "") -> Dict[str, Any]:
         """Generate response from Gemini model"""
         try:
-            if not self.api_key or self.api_key == "your_gemini_api_key_here":
+            if not self.api_key:
                 return {
                     'response_text': "Error: GEMINI_API_KEY not configured or invalid",
                     'latency_ms': 0,
@@ -84,25 +84,23 @@ class GeminiClient:
             
             start_time = time.time()
             
-            # Vatandaş adına göre dinamik sistem promptu
-            if citizen_name and citizen_name.strip():
-                greeting_instruction = f"Sayın {citizen_name.strip().upper()},"
+            # Frontend'den gelen sistem promptunu kullan, yoksa varsayılanı kullan
+            if system_prompt:
+                final_system_prompt = system_prompt
             else:
-                greeting_instruction = "Değerli Vatandaşımız,"
-            
-            # Kısa sistem promptu
-            system_prompt = f"""Bursa Nilüfer Belediyesi adına resmi yanıt hazırla.
+                # Varsayılan sistem promptu
+                final_system_prompt = """Bursa Nilüfer Belediyesi adına resmi yanıt hazırla.
 
 Yanıt şablonu:
-1. İlk satır: {greeting_instruction}
+1. "Sayın," ile başla
 2. Vatandaşın talebini özetle (1-2 cümle)
-3. Personelin hazırladığı cevabı düzelt ve genişlet
+3. Personelin cevabını genişlet ve düzelt
 4. Resmi, kibar dil kullan
-5. Son satır: "Saygılarımızla, Bursa Nilüfer Belediyesi."
+5. "Saygılarımızla, Bursa Nilüfer Belediyesi" ile bitir
 
-Uzunluk: 80-150 kelime"""
+Uzunluk: 150-300 kelime"""
 
-            full_prompt = f"{system_prompt}\n\n{prompt}"
+            full_prompt = f"{final_system_prompt}\n\n{prompt}"
             
             async with httpx.AsyncClient() as client:
                 headers = {
@@ -123,7 +121,7 @@ Uzunluk: 80-150 kelime"""
                     "generationConfig": {
                         "temperature": temperature,
                         "topP": top_p,
-                        "maxOutputTokens": 2000
+                        "maxOutputTokens": 4000  # 2000'den 4000'e çıkarıldı
                     }
                 }
                 

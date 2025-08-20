@@ -125,12 +125,12 @@ def get_models():
         st.error(f"Bağlantı hatası: {e}")
         return []
 
-def create_request(original_text, response_type):
+def create_request(original_text):
     """Create a new request"""
     try:
         data = {
             "original_text": original_text,
-            "response_type": response_type
+            "response_type": "informative"  # Sabit değer
         }
         response = requests.post(f"{BACKEND_URL}/requests", json=data)
         if response.status_code == 200:
@@ -142,17 +142,21 @@ def create_request(original_text, response_type):
         st.error(f"Bağlantı hatası: {e}")
         return None
 
-def generate_response(request_id, custom_input, citizen_name, temperature, top_p, repetition_penalty):
+def generate_response(request_id, custom_input, temperature, top_p, repetition_penalty, model_name):
     """Generate response using LLM"""
     try:
+        # Sistem promptunu session state'den al
+        system_prompt = st.session_state.get('system_prompt', '')
+        
         data = {
             "request_id": request_id,
-            "model_name": "gemini-2.5-flash-lite",  # Sabit model
+            "model_name": model_name,
             "custom_input": custom_input,
-            "citizen_name": citizen_name,
+            "citizen_name": "",  # Boş bırakılıyor, sadece "Sayın" yazacak
             "temperature": temperature,
             "top_p": top_p,
-            "repetition_penalty": repetition_penalty
+            "repetition_penalty": repetition_penalty,
+            "system_prompt": system_prompt  # Sistem promptunu ekle
         }
         response = requests.post(f"{BACKEND_URL}/generate", json=data)
         if response.status_code == 200:
@@ -197,9 +201,62 @@ def main():
         st.session_state.responses = []
     if 'current_response' not in st.session_state:
         st.session_state.current_response = None
+    if 'generated_response' not in st.session_state:
+        st.session_state.generated_response = None
+    
+    # Modelleri al
+    models = get_models()
+    
+    # Sistem promptu düzenlenebilir alan
+    st.subheader("🔧 Sistem Promptu (Debug)")
+    default_system_prompt = """Sen Bursa Nilüfer Belediyesi çalışanısın. Vatandaşlara resmi, kibar ve anlaşılır yanıtlar veriyorsun.
+
+Sen Bursa Nilüfer Belediyesi'nde çalışan bir memursun.
+
+Görevin, vatandaşlardan gelen talepleri dikkatle okuyarak onlara resmi, anlaşılır, kibar ve Türkçe bir dille yazılı yanıtlar oluşturmaktır.
+
+Yanıtın yapısı şu şekilde olmalıdır:
+1. "Sayın" ifadesiyle başlamalıdır.
+2. Vatandaşın ilettiği konuyu resmi bir şekilde özetlemelisin.
+3. Personelin hazırladığı cevabı daha uygun, nezaketli ve açıklayıcı bir dile dönüştürmelisin.
+4. Metni "Saygılarımızla, Bursa Nilüfer Belediyesi" ifadesiyle bitirmelisin."""
+
+    # Kaydedilmiş prompt dosyasını kontrol et
+    prompt_file = "saved_system_prompt.txt"
+    
+    # Session state'den sistem promptunu al veya dosyadan oku
+    if 'system_prompt' not in st.session_state:
+        if os.path.exists(prompt_file):
+            try:
+                with open(prompt_file, 'r', encoding='utf-8') as f:
+                    st.session_state.system_prompt = f.read()
+            except:
+                st.session_state.system_prompt = default_system_prompt
+        else:
+            st.session_state.system_prompt = default_system_prompt
+
+    system_prompt = st.text_area(
+        "Sistem Promptu (LLM'e gönderilen talimat):",
+        value=st.session_state.system_prompt,
+        height=100,
+        help="Bu prompt LLM'e gönderilir. Değiştirerek farklı yanıt stilleri deneyebilirsiniz. Ctrl+Enter ile kaydedin."
+    )
+    
+    # Prompt değiştiğinde session state'i ve dosyayı güncelle
+    if system_prompt != st.session_state.system_prompt:
+        st.session_state.system_prompt = system_prompt
+        try:
+            with open(prompt_file, 'w', encoding='utf-8') as f:
+                f.write(system_prompt)
+            st.success("✅ Sistem promptu kalıcı olarak kaydedildi!")
+        except Exception as e:
+            st.error(f"❌ Kaydetme hatası: {e}")
+    
+    # Model seçimi yanıt ayarları içinde olacak
+    selected_model = "gemini-2.5-flash"  # Varsayılan model
     
     # Son üretilen yanıt gösterimi (başlığın hemen altında)
-    if 'generated_response' in st.session_state and st.session_state.generated_response:
+    if st.session_state.generated_response:
         st.markdown("---")
         st.subheader("✅ Son Üretilen Yanıt")
         
@@ -229,18 +286,18 @@ def main():
                     st.info("Alternatif yanıt üretiliyor...")
                     # Yeni alternatif üret - tüm değişkenleri session_state'den al
                     if ('last_custom_input' in st.session_state and 
-                        'last_citizen_name' in st.session_state and
                         'last_temperature' in st.session_state and
                         'last_top_p' in st.session_state and
-                        'last_repetition_penalty' in st.session_state):
+                        'last_repetition_penalty' in st.session_state and
+                        'last_model_name' in st.session_state):
                         
                         new_response = generate_response(
                             st.session_state.current_response['request_id'], 
                             st.session_state.last_custom_input, 
-                            st.session_state.last_citizen_name,
                             st.session_state.last_temperature,
                             st.session_state.last_top_p,
-                            st.session_state.last_repetition_penalty
+                            st.session_state.last_repetition_penalty,
+                            st.session_state.last_model_name
                         )
                         if new_response:
                             st.session_state.responses.append(new_response)
@@ -285,9 +342,6 @@ def main():
             value="Bursa Nilüfer'de bir dükkanım var ve yönetim planından tahsisli otoparkımda bulunan dubaları, belediye ekipleri mafyavari şekilde tahsisli alanımdan alıp götürebiliyor. Geri aradığımda ise belediye zabıtası, görevliyi mahkemeye vermemi söylüyor. Bu nasıl bir hizmet anlayışı? Benim tahsisli alanımdan eşyamı alıyorsunuz, buna ne denir? Herkes biliyordur. Bir yeri koruduğunu zannedip başka bir yeri mağdur etmek mi belediyecilik?",
             height=200
         )
-        
-        st.subheader("👤 Adı Soyadı")
-        citizen_name = st.text_input("Vatandaşın adı ve soyadını girin:", value="Zafer Turan")
     
     with col2:
         st.subheader("✍️ Hazırladığınız Cevap")
@@ -296,24 +350,75 @@ def main():
             value="Orası size tahsis edilmiş bir yer değil. Nilüfer halkının ortak kullanım alanı. Kaldırımlar da öyle.",
             height=200
         )
-        
-        st.subheader("📋 Geri Dönüş Tipi")
-        response_type = st.selectbox(
-            "Yanıt tipini seçin:",
-            ["positive", "negative", "informative", "other"],
-            index=2,  # informative varsayılan
-            format_func=lambda x: {
-                "positive": "Olumlu",
-                "negative": "Olumsuz", 
-                "informative": "Bilgilendirici",
-                "other": "Diğer"
-            }[x]
-        )
     
     # LLM parametreleri - tam genişlik (kolonların dışında)
     st.markdown("---")
-    with st.expander("🎚️ Yanıt Ayarları", expanded=False):
-        # LLM parametrelerini kaydetme dosyası
+    with st.expander("🔧 Yanıt Ayarları", expanded=False):
+        # Model seçimi (üstte)
+        if models:
+            # Sadece belirli modelleri göster
+            allowed_models = [
+                "gemini-2.5-flash",
+                "gemini-1.5-flash-002", 
+                "gemini-2.0-flash-001",
+                "gpt-oss:latest"
+            ]
+            
+            # Mevcut modellerden sadece izin verilenleri filtrele
+            filtered_models = [model for model in models if model["name"] in allowed_models]
+            
+            if filtered_models:
+                model_names = [model["name"] for model in filtered_models]
+                selected_model = st.selectbox(
+                    "🤖 Model Seçimi:",
+                    model_names,
+                    index=0,  # İlk model (gemini-2.5-flash) varsayılan olarak seçili
+                    format_func=lambda x: next((m["display_name"] for m in filtered_models if m["name"] == x), x),
+                    help="Kullanmak istediğiniz AI modelini seçin"
+                )
+            else:
+                selected_model = "gemini-2.5-flash"  # Fallback
+                st.warning("⚠️ İzin verilen modeller bulunamadı, varsayılan model kullanılıyor")
+        else:
+            selected_model = "gemini-2.5-flash"  # Fallback
+            st.warning("⚠️ Modeller yüklenemedi, varsayılan model kullanılıyor")
+        
+        st.markdown("---")  # Ayırıcı çizgi
+        
+        # LLM parametreleri
+        col1, col2, col3 = st.columns(3)
+        
+        with col1:
+            temperature = st.slider(
+                "🌡️ Temperature", 
+                min_value=0.0, 
+                max_value=2.0, 
+                value=st.session_state.get('last_temperature', 0.5), 
+                step=0.1,
+                help="Düşük değerler daha tutarlı, yüksek değerler daha yaratıcı yanıtlar üretir"
+            )
+        
+        with col2:
+            top_p = st.slider(
+                "🎯 Top-p", 
+                min_value=0.0, 
+                max_value=1.0, 
+                value=st.session_state.get('last_top_p', 0.4), 
+                step=0.1,
+                help="Kelime seçiminde çeşitliliği kontrol eder. Düşük değerler daha odaklı yanıtlar üretir"
+            )
+        
+        with col3:
+            repetition_penalty = st.slider(
+                "🔄 Repetition Penalty", 
+                min_value=0.0, 
+                max_value=3.0, 
+                value=st.session_state.get('last_repetition_penalty', 2.0), 
+                step=0.1,
+                help="Tekrarlanan kelimeleri azaltır. Yüksek değerler daha çeşitli kelime kullanımını sağlar"
+            )
+        
+        # Parametreleri kaydetme dosyası
         llm_params_file = "saved_llm_params.json"
         
         # Varsayılan değerler
@@ -337,15 +442,6 @@ def main():
         else:
             saved_params = default_params
         
-        col_temp, col_topp, col_rep = st.columns(3)
-        
-        with col_temp:
-            temperature = st.slider("Temperature", 0.1, 1.5, saved_params["temperature"], 0.1)
-        with col_topp:
-            top_p = st.slider("Top-p", 0.1, 1.0, saved_params["top_p"], 0.05)
-        with col_rep:
-            repetition_penalty = st.slider("Repetition Penalty", 1.0, 2.0, saved_params["repetition_penalty"], 0.1)
-        
         # Parametreler değiştiğinde kaydet
         current_params = {
             "temperature": temperature,
@@ -356,8 +452,8 @@ def main():
         if current_params != saved_params:
             try:
                 with open(llm_params_file, 'w', encoding='utf-8') as f:
-                    json.dump(current_params, f, indent=2)
-                st.success("✅ Ayarlar kaydedildi!")
+                    json.dump(current_params, f, indent=2, ensure_ascii=False)
+                st.success("✅ LLM parametreleri kaydedildi!")
             except Exception as e:
                 st.error(f"❌ Kaydetme hatası: {e}")
     
@@ -366,20 +462,20 @@ def main():
         if original_text and custom_input:
             with st.spinner("Yanıt üretiliyor..."):
                 # Request oluştur
-                request_id = create_request(original_text, response_type)
+                request_id = create_request(original_text)
                 
                 if request_id:
                     # Değişkenleri session_state'e kaydet
                     st.session_state.last_custom_input = custom_input
-                    st.session_state.last_citizen_name = citizen_name
                     st.session_state.last_temperature = temperature
                     st.session_state.last_top_p = top_p
                     st.session_state.last_repetition_penalty = repetition_penalty
+                    st.session_state.last_model_name = selected_model
                     
                     # Yanıt üret
                     response_data = generate_response(
-                        request_id, custom_input, citizen_name, 
-                        temperature, top_p, repetition_penalty
+                        request_id, custom_input, 
+                        temperature, top_p, repetition_penalty, selected_model
                     )
                     
                     if response_data:

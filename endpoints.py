@@ -18,12 +18,20 @@ async def get_models(db: Session = Depends(get_db)):
         all_models = []
         
         # Get models from Ollama
-        ollama_models = await ollama_client.get_models()
+        print("DEBUG: Getting Ollama models...")
+        ollama_models = ollama_client.get_models()
+        print(f"DEBUG: Ollama models count: {len(ollama_models)}")
+        print(f"DEBUG: Ollama models: {ollama_models}")
         all_models.extend(ollama_models)
         
         # Get models from Gemini
+        print("DEBUG: Getting Gemini models...")
         gemini_models = await gemini_client.get_models()
+        print(f"DEBUG: Gemini models count: {len(gemini_models)}")
+        print(f"DEBUG: Gemini models: {gemini_models}")
         all_models.extend(gemini_models)
+        
+        print(f"DEBUG: Total models before DB sync: {len(all_models)}")
         
         # Sync with database
         for model_data in all_models:
@@ -49,6 +57,7 @@ async def get_models(db: Session = Depends(get_db)):
         
         # Return models from database
         db_models = db.query(models.Model).all()
+        print(f"DEBUG: DB models count: {len(db_models)}")
         return [
             api_models.ModelInfo(
                 name=model.name,
@@ -59,6 +68,7 @@ async def get_models(db: Session = Depends(get_db)):
             for model in db_models
         ]
     except Exception as e:
+        print(f"DEBUG: Error in get_models: {e}")
         raise HTTPException(status_code=500, detail=f"Error getting models: {str(e)}")
 
 @router.post("/requests", response_model=api_models.RequestResponse)
@@ -99,8 +109,15 @@ async def generate_response(generate_request: api_models.GenerateRequest, db: Se
         if not original_request:
             raise HTTPException(status_code=404, detail="Request not found")
         
-        # Create prompt
-        prompt = f"Lütfen aşağıdaki metni kibar, resmi ve anlaşılır hale getir:\n\n{original_request.original_text}"
+        # Create prompt - daha kısa ve net
+        prompt = f"""Vatandaş talebi: {original_request.original_text}
+
+Personel cevabı: {generate_request.custom_input}
+
+Bu cevabı genişlet, daha detaylı ve ikna edici hale getir."""
+        
+        # Sistem promptunu kullan (frontend'den gelen)
+        system_prompt = generate_request.system_prompt if generate_request.system_prompt else ""
         
         # Determine which client to use based on model name
         if generate_request.model_name.startswith('gemini-'):
@@ -108,20 +125,20 @@ async def generate_response(generate_request: api_models.GenerateRequest, db: Se
             response = await gemini_client.generate_response(
                 generate_request.model_name, 
                 prompt,
-                citizen_name=generate_request.citizen_name,
                 temperature=generate_request.temperature,
                 top_p=generate_request.top_p,
-                repetition_penalty=generate_request.repetition_penalty
+                repetition_penalty=generate_request.repetition_penalty,
+                system_prompt=system_prompt  # Sistem promptunu geçir
             )
         else:
             # Use Ollama client
             response = await ollama_client.generate_response(
                 generate_request.model_name, 
                 prompt,
-                citizen_name=generate_request.citizen_name,
                 temperature=generate_request.temperature,
                 top_p=generate_request.top_p,
-                repetition_penalty=generate_request.repetition_penalty
+                repetition_penalty=generate_request.repetition_penalty,
+                system_prompt=system_prompt  # Sistem promptunu geçir
             )
         
         if not response['success']:

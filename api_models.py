@@ -11,10 +11,10 @@ class GenerateRequest(BaseModel):
     request_id: int
     model_name: str
     custom_input: str
-    citizen_name: Optional[str] = None
     temperature: Optional[float] = 0.7
     top_p: Optional[float] = 0.9
     repetition_penalty: Optional[float] = 1.2
+    system_prompt: Optional[str] = ""  # Sistem promptu eklendi
 
 class FeedbackRequest(BaseModel):
     response_id: int
