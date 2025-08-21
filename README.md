@@ -11,6 +11,12 @@ Vatandaş taleplerine cevaplarınızı hazırlayın. İstek ve önerilere uygun,
   - Kendi yazdığınız cevabı iyileştirme
 - **Gerçek Zamanlı İstatistikler**: Üretim süresi, model adı, karakter sayısı
 - **Veritabanı Entegrasyonu**: Tüm istekler ve yanıtlar MySQL'de saklanır
+- **İki Sütunlu Modern Layout**: Sol sütunda giriş, sağ sütunda yanıtlar
+- **Yanıt Geçmişi**: Önceki yanıtları görüntüleme ve seçme
+- **Panoya Kopyalama**: JavaScript ile tek tıkla yanıt kopyalama
+- **Yanıt Seçimi Takibi**: Hangi yanıtların seçildiğini veritabanında saklama
+- **LLM Parametre Kontrolü**: Temperature, Top-p, Repetition Penalty ayarları
+- **Tooltip Desteği**: Parametreler hakkında açıklayıcı bilgiler
 
 ## 🛠️ Teknolojiler
 
@@ -20,11 +26,14 @@ Vatandaş taleplerine cevaplarınızı hazırlayın. İstek ve önerilere uygun,
 - **MySQL**: Ana veritabanı
 - **Ollama**: Yerel LLM entegrasyonu
 - **Pydantic**: Veri doğrulama ve serileştirme
+- **Gemini API**: Google Gemini modelleri entegrasyonu
 
 ### Frontend
 - **Streamlit**: Python tabanlı web uygulaması
 - **Responsive Design**: Mobil ve masaüstü uyumlu
 - **Modern UI**: Temiz ve kullanıcı dostu arayüz
+- **JavaScript Integration**: Panoya kopyalama için client-side script
+- **CSS Styling**: Özel tasarım ve gölge efektleri
 
 ## 📋 Gereksinimler
 
@@ -91,14 +100,20 @@ Frontend `http://localhost:8501` adresinde çalışacak.
 
 1. **İstek/Öneri Metninden Cevap Üretme**:
    - Sol sütunda metin girişi yapın
-   - Geri dönüş tipini seçin (Pozitif/Negatif/Bilgilendirici/Diğer)
-   - Model seçin
-   - "Yanıt Üret" butonuna tıklayın
+   - Yanıt ayarlarını düzenleyin (Temperature, Top-p, Repetition Penalty)
+   - Model seçin (Gemini veya Ollama)
+   - "🚀 Yanıt Üret" butonuna tıklayın
 
 2. **Kendi Cevabınızı İyileştirme**:
-   - Sağ sütunda kendi yazdığınız cevabı girin
-   - "Metnimi İyileştir" butonuna tıklayın
+   - Sol sütunda kendi yazdığınız cevabı girin
+   - "🚀 Yanıt Üret" butonuna tıklayın
    - AI metni daha kibar ve resmi hale getirecek
+
+3. **Yanıt Geçmişi ve Seçimi**:
+   - Sağ sütunda en son yanıtı görüntüleyin
+   - "📋 Seç ve Kopyala" ile yanıtı panoya kopyalayın
+   - Önceki yanıtları expander'larda görüntüleyin
+   - Her yanıt için ayrı "📋 Seç ve Kopyala" butonu
 
 ### API Endpoints
 
@@ -119,6 +134,7 @@ ai_helper/
 ├── api_models.py         # Pydantic modelleri
 ├── endpoints.py          # API endpoint'leri
 ├── ollama_client.py      # Ollama entegrasyonu
+├── gemini_client.py      # Gemini API entegrasyonu
 ├── requirements.txt      # Python bağımlılıkları
 ├── .env                  # Ortam değişkenleri
 ├── .gitignore           # Git ignore kuralları
@@ -132,17 +148,23 @@ ai_helper/
 - ✅ FastAPI ile modern REST API
 - ✅ SQLAlchemy ORM ile veritabanı yönetimi
 - ✅ Ollama entegrasyonu
+- ✅ Gemini API entegrasyonu
 - ✅ Pydantic ile veri doğrulama
 - ✅ Asenkron HTTP istekleri
 - ✅ Hata yönetimi ve logging
+- ✅ LLM parametre kontrolü (Temperature, Top-p, Repetition Penalty)
 
 ### Frontend Özellikleri
 - ✅ Streamlit ile modern web arayüzü
 - ✅ İki sütunlu responsive layout
-- ✅ Dinamik model seçimi
+- ✅ Dinamik model seçimi (Gemini + Ollama)
 - ✅ Gerçek zamanlı yanıt üretimi
 - ✅ İstatistik gösterimi
-- ✅ Kopyalama ve seçim butonları
+- ✅ Yanıt geçmişi ve expander'lar
+- ✅ JavaScript ile panoya kopyalama
+- ✅ Yanıt seçimi ve veritabanı takibi
+- ✅ Tooltip desteği (parametre açıklamaları)
+- ✅ Modern CSS tasarım ve gölge efektleri
 
 ## 🔧 Geliştirme
 
@@ -224,6 +246,22 @@ Bu proje MIT lisansı altında lisanslanmıştır.
 * **Issues**: GitHub Issues
 
 ## 🔄 Güncellemeler
+
+### v1.4.0
+- ✅ İki sütunlu modern layout
+- ✅ Yanıt geçmişi ve expander'lar
+- ✅ JavaScript ile panoya kopyalama
+- ✅ Yanıt seçimi veritabanı takibi
+- ✅ LLM parametre kontrolü (Temperature, Top-p, Repetition Penalty)
+- ✅ Tooltip desteği
+- ✅ Modern CSS tasarım
+
+### v1.3.0
+- ✅ Gemini API entegrasyonu
+- ✅ Çoklu model desteği (Gemini + Ollama)
+- ✅ Model filtreleme ve varsayılan seçim
+- ✅ Sistem prompt yönetimi
+- ✅ Token limit optimizasyonu
 
 ### v1.2.0
 - ✅ Docker containerization
