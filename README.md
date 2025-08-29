@@ -17,6 +17,11 @@ Vatandaş taleplerine cevaplarınızı hazırlayın. İstek ve önerilere uygun,
 - **Yanıt Seçimi Takibi**: Hangi yanıtların seçildiğini veritabanında saklama
 - **LLM Parametre Kontrolü**: Temperature, Top-p, Repetition Penalty ayarları
 - **Tooltip Desteği**: Parametreler hakkında açıklayıcı bilgiler
+- **Güvenli Authentication**: Magic Link + OTP ile giriş sistemi
+- **Domain Kısıtlaması**: Sadece @nilufer.bel.tr e-posta adresleri
+- **Profil Yönetimi**: Ad soyad ve müdürlük bilgileri
+- **Rate Limiting**: Brute force koruması ve günlük limitler
+- **Modern UI/UX**: Gelişmiş gölge efektleri ve responsive tasarım
 
 ## 🛠️ Teknolojiler
 
@@ -27,6 +32,9 @@ Vatandaş taleplerine cevaplarınızı hazırlayın. İstek ve önerilere uygun,
 - **Ollama**: Yerel LLM entegrasyonu
 - **Pydantic**: Veri doğrulama ve serileştirme
 - **Gemini API**: Google Gemini modelleri entegrasyonu
+- **JWT**: JSON Web Token authentication
+- **SMTP**: E-posta gönderimi (Google Workspace)
+- **Rate Limiting**: Brute force koruması
 
 ### Frontend
 - **Streamlit**: Python tabanlı web uygulaması
@@ -65,16 +73,36 @@ pip install -r requirements.txt
 ### 4. Ortam Değişkenlerini Ayarlayın
 `.env` dosyası oluşturun:
 ```env
+# Database Configuration
 MYSQL_HOST=localhost
 MYSQL_PORT=3306
 MYSQL_DATABASE=ai_helper
 MYSQL_USER=root
 MYSQL_PASSWORD=your_password
 
+# Redis Configuration
 REDIS_HOST=localhost
 REDIS_PORT=6379
 
+# Ollama Configuration
 OLLAMA_HOST=http://localhost:11434
+
+# Authentication Configuration
+JWT_SECRET_KEY=your-super-secret-jwt-key
+JWT_ALGORITHM=HS256
+ACCESS_TOKEN_EXPIRE_MINUTES=720
+
+# SMTP Configuration (Google Workspace)
+SMTP_HOST=smtp.gmail.com
+SMTP_PORT=587
+SMTP_USERNAME=your-email@niluferyapayzeka.tr
+SMTP_PASSWORD=your-app-password
+SENDER_EMAIL=yonetici@niluferyapayzeka.tr
+
+# Production URLs
+PRODUCTION_URL=https://yardimci.niluferyapayzeka.tr
+FRONTEND_URL=http://localhost:8500
+BACKEND_URL=http://localhost:8000
 ```
 
 ### 5. Veritabanını Oluşturun
@@ -117,6 +145,15 @@ Frontend `http://localhost:8501` adresinde çalışacak.
 
 ### API Endpoints
 
+#### Authentication
+- `POST /api/v1/auth/request-magic-link`: Magic link ve OTP isteği
+- `POST /api/v1/auth/verify-otp`: OTP doğrulama
+- `GET /api/v1/auth/verify-magic-link`: Magic link doğrulama
+- `GET /api/v1/auth/profile`: Kullanıcı profili
+- `POST /api/v1/auth/complete-profile`: Profil tamamlama
+- `POST /api/v1/auth/logout`: Çıkış yapma
+
+#### Core API
 - `GET /api/v1/models`: Mevcut modelleri listele
 - `POST /api/v1/requests`: Yeni istek oluştur
 - `POST /api/v1/generate`: AI yanıtı üret
@@ -153,6 +190,13 @@ ai_helper/
 - ✅ Asenkron HTTP istekleri
 - ✅ Hata yönetimi ve logging
 - ✅ LLM parametre kontrolü (Temperature, Top-p, Repetition Penalty)
+- ✅ JWT tabanlı authentication sistemi
+- ✅ Magic Link + OTP giriş yöntemi
+- ✅ Domain kısıtlaması (@nilufer.bel.tr)
+- ✅ Rate limiting ve brute force koruması
+- ✅ SMTP entegrasyonu (Google Workspace)
+- ✅ Login attempt logging
+- ✅ Session yönetimi (19:00'a kadar geçerli)
 
 ### Frontend Özellikleri
 - ✅ Streamlit ile modern web arayüzü
@@ -165,6 +209,12 @@ ai_helper/
 - ✅ Yanıt seçimi ve veritabanı takibi
 - ✅ Tooltip desteği (parametre açıklamaları)
 - ✅ Modern CSS tasarım ve gölge efektleri
+- ✅ Authentication sistemi (Magic Link + OTP)
+- ✅ Profil tamamlama sayfası
+- ✅ Domain kontrolü (@nilufer.bel.tr)
+- ✅ Responsive tasarım ve modern UI
+- ✅ Gelişmiş gölge efektleri (çoklu gölge sistemi)
+- ✅ Hover animasyonları ve geçiş efektleri
 
 ## 🔧 Geliştirme
 
@@ -187,6 +237,34 @@ python -c "from connection import engine; from models import Base; Base.metadata
 ```
 
 ## 📊 Veritabanı Şeması
+
+### Users Tablosu
+- `id`: Birincil anahtar
+- `email`: E-posta adresi (unique, @nilufer.bel.tr)
+- `full_name`: Ad soyad
+- `department`: Müdürlük bilgisi
+- `is_active`: Aktif kullanıcı durumu
+- `created_at`: Oluşturulma tarihi
+- `last_login`: Son giriş tarihi
+- `profile_completed`: Profil tamamlanma durumu
+
+### MagicLinks Tablosu
+- `id`: Birincil anahtar
+- `user_id`: Kullanıcı referansı
+- `token`: JWT token
+- `otp_code`: 6 haneli OTP kodu
+- `is_used`: Kullanım durumu
+- `expires_at`: Son kullanım tarihi
+- `created_at`: Oluşturulma tarihi
+
+### LoginAttempts Tablosu
+- `id`: Birincil anahtar
+- `user_id`: Kullanıcı referansı
+- `email`: E-posta adresi
+- `ip_address`: IP adresi
+- `success`: Başarı durumu
+- `method`: Giriş yöntemi (magic_link, otp)
+- `timestamp`: Zaman damgası
 
 ### Requests Tablosu
 - `id`: Birincil anahtar
@@ -246,6 +324,24 @@ Bu proje MIT lisansı altında lisanslanmıştır.
 * **Issues**: GitHub Issues
 
 ## 🔄 Güncellemeler
+
+### v1.6.0
+- ✅ JWT tabanlı authentication sistemi
+- ✅ Magic Link + OTP giriş yöntemi
+- ✅ Domain kısıtlaması (@nilufer.bel.tr)
+- ✅ Profil yönetimi (ad soyad, müdürlük)
+- ✅ Rate limiting ve brute force koruması
+- ✅ SMTP entegrasyonu (Google Workspace)
+- ✅ Login attempt logging
+- ✅ Session yönetimi (19:00'a kadar geçerli)
+- ✅ Production URL desteği (Cloudflare Tunnel)
+- ✅ Modern UI/UX ve gelişmiş gölge efektleri
+
+### v1.5.0
+- ✅ Authentication sistemi entegrasyonu
+- ✅ Kullanıcı profil yönetimi
+- ✅ Güvenlik önlemleri ve rate limiting
+- ✅ E-posta gönderim sistemi
 
 ### v1.4.0
 - ✅ İki sütunlu modern layout

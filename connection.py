@@ -1,14 +1,20 @@
+import os
 from sqlalchemy import create_engine
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
 from config import DATABASE_URL
 
-# Create SQLAlchemy engine
+# Get absolute path for database file
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+DATABASE_PATH = os.path.join(BASE_DIR, "ai_helper.db")
+
+# Create SQLAlchemy engine with absolute path
 engine = create_engine(
-    DATABASE_URL,
+    f"sqlite:///{DATABASE_PATH}",
     echo=True,  # Set to False in production
     pool_pre_ping=True,
-    pool_recycle=300
+    pool_recycle=300,
+    connect_args={"check_same_thread": False}  # SQLite için gerekli
 )
 
 # Create SessionLocal class

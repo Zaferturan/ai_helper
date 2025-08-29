@@ -6,6 +6,7 @@ import api_models
 from connection import get_db
 from ollama_client import OllamaClient
 from gemini_client import GeminiClient
+from auth_endpoints import get_current_user
 
 router = APIRouter()
 ollama_client = OllamaClient()
@@ -72,7 +73,7 @@ async def get_models(db: Session = Depends(get_db)):
         raise HTTPException(status_code=500, detail=f"Error getting models: {str(e)}")
 
 @router.post("/requests", response_model=api_models.RequestResponse)
-async def create_request(request: api_models.RequestCreate, db: Session = Depends(get_db)):
+async def create_request(request: api_models.RequestCreate, db: Session = Depends(get_db), current_user: models.User = Depends(get_current_user)):
     """Create a new request"""
     try:
         # Validate response_type
@@ -83,7 +84,9 @@ async def create_request(request: api_models.RequestCreate, db: Session = Depend
         # Create new request
         new_request = models.Request(
             original_text=request.original_text,
-            response_type=request.response_type
+            response_type=request.response_type,
+            user_id=current_user.id,
+            is_new_request=request.is_new_request  # Frontend'den gelen değer
         )
         
         db.add(new_request)
@@ -99,6 +102,82 @@ async def create_request(request: api_models.RequestCreate, db: Session = Depend
     except Exception as e:
         db.rollback()
         raise HTTPException(status_code=500, detail=f"Error creating request: {str(e)}")
+
+@router.put("/requests/{request_id}")
+async def update_request(request_id: int, db: Session = Depends(get_db)):
+    """Update request - GELİŞTİRME MODU: auth bypass"""
+    try:
+        # Request'i bul
+        request = db.query(models.Request).filter(models.Request.id == request_id).first()
+        if not request:
+            raise HTTPException(status_code=404, detail="Request not found")
+
+        # GELİŞTİRME MODU: auth bypass edildi
+        
+        # Bu endpoint artık sadece request'in varlığını kontrol ediyor
+        db.commit()
+        return {"message": "Request updated successfully"}
+
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(status_code=500, detail=f"Error updating request: {str(e)}")
+
+@router.put("/reset-copied-flags")
+async def reset_copied_flags(db: Session = Depends(get_db)):
+    """Reset has_been_copied flag for all responses - GELİŞTİRME MODU: auth bypass"""
+    try:
+        # Tüm response'ların has_been_copied flag'ini False yap
+        db.query(models.Response).update({models.Response.has_been_copied: False})
+        
+        db.commit()
+        return {"message": "All copied flags reset successfully"}
+
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(status_code=500, detail=f"Error resetting copied flags: {str(e)}")
+
+@router.put("/responses/{response_id}/mark-copied")
+async def mark_response_as_copied(response_id: int, db: Session = Depends(get_db)):
+    """Mark response as copied (has_been_copied=True) - GELİŞTİRME MODU: auth bypass"""
+    try:
+        # Response'u bul
+        response = db.query(models.Response).filter(models.Response.id == response_id).first()
+        if not response:
+            raise HTTPException(status_code=404, detail="Response not found")
+
+        # GELİŞTİRME MODU: auth bypass edildi
+        
+        # has_been_copied flag'ini True yap
+        response.has_been_copied = True
+
+        db.commit()
+        return {"message": "Response marked as copied successfully"}
+
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(status_code=500, detail=f"Error marking response as copied: {str(e)}")
+
+@router.get("/requests/{request_id}/has-copied-response")
+async def check_request_has_copied_response(request_id: int, db: Session = Depends(get_db)):
+    """Check if a request has any copied responses - GELİŞTİRME MODU: auth bypass"""
+    try:
+        # Request'i bul
+        request = db.query(models.Request).filter(models.Request.id == request_id).first()
+        if not request:
+            raise HTTPException(status_code=404, detail="Request not found")
+
+        # GELİŞTİRME MODU: auth bypass edildi
+        
+        # Bu request için kopyalanmış yanıt var mı kontrol et
+        has_copied_response = db.query(models.Response).filter(
+            models.Response.request_id == request_id,
+            models.Response.has_been_copied == True
+        ).first() is not None
+
+        return {"has_copied": has_copied_response}
+
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error checking request: {str(e)}")
 
 @router.post("/generate", response_model=api_models.GenerateResponse)
 async def generate_response(generate_request: api_models.GenerateRequest, db: Session = Depends(get_db)):
@@ -187,7 +266,8 @@ async def update_response_feedback(feedback: api_models.FeedbackRequest, db: Ses
         
         return api_models.FeedbackResponse(
             success=True,
-            message="Feedback updated successfully"
+            message="Feedback updated successfully",
+            request_id=response.request_id
         )
     except HTTPException:
         raise

@@ -2,7 +2,7 @@ from fastapi import FastAPI
 from connection import engine
 import models
 from endpoints import router
-from auth_endpoints import router as auth_router
+from auth_endpoints import auth_router
 
 # Create database tables
 models.Base.metadata.create_all(bind=engine)
@@ -10,7 +10,7 @@ models.Base.metadata.create_all(bind=engine)
 # Create FastAPI app
 app = FastAPI(
     title="AI Helper API",
-    description="AI Helper Backend API",
+    description="AI Helper Backend API with Authentication",
     version="1.0.0"
 )
 
