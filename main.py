@@ -2,6 +2,7 @@ from fastapi import FastAPI
 from connection import engine
 import models
 from endpoints import router
+from auth_endpoints import router as auth_router
 
 # Create database tables
 models.Base.metadata.create_all(bind=engine)
@@ -15,6 +16,7 @@ app = FastAPI(
 
 # Include API endpoints
 app.include_router(router, prefix="/api/v1")
+app.include_router(auth_router, prefix="/api/v1")
 
 @app.get("/")
 async def root():

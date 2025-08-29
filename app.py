@@ -182,6 +182,25 @@ def update_response_feedback(response_id, is_selected=False, copied=False):
 
 # Ana uygulama
 def main():
+    # Authentication check
+    if not check_authentication():
+        if st.session_state.get("login_sent"):
+            login_sent_page()
+        else:
+            login_page()
+        return
+    
+    # User info and logout button
+    col_user, col_logout = st.columns([3, 1])
+    with col_user:
+        user = st.session_state.get("user", {})
+        st.info(f"👤 **{user.get('name', user.get('email', 'Kullanıcı'))}** olarak giriş yapıldı")
+    
+    with col_logout:
+        if st.button("🚪 Çıkış Yap", type="secondary"):
+            logout()
+            return
+    
     # Logo ve başlık
     col_logo, col_title, col_desc = st.columns([1, 3, 2])
     
@@ -463,6 +482,156 @@ Yanıtın yapısı şu şekilde olmalıdır:
                         """, unsafe_allow_html=True)
                         st.success(f"✅ Yanıt #{i} panoya kopyalandı ve seçildi!")
                         update_response_feedback(resp['id'], is_selected=True, copied=True)
+
+# Authentication functions
+def check_authentication():
+    """Check if user is authenticated"""
+    # Check URL parameters for token
+    query_params = st.experimental_get_query_params()
+    token = query_params.get("token", [None])[0]
+    
+    if token:
+        # Verify token with backend
+        try:
+            response = requests.post(
+                f"{BACKEND_URL}/auth/consume-token",
+                json={"token": token}
+            )
+            if response.status_code == 200:
+                data = response.json()
+                st.session_state.access_token = data["access_token"]
+                st.session_state.user = data["user"]
+                st.session_state.authenticated = True
+                # Clear URL parameters
+                st.experimental_set_query_params()
+                return True
+        except Exception as e:
+            st.error(f"Token doğrulama hatası: {e}")
+    
+    # Check session state
+    if st.session_state.get("authenticated") and st.session_state.get("access_token"):
+        return True
+    
+    return False
+
+def login_page():
+    """Login page"""
+    st.title("🔐 Giriş Yap")
+    
+    # Email input
+    email = st.text_input("E-posta Adresiniz:", placeholder="ornek@nilufer.bel.tr")
+    
+    # Send button
+    if st.button("🔗 Bağlantı ve Kod Gönder", type="primary"):
+        if email and "@" in email:
+            try:
+                response = requests.post(
+                    f"{BACKEND_URL}/auth/send",
+                    json={"email": email}
+                )
+                if response.status_code == 200:
+                    st.session_state.email = email
+                    st.session_state.login_sent = True
+                    st.rerun()
+                else:
+                    st.error(f"Giriş bilgileri gönderilemedi: {response.json().get('detail', 'Bilinmeyen hata')}")
+            except Exception as e:
+                st.error(f"Bağlantı hatası: {e}")
+        else:
+            st.error("Lütfen geçerli bir e-posta adresi girin")
+    
+    # Email history
+    if 'email_history' in st.session_state and st.session_state.email_history:
+        st.subheader("📧 Son Kullanılan E-posta Adresleri")
+        for hist_email in st.session_state.email_history:
+            if st.button(f"📧 {hist_email}", key=f"hist_{hist_email}"):
+                st.session_state.email = hist_email
+                st.rerun()
+
+def login_sent_page():
+    """Page shown after sending login credentials"""
+    st.title("📧 Giriş Bilgileri Gönderildi")
+    st.info(f"Giriş bilgileri **{st.session_state.email}** adresine gönderildi.")
+    
+    # 6-digit code input
+    st.subheader("🔢 Giriş Kodunu Girin")
+    code = st.text_input("6 Haneli Kod:", placeholder="123456", max_chars=6)
+    
+    col1, col2 = st.columns(2)
+    
+    with col1:
+        if st.button("✅ Doğrula", type="primary"):
+            if code and len(code) == 6:
+                try:
+                    response = requests.post(
+                        f"{BACKEND_URL}/auth/verify-code",
+                        json={"email": st.session_state.email, "code": code}
+                    )
+                    if response.status_code == 200:
+                        data = response.json()
+                        st.session_state.access_token = data["access_token"]
+                        st.session_state.user = data["user"]
+                        st.session_state.authenticated = True
+                        st.session_state.login_sent = False
+                        
+                        # Add to email history
+                        if 'email_history' not in st.session_state:
+                            st.session_state.email_history = []
+                        if st.session_state.email not in st.session_state.email_history:
+                            st.session_state.email_history.insert(0, st.session_state.email)
+                            if len(st.session_state.email_history) > 5:
+                                st.session_state.email_history = st.session_state.email_history[:5]
+                        
+                        st.rerun()
+                    else:
+                        st.error(f"Kod doğrulanamadı: {response.json().get('detail', 'Bilinmeyen hata')}")
+                except Exception as e:
+                    st.error(f"Bağlantı hatası: {e}")
+            else:
+                st.error("Lütfen 6 haneli kodu girin")
+    
+    with col2:
+        # Resend button with cooldown
+        if 'resend_cooldown' not in st.session_state:
+            st.session_state.resend_cooldown = 0
+        
+        if st.session_state.resend_cooldown > 0:
+            st.button(f"⏳ {st.session_state.resend_cooldown}s sonra tekrar gönder", disabled=True)
+        else:
+            if st.button("🔄 Tekrar Gönder"):
+                try:
+                    response = requests.post(
+                        f"{BACKEND_URL}/auth/send",
+                        json={"email": st.session_state.email}
+                    )
+                    if response.status_code == 200:
+                        st.session_state.resend_cooldown = 60
+                        st.success("Yeni giriş bilgileri gönderildi!")
+                        st.rerun()
+                    else:
+                        st.error(f"Giriş bilgileri gönderilemedi: {response.json().get('detail', 'Bilinmeyen hata')}")
+                except Exception as e:
+                    st.error(f"Bağlantı hatası: {e}")
+    
+    # Back to login
+    if st.button("⬅️ Giriş Sayfasına Dön"):
+        st.session_state.login_sent = False
+        st.rerun()
+
+def logout():
+    """Logout function"""
+    # Clear all session state
+    for key in list(st.session_state.keys()):
+        del st.session_state[key]
+    st.rerun()
+
+def verify_page():
+    """Verify page for token consumption"""
+    st.title("🔐 Giriş Doğrulanıyor...")
+    
+    # This page should not be shown directly
+    st.error("Bu sayfa doğrudan erişilemez")
+    st.button("⬅️ Ana Sayfaya Dön", on_click=logout)
 
 if __name__ == "__main__":
     main() 

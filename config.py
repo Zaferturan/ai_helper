@@ -1,27 +1,32 @@
 import os
-from dotenv import load_dotenv
+from datetime import timedelta
 
-# Load environment variables from .env file
-load_dotenv()
+# Database
+DATABASE_URL = "sqlite:///./ai_helper.db"
 
-# Database configuration
-MYSQL_HOST = os.getenv("MYSQL_HOST", "localhost")
-MYSQL_PORT = os.getenv("MYSQL_PORT", "3306")
-MYSQL_DATABASE = os.getenv("MYSQL_DATABASE", "ai_helper")
-MYSQL_USER = os.getenv("MYSQL_USER", "root")
-MYSQL_PASSWORD = os.getenv("MYSQL_PASSWORD", "")
+# JWT Settings
+SECRET_KEY = os.getenv("SECRET_KEY", "your-secret-key-here-change-in-production")
+ALGORITHM = "HS256"
+ACCESS_TOKEN_EXPIRE_MINUTES = 60 * 24 * 7  # 7 days
 
-# Redis configuration
-REDIS_HOST = os.getenv("REDIS_HOST", "localhost")
-REDIS_PORT = os.getenv("REDIS_PORT", "6379")
+# Authentication System
+LOGIN_TOKEN_TTL_MINUTES = 10  # 10 minutes
+LOGIN_CODE_TTL_MINUTES = 10   # 10 minutes
 
-# Ollama configuration
-OLLAMA_HOST = os.getenv("OLLAMA_HOST", "http://localhost:11434")
+# Rate Limiting
+RATE_LIMIT_LOGIN_SECONDS = 60      # 1 minute between login attempts
+RATE_LIMIT_DAILY_LOGINS = 10       # Max 10 login attempts per day per email
+RATE_LIMIT_CODE_ATTEMPTS = 5       # Max 5 code verification attempts per token
 
-# Gemini API configuration
-GEMINI_API_KEY = os.getenv("GEMINI_API_KEY", "")
-GEMINI_API_URL = os.getenv("GEMINI_API_URL", "https://generativelanguage.googleapis.com/v1beta/models")
+# Email Settings
+SMTP_HOST = os.getenv("SMTP_HOST", "smtp.gmail.com")
+SMTP_PORT = int(os.getenv("SMTP_PORT", "587"))
+SMTP_USERNAME = os.getenv("SMTP_USERNAME", "")
+SMTP_PASSWORD = os.getenv("SMTP_PASSWORD", "")
+SMTP_USE_TLS = os.getenv("SMTP_USE_TLS", "True").lower() == "true"
 
-# Database URL for SQLAlchemy
-# Use SQLite for development
-DATABASE_URL = "sqlite:///./ai_helper.db" 
+# Frontend URL
+FRONTEND_URL = os.getenv("FRONTEND_URL", "https://yardimci.niluferyzeka.tr")
+
+# Backend URL
+BACKEND_URL = os.getenv("BACKEND_URL", "http://localhost:8000") 
