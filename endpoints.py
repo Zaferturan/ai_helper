@@ -19,20 +19,12 @@ async def get_models(db: Session = Depends(get_db)):
         all_models = []
         
         # Get models from Ollama
-        print("DEBUG: Getting Ollama models...")
         ollama_models = ollama_client.get_models()
-        print(f"DEBUG: Ollama models count: {len(ollama_models)}")
-        print(f"DEBUG: Ollama models: {ollama_models}")
         all_models.extend(ollama_models)
         
         # Get models from Gemini
-        print("DEBUG: Getting Gemini models...")
         gemini_models = await gemini_client.get_models()
-        print(f"DEBUG: Gemini models count: {len(gemini_models)}")
-        print(f"DEBUG: Gemini models: {gemini_models}")
         all_models.extend(gemini_models)
-        
-        print(f"DEBUG: Total models before DB sync: {len(all_models)}")
         
         # Sync with database
         for model_data in all_models:
@@ -58,7 +50,6 @@ async def get_models(db: Session = Depends(get_db)):
         
         # Return models from database
         db_models = db.query(models.Model).all()
-        print(f"DEBUG: DB models count: {len(db_models)}")
         return [
             api_models.ModelInfo(
                 name=model.name,
@@ -69,7 +60,6 @@ async def get_models(db: Session = Depends(get_db)):
             for model in db_models
         ]
     except Exception as e:
-        print(f"DEBUG: Error in get_models: {e}")
         raise HTTPException(status_code=500, detail=f"Error getting models: {str(e)}")
 
 @router.post("/requests", response_model=api_models.RequestResponse)

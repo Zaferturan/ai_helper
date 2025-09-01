@@ -133,26 +133,15 @@ Uzunluk: 150-300 kelime"""
                 
                 model_endpoint = f"https://generativelanguage.googleapis.com/{api_version}/models/{model_name}:generateContent"
                 
-                # Debug: API key ve endpoint bilgileri
-                print(f"DEBUG: Using API key: {self.api_key[:10]}...")
-                print(f"DEBUG: Model endpoint: {model_endpoint}")
-                print(f"DEBUG: Headers: {headers}")
-                
                 response = await client.post(model_endpoint, json=payload, headers=headers, timeout=300.0)
-                
-                # Debug: Response bilgileri
-                print(f"DEBUG: Response status: {response.status_code}")
-                print(f"DEBUG: Response text: {response.text[:200]}...")
                 
                 end_time = time.time()
                 latency_ms = (end_time - start_time) * 1000
                 
                 if response.status_code == 200:
                     data = response.json()
-                    print(f"DEBUG: Response data: {data}")
                     
                     response_text = data.get('candidates', [{}])[0].get('content', {}).get('parts', [{}])[0].get('text', '')
-                    print(f"DEBUG: Extracted response text: '{response_text}'")
                     
                     return {
                         'response_text': response_text,
@@ -161,7 +150,6 @@ Uzunluk: 150-300 kelime"""
                     }
                 else:
                     error_text = f"HTTP {response.status_code}: {response.text}"
-                    print(f"DEBUG: Error response: {error_text}")
                     return {
                         'response_text': error_text,
                         'latency_ms': latency_ms,

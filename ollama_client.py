@@ -54,11 +54,7 @@ ZORUNLU YANIT ŞABLONU:
 
 Uzunluk: 150-300 kelime, 3-4 paragraf"""
             
-            print(f"DEBUG: Final system prompt starts with: '{final_system_prompt[:100]}...'")
-            print(f"DEBUG: User prompt: '{prompt[:100]}...'")
-            
             full_prompt = f"{final_system_prompt}\n\n{prompt}"
-            print(f"DEBUG: Full prompt length: {len(full_prompt)} characters")
             
             async with httpx.AsyncClient() as client:
                 payload = {
@@ -79,14 +75,9 @@ Uzunluk: 150-300 kelime, 3-4 paragraf"""
                 end_time = time.time()
                 latency_ms = (end_time - start_time) * 1000
                 
-                print(f"DEBUG: Ollama response status: {response.status_code}")
-                print(f"DEBUG: Ollama response text: {response.text}")
-                
                 if response.status_code == 200:
                     data = response.json()
-                    print(f"DEBUG: Ollama response data: {data}")
                     response_text = data.get('response', '')
-                    print(f"DEBUG: Extracted response_text: '{response_text}'")
                     return {
                         'response_text': response_text,
                         'latency_ms': latency_ms,
@@ -94,7 +85,6 @@ Uzunluk: 150-300 kelime, 3-4 paragraf"""
                     }
                 else:
                     error_text = f"HTTP {response.status_code}: {response.text}"
-                    print(f"DEBUG: Ollama error: {error_text}")
                     return {
                         'response_text': error_text,
                         'latency_ms': latency_ms,
