@@ -1189,7 +1189,7 @@ Yanıtın yapısı şu şekilde olmalıdır:
                 if response.get('id'):
                     # Durum makinesi kontrolü - eğer zaten kopyalanmışsa hiçbir şey yapma
                     if st.session_state.has_copied:
-                        st.warning("⚠️ Bu istek için zaten bir yanıt kopyalandı! Sayı 2 artmayacak.")
+                        st.warning("⚠️ Bu istek için zaten bir yanıt kopyalandı!")
                         return
                     
                     # Response'u kopyalandı olarak işaretle
@@ -1248,7 +1248,7 @@ Yanıtın yapısı şu şekilde olmalıdır:
                         if resp.get('id'):
                             # Durum makinesi kontrolü - eğer zaten kopyalanmışsa hiçbir şey yapma
                             if st.session_state.has_copied:
-                                st.warning("⚠️ Bu istek için zaten bir yanıt kopyalandı! Sayı 2 artmayacak.")
+                                st.warning("⚠️ Bu istek için zaten bir yanıt kopyalandı!")
                                 return
                             
                             # Response'u kopyalandı olarak işaretle
