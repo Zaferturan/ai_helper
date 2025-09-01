@@ -1,7 +1,14 @@
 import streamlit as st
 import requests
 import time
-from config import BACKEND_URL
+
+# Backend URL - Cloudflare Tunnel üzerinden public hostname kullan
+BACKEND_URL = "https://yardimci.niluferyapayzeka.tr/api/v1"
+
+# Debug için localhost'u da destekle
+import os
+if os.getenv("DEBUG_MODE") == "true":
+    BACKEND_URL = "http://localhost:8000/api/v1"
 
 def show_admin_panel():
     """İstatistik panelini göster - kullanıcı listesi ve istatistikler"""
@@ -21,11 +28,11 @@ def show_admin_panel():
         st.subheader("👥 Kullanıcı Listesi")
         try:
             # Backend'den kullanıcı listesini al
-                    response = requests.get(
-            f"{BACKEND_URL}/auth/admin/users",
-            headers={"Authorization": f"Bearer {st.session_state.access_token}"},
-            timeout=30
-        )
+            response = requests.get(
+                f"{BACKEND_URL}/auth/admin/users",
+                headers={"Authorization": f"Bearer {st.session_state.access_token}"},
+                timeout=30
+            )
             
             if response.status_code == 200:
                 users_data = response.json()

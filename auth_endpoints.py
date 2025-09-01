@@ -453,7 +453,10 @@ async def get_admin_users(
     """
     Get all users with statistics (only for admin users)
     """
+    logger.info(f"Admin users request from user: {current_user.email}, is_admin: {current_user.is_admin}")
+    
     if not current_user.is_admin:
+        logger.warning(f"Non-admin user {current_user.email} tried to access admin endpoint")
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Bu işlem için admin yetkisi gerekli"
@@ -465,17 +468,28 @@ async def get_admin_users(
         
         user_stats = []
         for user in users:
-            # Kullanıcının istek sayısı
-            total_requests = db.query(DBRequest).filter(DBRequest.user_id == user.id).count()
-            
-            # Kullanıcının yanıt sayısı
-            total_responses = db.query(DBResponse).join(DBRequest).filter(DBRequest.user_id == user.id).count()
-            
-            # Kullanıcının cevapladığı istek sayısı (sadece yeni istekler)
-            answered_requests = db.query(DBRequest).filter(
-                DBRequest.user_id == user.id,
-                DBRequest.is_new_request == True
-            ).count()
+            # Kullanıcının ürettiği yanıt sayısı (Yanıt Üret ile oluşan Response satırları)
+            total_responses = (
+                db.query(DBResponse)
+                .join(DBRequest, DBRequest.id == DBResponse.request_id)
+                .filter(DBRequest.user_id == user.id)
+                .count()
+            )
+
+            # Backward-compat: total_requests alanını "Toplam Ürettiği Yanıt" olarak gönder
+            total_requests = total_responses
+
+            # Kullanıcının cevapladığı benzersiz istek sayısı (ilk kopyalama sonrası)
+            answered_requests = (
+                db.query(DBRequest.id)
+                .join(DBResponse, DBResponse.request_id == DBRequest.id)
+                .filter(
+                    DBRequest.user_id == user.id,
+                    DBResponse.copied == True
+                )
+                .distinct()
+                .count()
+            )
             
             # Son aktivite (en son istek veya yanıt)
             last_request = db.query(DBRequest).filter(DBRequest.user_id == user.id).order_by(

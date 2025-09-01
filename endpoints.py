@@ -124,10 +124,10 @@ async def update_request(request_id: int, db: Session = Depends(get_db)):
 
 @router.put("/reset-copied-flags")
 async def reset_copied_flags(db: Session = Depends(get_db)):
-    """Reset has_been_copied flag for all responses - GELİŞTİRME MODU: auth bypass"""
+    """Reset copied flag for all responses - GELİŞTİRME MODU: auth bypass"""
     try:
-        # Tüm response'ların has_been_copied flag'ini False yap
-        db.query(models.Response).update({models.Response.has_been_copied: False})
+        # Tüm response'ların copied flag'ini False yap
+        db.query(models.Response).update({models.Response.copied: False})
         
         db.commit()
         return {"message": "All copied flags reset successfully"}
@@ -138,7 +138,7 @@ async def reset_copied_flags(db: Session = Depends(get_db)):
 
 @router.put("/responses/{response_id}/mark-copied")
 async def mark_response_as_copied(response_id: int, db: Session = Depends(get_db)):
-    """Mark response as copied (has_been_copied=True) - GELİŞTİRME MODU: auth bypass"""
+    """Mark response as copied (copied=True) - GELİŞTİRME MODU: auth bypass"""
     try:
         # Response'u bul
         response = db.query(models.Response).filter(models.Response.id == response_id).first()
@@ -147,8 +147,8 @@ async def mark_response_as_copied(response_id: int, db: Session = Depends(get_db
 
         # GELİŞTİRME MODU: auth bypass edildi
         
-        # has_been_copied flag'ini True yap
-        response.has_been_copied = True
+        # copied flag'ini True yap
+        response.copied = True
 
         db.commit()
         return {"message": "Response marked as copied successfully"}
@@ -171,7 +171,7 @@ async def check_request_has_copied_response(request_id: int, db: Session = Depen
         # Bu request için kopyalanmış yanıt var mı kontrol et
         has_copied_response = db.query(models.Response).filter(
             models.Response.request_id == request_id,
-            models.Response.has_been_copied == True
+            models.Response.copied == True
         ).first() is not None
 
         return {"has_copied": has_copied_response}

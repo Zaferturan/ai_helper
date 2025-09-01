@@ -1034,6 +1034,8 @@ Yanıtın yapısı şu şekilde olmalıdır:
                         if original_text and custom_input:
                             # Loading state'i session'a kaydet
                             st.session_state.is_generating = True
+                            # Sayaç 1: Toplam Üretilen Yanıt (sadece burada artar)
+                            st.session_state.yanit_sayisi += 1
                             st.rerun()
                         else:
                             st.warning("⚠️ Lütfen gelen istek ve cevap alanlarını doldurun")
@@ -1196,6 +1198,13 @@ Yanıtın yapısı şu şekilde olmalıdır:
                         # İlk kopyalama - sayac2 artacak
                         st.session_state.has_copied = True
                         st.session_state.state = "finalized"
+                        # Kısa süreli çift tıklama koruması (opsiyonel)
+                        st.markdown("""
+                        <script>
+                        const buttons = Array.from(document.querySelectorAll('button'));
+                        buttons.filter(b=>b.textContent.includes('Seç ve Kopyala')).forEach(b=>{b.disabled=true; setTimeout(()=>b.disabled=false, 800);});
+                        </script>
+                        """, unsafe_allow_html=True)
                         
                         # Seçilen yanıtı "Son Yanıt" olarak ayarla ve diğerlerini temizle
                         st.session_state.generated_response = response
@@ -1248,6 +1257,13 @@ Yanıtın yapısı şu şekilde olmalıdır:
                                 # İlk kopyalama - sayac2 artacak
                                 st.session_state.has_copied = True
                                 st.session_state.state = "finalized"
+                                # Kısa süreli çift tıklama koruması (opsiyonel)
+                                st.markdown("""
+                                <script>
+                                const buttons = Array.from(document.querySelectorAll('button'));
+                                buttons.filter(b=>b.textContent.includes('Seç ve Kopyala')).forEach(b=>{b.disabled=true; setTimeout(()=>b.disabled=false, 800);});
+                                </script>
+                                """, unsafe_allow_html=True)
                                 
                                 # Seçilen yanıtı "Son Yanıt" olarak ayarla ve diğerlerini temizle
                                 st.session_state.generated_response = resp

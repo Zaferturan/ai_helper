@@ -16,7 +16,7 @@ from email.mime.text import MIMEText
 from email.mime.base import MIMEBase
 from email import encoders
 import logging
-from config import settings, PRODUCTION_URL, RATE_LIMIT_LOGIN_SECONDS
+from config import settings, PRODUCTION_URL, RATE_LIMIT_LOGIN_SECONDS, RATE_LIMIT_DAILY_LOGINS
 
 # Logging configuration
 logging.basicConfig(level=logging.INFO)
