@@ -10,7 +10,7 @@ Vatandaş taleplerine cevaplarınızı hazırlayın. İstek ve önerilere uygun,
   - İstek/öneri metninden cevap üretme
   - Kendi yazdığınız cevabı iyileştirme
 - **Gerçek Zamanlı İstatistikler**: Üretim süresi, model adı, karakter sayısı
-- **Veritabanı Entegrasyonu**: Tüm istekler ve yanıtlar MySQL'de saklanır
+- **Veritabanı Entegrasyonu**: Tüm istekler ve yanıtlar SQLite'da saklanır
 - **İki Sütunlu Modern Layout**: Sol sütunda giriş, sağ sütunda yanıtlar
 - **Yanıt Geçmişi**: Önceki yanıtları görüntüleme ve seçme
 - **Panoya Kopyalama**: JavaScript ile tek tıkla yanıt kopyalama
@@ -22,13 +22,14 @@ Vatandaş taleplerine cevaplarınızı hazırlayın. İstek ve önerilere uygun,
 - **Profil Yönetimi**: Ad soyad ve müdürlük bilgileri
 - **Rate Limiting**: Brute force koruması ve günlük limitler
 - **Modern UI/UX**: Gelişmiş gölge efektleri ve responsive tasarım
+- **Docker Compose Deployment**: Kolay kurulum ve deployment
 
 ## 🛠️ Teknolojiler
 
 ### Backend
 - **FastAPI**: Modern Python web framework
 - **SQLAlchemy**: ORM ile veritabanı yönetimi
-- **MySQL**: Ana veritabanı
+- **SQLite**: Ana veritabanı (production-ready)
 - **Ollama**: Yerel LLM entegrasyonu
 - **Pydantic**: Veri doğrulama ve serileştirme
 - **Gemini API**: Google Gemini modelleri entegrasyonu
@@ -43,46 +44,32 @@ Vatandaş taleplerine cevaplarınızı hazırlayın. İstek ve önerilere uygun,
 - **JavaScript Integration**: Panoya kopyalama için client-side script
 - **CSS Styling**: Özel tasarım ve gölge efektleri
 
+### Deployment
+- **Docker**: Containerization
+- **Docker Compose**: Multi-service orchestration
+- **Cloudflare Tunnel**: Production URL routing
+
 ## 📋 Gereksinimler
 
-- Python 3.10+
-- MySQL Server
-- Ollama (yerel LLM platformu)
+- Docker ve Docker Compose
+- Python 3.10+ (development için)
+- SQLite (production'da otomatik)
 
 ## 🚀 Kurulum
 
-### 1. Projeyi Klonlayın
+### 🐳 Docker ile Hızlı Kurulum (Önerilen)
+
+1. **Projeyi Klonlayın**
 ```bash
 git clone <repository-url>
 cd ai_helper
 ```
 
-### 2. Sanal Ortam Oluşturun
-```bash
-python -m venv venv
-source venv/bin/activate  # Linux/Mac
-# veya
-venv\Scripts\activate  # Windows
-```
-
-### 3. Bağımlılıkları Yükleyin
-```bash
-pip install -r requirements.txt
-```
-
-### 4. Ortam Değişkenlerini Ayarlayın
+2. **Ortam Değişkenlerini Ayarlayın**
 `.env` dosyası oluşturun:
 ```env
 # Database Configuration
-MYSQL_HOST=localhost
-MYSQL_PORT=3306
-MYSQL_DATABASE=ai_helper
-MYSQL_USER=root
-MYSQL_PASSWORD=your_password
-
-# Redis Configuration
-REDIS_HOST=localhost
-REDIS_PORT=6379
+DATABASE_URL=sqlite:///./ai_helper.db
 
 # Ollama Configuration
 OLLAMA_HOST=http://localhost:11434
@@ -99,24 +86,47 @@ SMTP_USERNAME=your-email@niluferyapayzeka.tr
 SMTP_PASSWORD=your-app-password
 SENDER_EMAIL=yonetici@niluferyapayzeka.tr
 
+# Gemini API Configuration
+GEMINI_API_KEY=your-gemini-api-key
+
 # Production URLs
 PRODUCTION_URL=https://yardimci.niluferyapayzeka.tr
 FRONTEND_URL=http://localhost:8500
 BACKEND_URL=http://localhost:8000
 ```
 
-### 5. Veritabanını Oluşturun
-```sql
-CREATE DATABASE ai_helper;
+3. **Docker Compose ile Başlatın**
+```bash
+docker compose up --build -d
 ```
 
-### 6. Backend'i Başlatın
+4. **Uygulamaya Erişin**
+- **Frontend**: https://yardimci.niluferyapayzeka.tr/
+- **Backend API**: https://yardimci.niluferyapayzeka.tr/api/v1/
+- **Health Check**: https://yardimci.niluferyapayzeka.tr/api/v1/auth/health
+
+### 🔧 Geliştirme Ortamı Kurulumu
+
+1. **Sanal Ortam Oluşturun**
+```bash
+python -m venv venv
+source venv/bin/activate  # Linux/Mac
+# veya
+venv\Scripts\activate  # Windows
+```
+
+2. **Bağımlılıkları Yükleyin**
+```bash
+pip install -r requirements.txt
+```
+
+3. **Backend'i Başlatın**
 ```bash
 python main.py
 ```
 Backend `http://localhost:8000` adresinde çalışacak.
 
-### 7. Frontend'i Başlatın
+4. **Frontend'i Başlatın**
 ```bash
 streamlit run app.py
 ```
@@ -170,9 +180,15 @@ ai_helper/
 ├── models.py             # SQLAlchemy modelleri
 ├── api_models.py         # Pydantic modelleri
 ├── endpoints.py          # API endpoint'leri
+├── auth_endpoints.py     # Authentication endpoints
+├── auth_system.py        # Authentication logic
 ├── ollama_client.py      # Ollama entegrasyonu
 ├── gemini_client.py      # Gemini API entegrasyonu
 ├── requirements.txt      # Python bağımlılıkları
+├── Dockerfile            # Docker container build
+├── docker-compose.yml    # Multi-service orchestration
+├── docker/start.sh       # Multi-service startup script
+├── data/                 # Database storage directory
 ├── .env                  # Ortam değişkenleri
 ├── .gitignore           # Git ignore kuralları
 ├── README.md            # Bu dosya
@@ -216,24 +232,45 @@ ai_helper/
 - ✅ Gelişmiş gölge efektleri (çoklu gölge sistemi)
 - ✅ Hover animasyonları ve geçiş efektleri
 
+### Deployment Özellikleri
+- ✅ Docker containerization
+- ✅ Docker Compose multi-service orchestration
+- ✅ Database persistence
+- ✅ Health checks
+- ✅ Production-ready configuration
+- ✅ Cloudflare Tunnel integration
+- ✅ Automatic restart policy
+
 ## 🔧 Geliştirme
 
-### Backend Geliştirme
+### Docker ile Geliştirme
+```bash
+# Container'ı başlat
+docker compose up --build
+
+# Logları izle
+docker compose logs -f
+
+# Container'a bağlan
+docker exec -it ai-helperv2-container bash
+
+# Container'ı durdur
+docker compose down
+```
+
+### Yerel Geliştirme
 ```bash
 # Backend'i geliştirme modunda başlat
 uvicorn main:app --reload --host 0.0.0.0 --port 8000
-```
 
-### Frontend Geliştirme
-```bash
 # Streamlit'i geliştirme modunda başlat
 streamlit run app.py --server.port 8501
 ```
 
 ### Veritabanı İşlemleri
 ```bash
-# Tabloları oluştur
-python -c "from connection import engine; from models import Base; Base.metadata.create_all(engine)"
+# Container içinde veritabanını kontrol et
+docker exec ai-helperv2-container python -c "import sqlite3; conn = sqlite3.connect('/app/ai_helper.db'); cursor = conn.cursor(); cursor.execute('SELECT COUNT(*) FROM users'); print(f'Users: {cursor.fetchone()[0]}'); conn.close()"
 ```
 
 ## 📊 Veritabanı Şeması
@@ -247,8 +284,9 @@ python -c "from connection import engine; from models import Base; Base.metadata
 - `created_at`: Oluşturulma tarihi
 - `last_login`: Son giriş tarihi
 - `profile_completed`: Profil tamamlanma durumu
+- `is_admin`: Admin yetkisi
 
-### MagicLinks Tablosu
+### LoginTokens Tablosu
 - `id`: Birincil anahtar
 - `user_id`: Kullanıcı referansı
 - `token`: JWT token
@@ -268,19 +306,27 @@ python -c "from connection import engine; from models import Base; Base.metadata
 
 ### Requests Tablosu
 - `id`: Birincil anahtar
+- `user_id`: Kullanıcı referansı
 - `original_text`: Orijinal metin
 - `response_type`: Yanıt tipi (positive/negative/informative/other)
 - `created_at`: Oluşturulma tarihi
+- `is_active`: Aktif durum
+- `remaining_responses`: Kalan yanıt sayısı
+- `is_new_request`: Yeni istek durumu
 
 ### Responses Tablosu
 - `id`: Birincil anahtar
 - `request_id`: İstek referansı
 - `model_name`: Kullanılan model
 - `response_text`: AI yanıtı
+- `temperature`: Temperature parametresi
+- `top_p`: Top-p parametresi
+- `repetition_penalty`: Repetition penalty parametresi
 - `latency_ms`: Üretim süresi
 - `is_selected`: Seçilme durumu
 - `copied`: Kopyalanma durumu
 - `created_at`: Oluşturulma tarihi
+- `tokens_used`: Kullanılan token sayısı
 
 ### Models Tablosu
 - `id`: Birincil anahtar
@@ -292,16 +338,43 @@ python -c "from connection import engine; from models import Base; Base.metadata
 ## 🚀 Deployment
 
 ### Production Ortamı
-1. **Backend**: Gunicorn ile FastAPI'yi çalıştırın
-2. **Frontend**: Streamlit Cloud veya kendi sunucunuzda
-3. **Veritabanı**: MySQL production sunucusu
-4. **Ollama**: Production sunucusunda Ollama kurulumu
+1. **Docker Compose**: Multi-service orchestration
+2. **Database**: SQLite with persistence
+3. **Frontend**: Streamlit (port 8500)
+4. **Backend**: FastAPI (port 8000)
+5. **Cloudflare Tunnel**: Production URL routing
 
-### Docker
+### Docker Commands
 ```bash
-# Docker ile çalıştır
-docker build -t ai-helper .
-docker run -d --name ai-helper-container --restart always -p 8500:8500 -p 8000:8000 ai-helper
+# Production deployment
+docker compose up --build -d
+
+# Logları izle
+docker compose logs -f ai-helperv2
+
+# Container durumunu kontrol et
+docker compose ps
+
+# Health check
+curl http://localhost:8000/api/v1/auth/health
+
+# Container'ı yeniden başlat
+docker compose restart ai-helperv2
+
+# Container'ı durdur
+docker compose down
+```
+
+### Environment Variables
+```bash
+# Production environment
+APP_ENV=production
+DEBUG_MODE=false
+LOG_LEVEL=INFO
+API_PORT=8000
+WEB_PORT=8500
+DATABASE_URL=sqlite:///./ai_helper.db
+ALLOWED_ORIGINS=https://yardimci.niluferyapayzeka.tr
 ```
 
 ## 🤝 Katkıda Bulunma
@@ -324,6 +397,16 @@ Bu proje MIT lisansı altında lisanslanmıştır.
 * **Issues**: GitHub Issues
 
 ## 🔄 Güncellemeler
+
+### v1.7.0 - Docker Compose Deployment
+- ✅ Docker Compose multi-service orchestration
+- ✅ Database persistence with SQLite
+- ✅ Production-ready containerization
+- ✅ Health checks and monitoring
+- ✅ Cloudflare Tunnel integration
+- ✅ Automatic restart policy
+- ✅ Environment variable management
+- ✅ Multi-service startup script
 
 ### v1.6.0
 - ✅ JWT tabanlı authentication sistemi
@@ -374,13 +457,13 @@ Bu proje MIT lisansı altında lisanslanmıştır.
 - ✅ Temel FastAPI backend
 - ✅ Streamlit frontend
 - ✅ Ollama entegrasyonu
-- ✅ MySQL veritabanı
+- ✅ SQLite veritabanı
 - ✅ İki farklı kullanım modu
 
 ### Gelecek Sürümler
-- 🔄 Authentication sistemi
-- 🔄 Gelişmiş metrikler
 - 🔄 CI/CD pipeline
+- 🔄 Advanced monitoring
+- 🔄 Multi-language support
 - 🔄 API rate limiting
 
 ---
