@@ -38,9 +38,6 @@ def show_admin_panel():
                 users_data = response.json()
                 users = users_data.get('users', [])
                 
-                # Debug bilgisi
-                st.info(f"Backend'den {len(users)} kullanıcı alındı")
-                
                 # Toplam istatistikler tablosu
                 if users:
                     st.markdown("### 📈 Genel İstatistikler")
@@ -48,9 +45,6 @@ def show_admin_panel():
                     # Toplam değerleri hesapla
                     total_generated_responses = sum(user.get('total_requests', 0) for user in users)
                     total_answered_requests = sum(user.get('answered_requests', 0) for user in users)
-                    
-                    # Debug bilgisi
-                    st.info(f"Toplam üretilen yanıt: {total_generated_responses}, Toplam cevaplanan istek: {total_answered_requests}")
                     
                     # Toplam istatistikler tablosu
                     col1, col2 = st.columns(2)
@@ -81,9 +75,6 @@ def show_admin_panel():
                         total_requests = user.get('total_requests', 0)  # Toplam Üretilen Yanıt
                         answered_requests = user.get('answered_requests', 0)  # Cevapladığı İstek Sayısı
                         
-                        # Debug bilgisi
-                        st.info(f"Kullanıcı: {email}, Yanıt: {total_requests}, Cevaplanan: {answered_requests}")
-                        
                         table_data.append({
                             "Ad Soyad": full_name,
                             "Müdürlük": department,
@@ -102,7 +93,7 @@ def show_admin_panel():
                 else:
                     st.info("Kullanıcı bulunamadı")
             else:
-                st.error(f"Kullanıcı listesi alınamadı. Status: {response.status_code}, Response: {response.text}")
+                st.error("Kullanıcı listesi alınamadı")
         except Exception as e:
             st.error(f"Bağlantı hatası: {e}")
     
