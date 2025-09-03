@@ -465,69 +465,62 @@ async def get_admin_users(
     try:
         # Kullanıcıları ve istatistiklerini al
         users = db.query(User).offset(skip).limit(limit).all()
-        logger.info(f"Found {len(users)} users in database")
         
         user_stats = []
         for user in users:
-            try:
-                # Kullanıcının ürettiği yanıt sayısı (Yanıt Üret ile oluşan Response satırları)
-                total_responses = (
-                    db.query(DBResponse)
-                    .join(DBRequest, DBRequest.id == DBResponse.request_id)
-                    .filter(DBRequest.user_id == user.id)
-                    .count()
-                )
+            # Kullanıcının ürettiği yanıt sayısı (Yanıt Üret ile oluşan Response satırları)
+            total_responses = (
+                db.query(DBResponse)
+                .join(DBRequest, DBRequest.id == DBResponse.request_id)
+                .filter(DBRequest.user_id == user.id)
+                .count()
+            )
 
-                # Backward-compat: total_requests alanını "Toplam Ürettiği Yanıt" olarak gönder
-                total_requests = total_responses
+            # Backward-compat: total_requests alanını "Toplam Ürettiği Yanıt" olarak gönder
+            total_requests = total_responses
 
-                # Kullanıcının cevapladığı benzersiz istek sayısı (ilk kopyalama sonrası)
-                answered_requests = (
-                    db.query(DBRequest.id)
-                    .join(DBResponse, DBResponse.request_id == DBRequest.id)
-                    .filter(
-                        DBRequest.user_id == user.id,
-                        DBResponse.copied == True
-                    )
-                    .distinct()
-                    .count()
+            # Kullanıcının cevapladığı benzersiz istek sayısı (ilk kopyalama sonrası)
+            answered_requests = (
+                db.query(DBRequest.id)
+                .join(DBResponse, DBResponse.request_id == DBRequest.id)
+                .filter(
+                    DBRequest.user_id == user.id,
+                    DBResponse.copied == True
                 )
-                
-                logger.info(f"User {user.email}: total_requests={total_requests}, answered_requests={answered_requests}")
-                
-                # Son aktivite (en son istek veya yanıt)
-                last_request = db.query(DBRequest).filter(DBRequest.user_id == user.id).order_by(
-                    DBRequest.created_at.desc()
-                ).first()
-                
-                last_response = db.query(DBResponse).join(DBRequest).filter(
-                    DBRequest.user_id == user.id
-                ).order_by(DBResponse.created_at.desc()).first()
-                
-                last_activity = max(
-                    user.last_login or datetime.min,
-                    last_request.created_at if last_request else datetime.min,
-                    last_response.created_at if last_response else datetime.min
-                )
-                
-                user_stats.append(UserStats(
-                    user_id=user.id,
-                    email=user.email,
-                    full_name=user.full_name,
-                    department=user.department,
-                    total_requests=total_requests,
-                    total_responses=total_responses,
-                    answered_requests=answered_requests,  # Cevapladığı istek sayısı
-                    total_tokens=0,  # Token kullanımı kaldırıldı
-                    last_activity=last_activity,
-                    is_active=user.is_active
-                ))
-            except Exception as user_error:
-                logger.error(f"Error processing user {user.email}: {str(user_error)}")
-                # Bu kullanıcıyı atla ve devam et
-                continue
+                .distinct()
+                .count()
+            )
+            
+            logger.info(f"User {user.email}: total_requests={total_requests}, answered_requests={answered_requests}")
+            
+            # Son aktivite (en son istek veya yanıt)
+            last_request = db.query(DBRequest).filter(DBRequest.user_id == user.id).order_by(
+                DBRequest.created_at.desc()
+            ).first()
+            
+            last_response = db.query(DBResponse).join(DBRequest).filter(
+                DBRequest.user_id == user.id
+            ).order_by(DBResponse.created_at.desc()).first()
+            
+            last_activity = max(
+                user.last_login or datetime.min,
+                last_request.created_at if last_request else datetime.min,
+                last_response.created_at if last_response else datetime.min
+            )
+            
+            user_stats.append(UserStats(
+                user_id=user.id,
+                email=user.email,
+                full_name=user.full_name,
+                department=user.department,
+                total_requests=total_requests,
+                total_responses=total_responses,
+                answered_requests=answered_requests,  # Cevapladığı istek sayısı
+                total_tokens=0,  # Token kullanımı kaldırıldı
+                last_activity=last_activity,
+                is_active=user.is_active
+            ))
         
-        logger.info(f"Returning {len(user_stats)} user stats")
         return AdminUsersResponse(
             users=user_stats,
             total_count=len(user_stats)
