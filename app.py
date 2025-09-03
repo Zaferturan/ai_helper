@@ -1233,15 +1233,9 @@ Yanıtın yapısı şu şekilde olmalıdır:
                     
                     # Her yanıt için "Seç ve Kopyala" butonu
                     if st.button(f"📋 Seç ve Kopyala #{i}", key=f"copy_old_{i}", use_container_width=True):
-                        # JavaScript ile kopyalama
-                        st.markdown(f"""
-                        <script>
-                        navigator.clipboard.writeText(`{resp.get('response_text', '')}`).then(function() {{
-                            console.log('Yanıt #{i} kopyalandı!');
-                        }});
-                        </script>
-                        """, unsafe_allow_html=True)
-                        st.success(f"✅ Yanıt #{i} panoya kopyalandı ve seçildi!")
+                        # Kopyalanacak metni göster
+                        st.text_area(f"Kopyalanan Yanıt #{i}:", value=resp.get('response_text', ''), height=200, disabled=True)
+                        st.success(f"✅ Yanıt #{i}'i yukarıdaki alandan kopyalayabilirsiniz!")
                         update_response_feedback(resp['id'], is_selected=True, copied=True)
                         
                         # Response'u kopyalandı olarak işaretle - durum makinesine göre
