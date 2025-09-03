@@ -64,8 +64,8 @@ LOG_TO_FILE = os.getenv("LOG_TO_FILE", "false").lower() == "true"
 LOG_FILE_PATH = os.getenv("LOG_FILE_PATH", "logs/app.log")
 
 # Database URL for SQLAlchemy
-# Use SQLite for development
-DATABASE_URL = "sqlite:///./ai_helper.db"
+# Use environment variable or default to SQLite
+DATABASE_URL = os.getenv("DATABASE_URL", "sqlite:///./ai_helper.db")
 
 # Settings class for easy access
 class Settings:
