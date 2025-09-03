@@ -9,12 +9,16 @@ services:
       LOG_LEVEL: "INFO"
       API_PORT: "8000"
       WEB_PORT: "8500"
-      # Programı değiştirmeden DB yolunu volume'a yönlendiriyoruz:
-      DATABASE_URL: "sqlite:///./ai_helper.db"
+      # Veritabanı volume'dan gelecek - absolute path kullanıyoruz
+      DATABASE_URL: "sqlite:////app/data/ai_helper.db"
       ALLOWED_ORIGINS: "https://yardimci.niluferyapayzeka.tr"
     ports:
       - "8000:8000"
       - "8500:8500"
+    volumes:
+      # Named volume kullanarak path sorununu çözüyoruz
+      - ai_helper_data:/app/data:rw
+      - ai_helper_logs:/app/logs:rw
     restart: unless-stopped
     healthcheck:
       test: ["CMD-SHELL", "curl -sf http://localhost:8000/api/v1/auth/health || exit 1"]
@@ -22,3 +26,7 @@ services:
       timeout: 5s
       retries: 5
       start_period: 20s
+
+volumes:
+  ai_helper_data:
+  ai_helper_logs:

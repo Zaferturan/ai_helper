@@ -16,9 +16,6 @@ RUN pip install --no-cache-dir -r requirements.txt || true
 COPY . /app
 RUN chmod +x /app/docker/start.sh
 
-# Veritabanını doğru konuma kopyala
-RUN cp /app/data/ai_helper.db /app/ai_helper.db
-
 # Expose both ports
 EXPOSE 8000 8500
 
