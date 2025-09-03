@@ -465,6 +465,7 @@ async def get_admin_users(
     try:
         # Kullanıcıları ve istatistiklerini al
         users = db.query(User).offset(skip).limit(limit).all()
+        logger.info(f"Found {len(users)} users in database")
         
         user_stats = []
         for user in users:
@@ -490,6 +491,8 @@ async def get_admin_users(
                 .distinct()
                 .count()
             )
+            
+            logger.info(f"User {user.email}: total_requests={total_requests}, answered_requests={answered_requests}")
             
             # Son aktivite (en son istek veya yanıt)
             last_request = db.query(DBRequest).filter(DBRequest.user_id == user.id).order_by(
@@ -519,6 +522,7 @@ async def get_admin_users(
                 is_active=user.is_active
             ))
         
+        logger.info(f"Returning {len(user_stats)} user stats")
         return AdminUsersResponse(
             users=user_stats,
             total_count=len(user_stats)
