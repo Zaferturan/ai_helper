@@ -23,7 +23,15 @@ def show_admin_panel():
         st.session_state.admin_needs_refresh = False
         st.rerun()
     
-    # Her 2 saniyede bir admin panelini güncelle
+    # Otomatik yenileme için session state kullan
+    if 'last_admin_refresh' not in st.session_state:
+        st.session_state.last_admin_refresh = time.time()
+    
+    # Her 5 saniyede bir yenile
+    if time.time() - st.session_state.last_admin_refresh > 5:
+        st.session_state.last_admin_refresh = time.time()
+        st.rerun()
+    
     with admin_container:
         st.subheader("👥 Kullanıcı Listesi")
         try:
