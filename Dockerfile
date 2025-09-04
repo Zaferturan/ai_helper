@@ -8,12 +8,14 @@ WORKDIR /app
 RUN apt-get update && apt-get install -y --no-install-recommends \
     curl ca-certificates && rm -rf /var/lib/apt/lists/*
 
-# Python bağımlılıkları
-COPY requirements*.txt /app/
-RUN pip install --no-cache-dir -r requirements.txt || true
-
-# Uygulama kodu ve start script
+# Uygulama kodu ve venv'i kopyala
 COPY . /app
+
+# Venv'i aktifleştir ve bağımlılıkları yükle
+RUN python -m venv /app/venv
+RUN /app/venv/bin/pip install --no-cache-dir -r requirements.txt
+
+# Start script'i çalıştırılabilir yap
 RUN chmod +x /app/docker/start.sh
 
 # Expose both ports

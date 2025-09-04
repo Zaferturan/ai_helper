@@ -5,10 +5,10 @@ import os
 from datetime import datetime
 import urllib.parse
 import time
+import pyperclip
 
-# Backend URL - Cloudflare Tunnel üzerinden public hostname kullan
-# Cloudflare Tunnel tüm trafiği localhost'a yönlendiriyor
-BACKEND_URL = "https://yardimci.niluferyapayzeka.tr/api/v1"
+# Backend URL - Lokalde test için localhost kullan
+BACKEND_URL = "http://localhost:8000/api/v1"
 
 # Debug için localhost'u da destekle
 if os.getenv("DEBUG_MODE") == "true":
@@ -1174,49 +1174,45 @@ Yanıtın yapısı şu şekilde olmalıdır:
             
             # Kopyala butonu
             if st.button("📋 Seç ve Kopyala", key="copy_latest", use_container_width=True):
-                # JavaScript ile kopyalama
-                st.markdown(f"""
-                <script>
-                navigator.clipboard.writeText(`{response_text}`).then(function() {{
-                    console.log('Yanıt kopyalandı!');
-                }});
-                </script>
-                """, unsafe_allow_html=True)
-                st.success("✅ Yanıt panoya kopyalandı!")
-                update_response_feedback(response['id'], is_selected=True, copied=True)
-                
-                # Response'u kopyalandı olarak işaretle - durum makinesine göre
-                if response.get('id'):
-                    # Durum makinesi kontrolü - eğer zaten kopyalanmışsa hiçbir şey yapma
-                    if st.session_state.has_copied:
-                        st.warning("⚠️ Bu istek için zaten bir yanıt kopyalandı!")
-                        return
+                try:
+                    pyperclip.copy(response_text)
+                    st.success("✅ Yanıt panoya kopyalandı!")
+                    update_response_feedback(response['id'], is_selected=True, copied=True)
                     
-                    # Response'u kopyalandı olarak işaretle
-                    result = mark_response_as_copied(response['id'])
-                    if result:
-                        # İlk kopyalama - sayac2 artacak
-                        st.session_state.has_copied = True
-                        st.session_state.state = "finalized"
-                        # Kısa süreli çift tıklama koruması (opsiyonel)
-                        st.markdown("""
-                        <script>
-                        const buttons = Array.from(document.querySelectorAll('button'));
-                        buttons.filter(b=>b.textContent.includes('Seç ve Kopyala')).forEach(b=>{b.disabled=true; setTimeout(()=>b.disabled=false, 800);});
-                        </script>
-                        """, unsafe_allow_html=True)
+                    # Response'u kopyalandı olarak işaretle - durum makinesine göre
+                    if response.get('id'):
+                        # Durum makinesi kontrolü - eğer zaten kopyalanmışsa hiçbir şey yapma
+                        if st.session_state.has_copied:
+                            st.warning("⚠️ Bu istek için zaten bir yanıt kopyalandı!")
+                            return
                         
-                        # Seçilen yanıtı "Son Yanıt" olarak ayarla ve diğerlerini temizle
-                        st.session_state.generated_response = response
-                        st.session_state.history = [response]  # Sadece seçilen yanıt kalsın
-                        st.session_state.responses = [response]  # Responses'u da temizle
-                        
-                        st.success("✅ Response kopyalandı! Sayı 2 arttı.")
-                        # Admin panelini otomatik yenile
-                        st.session_state.admin_needs_refresh = True
-                        st.rerun()
-                    else:
-                        st.error("❌ Response işaretlenemedi!")
+                        # Response'u kopyalandı olarak işaretle
+                        result = mark_response_as_copied(response['id'])
+                        if result:
+                            # İlk kopyalama - sayac2 artacak
+                            st.session_state.has_copied = True
+                            st.session_state.state = "finalized"
+                            # Kısa süreli çift tıklama koruması (opsiyonel)
+                            st.markdown("""
+                            <script>
+                            const buttons = Array.from(document.querySelectorAll('button'));
+                            buttons.filter(b=>b.textContent.includes('Seç ve Kopyala')).forEach(b=>{b.disabled=true; setTimeout(()=>b.disabled=false, 800);});
+                            </script>
+                            """, unsafe_allow_html=True)
+                            
+                            # Seçilen yanıtı "Son Yanıt" olarak ayarla ve diğerlerini temizle
+                            st.session_state.generated_response = response
+                            st.session_state.history = [response]  # Sadece seçilen yanıt kalsın
+                            st.session_state.responses = [response]  # Responses'u da temizle
+                            
+                            st.success("✅ Response kopyalandı! Sayı 2 arttı.")
+                            # Admin panelini otomatik yenile
+                            st.session_state.admin_needs_refresh = True
+                            st.rerun()
+                        else:
+                            st.error("❌ Response işaretlenemedi!")
+                except Exception as e:
+                    st.error(f"❌ Kopyalama hatası: {str(e)}")
         
         # Önceki yanıtlar
         if len(st.session_state.history) > 1:
@@ -1233,49 +1229,45 @@ Yanıtın yapısı şu şekilde olmalıdır:
                     
                     # Her yanıt için "Seç ve Kopyala" butonu
                     if st.button(f"📋 Seç ve Kopyala #{i}", key=f"copy_old_{i}", use_container_width=True):
-                        # JavaScript ile kopyalama
-                        st.markdown(f"""
-                        <script>
-                        navigator.clipboard.writeText(`{resp.get('response_text', '')}`).then(function() {{
-                            console.log('Yanıt #{i} kopyalandı!');
-                        }});
-                        </script>
-                        """, unsafe_allow_html=True)
-                        st.success(f"✅ Yanıt #{i} panoya kopyalandı ve seçildi!")
-                        update_response_feedback(resp['id'], is_selected=True, copied=True)
-                        
-                        # Response'u kopyalandı olarak işaretle - durum makinesine göre
-                        if resp.get('id'):
-                            # Durum makinesi kontrolü - eğer zaten kopyalanmışsa hiçbir şey yapma
-                            if st.session_state.has_copied:
-                                st.warning("⚠️ Bu istek için zaten bir yanıt kopyalandı!")
-                                return
+                        try:
+                            pyperclip.copy(resp.get('response_text', ''))
+                            st.success(f"✅ Yanıt #{i} panoya kopyalandı ve seçildi!")
+                            update_response_feedback(resp['id'], is_selected=True, copied=True)
                             
-                            # Response'u kopyalandı olarak işaretle
-                            result = mark_response_as_copied(resp['id'])
-                            if result:
-                                # İlk kopyalama - sayac2 artacak
-                                st.session_state.has_copied = True
-                                st.session_state.state = "finalized"
-                                # Kısa süreli çift tıklama koruması (opsiyonel)
-                                st.markdown("""
-                                <script>
-                                const buttons = Array.from(document.querySelectorAll('button'));
-                                buttons.filter(b=>b.textContent.includes('Seç ve Kopyala')).forEach(b=>{b.disabled=true; setTimeout(()=>b.disabled=false, 800);});
-                                </script>
-                                """, unsafe_allow_html=True)
+                            # Response'u kopyalandı olarak işaretle - durum makinesine göre
+                            if resp.get('id'):
+                                # Durum makinesi kontrolü - eğer zaten kopyalanmışsa hiçbir şey yapma
+                                if st.session_state.has_copied:
+                                    st.warning("⚠️ Bu istek için zaten bir yanıt kopyalandı!")
+                                    return
                                 
-                                # Seçilen yanıtı "Son Yanıt" olarak ayarla ve diğerlerini temizle
-                                st.session_state.generated_response = resp
-                                st.session_state.history = [resp]  # Sadece seçilen yanıt kalsın
-                                st.session_state.responses = [resp]  # Responses'u da temizle
-                                
-                                st.success("✅ Önceki yanıt response kopyalandı! Sayı 2 arttı.")
-                                # Admin panelini otomatik yenile
-                                st.session_state.admin_needs_refresh = True
-                                st.rerun()
-                            else:
-                                st.error("❌ Önceki yanıt response işaretlenemedi!")
+                                # Response'u kopyalandı olarak işaretle
+                                result = mark_response_as_copied(resp['id'])
+                                if result:
+                                    # İlk kopyalama - sayac2 artacak
+                                    st.session_state.has_copied = True
+                                    st.session_state.state = "finalized"
+                                    # Kısa süreli çift tıklama koruması (opsiyonel)
+                                    st.markdown("""
+                                    <script>
+                                    const buttons = Array.from(document.querySelectorAll('button'));
+                                    buttons.filter(b=>b.textContent.includes('Seç ve Kopyala')).forEach(b=>{b.disabled=true; setTimeout(()=>b.disabled=false, 800);});
+                                    </script>
+                                    """, unsafe_allow_html=True)
+                                    
+                                    # Seçilen yanıtı "Son Yanıt" olarak ayarla ve diğerlerini temizle
+                                    st.session_state.generated_response = resp
+                                    st.session_state.history = [resp]  # Sadece seçilen yanıt kalsın
+                                    st.session_state.responses = [resp]  # Responses'u da temizle
+                                    
+                                    st.success("✅ Önceki yanıt response kopyalandı! Sayı 2 arttı.")
+                                    # Admin panelini otomatik yenile
+                                    st.session_state.admin_needs_refresh = True
+                                    st.rerun()
+                                else:
+                                    st.error("❌ Response işaretlenemedi!")
+                        except Exception as e:
+                            st.error(f"❌ Kopyalama hatası: {str(e)}")
 
 if __name__ == "__main__":
     main() 
