@@ -224,9 +224,13 @@ async def get_user_profile(current_user: User = Depends(get_current_user)):
     Kullanıcı profil bilgilerini getir
     """
     return UserProfile(
+        id=current_user.id,
         email=current_user.email,
         full_name=current_user.full_name,
         department=current_user.department,
+        is_active=current_user.is_active,
+        created_at=current_user.created_at,
+        last_login=current_user.last_login,
         profile_completed=current_user.profile_completed
     )
 
@@ -572,4 +576,37 @@ async def dev_login(
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Giriş yapılırken hata oluştu"
-        ) 
+        )
+
+@auth_router.post("/dev-token", response_model=CodeVerifyResponse)
+async def get_dev_token(
+    db: Session = Depends(get_db)
+):
+    """
+    Geliştirme için süresi dolmayan token al
+    """
+    # Kullanıcıyı bul - enginakyildiz için
+    user = db.query(User).filter(User.email == "enginakyildiz@nilufer.bel.tr").first()
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Kullanıcı bulunamadı"
+        )
+    
+    # Süresi dolmayan token oluştur (1 yıl)
+    token_data = {
+        "sub": str(user.id),
+        "email": user.email,
+        "exp": datetime.utcnow() + timedelta(days=365)
+    }
+    
+    token = auth_service.create_access_token(token_data)
+    
+    return CodeVerifyResponse(
+        access_token=token,
+        token_type="bearer",
+        user_id=user.id,
+        email=user.email,
+        full_name=user.full_name,
+        profile_completed=user.profile_completed
+    ) 
