@@ -24,17 +24,10 @@ app_state = {
     'has_copied': False  # Kopyalama durumu - eski koddan
 }
 
-def test_button():
-    """Test fonksiyonu - buton çalışıyor mu kontrol et"""
-    print("DEBUG: Test butonu çalıştı!")
-    return "Test butonu çalışıyor!"
-
 def send_login_code(email):
     """E-posta ile giriş kodu gönder"""
-    print(f"DEBUG: send_login_code çağrıldı, email: {email}")
     try:
         if not email or not email.endswith("@nilufer.bel.tr"):
-            print("DEBUG: E-posta formatı geçersiz")
             return (
                 gr.update(visible=True),  # login_title
                 gr.update(visible=True),  # login_subtitle
@@ -45,22 +38,18 @@ def send_login_code(email):
                 gr.update(visible=False),  # code_subtitle
                 gr.update(visible=False),  # code_input
                 gr.update(visible=False),  # verify_btn
-                gr.update(visible=False),  # code_buttons
-                "❌ Sadece @nilufer.bel.tr alan adına sahip e-posta adresleri kullanılabilir!"  # status_msg
+                gr.update(visible=False)  # code_buttons
             )
         
-        print(f"DEBUG: Backend'e istek gönderiliyor: {BACKEND_URL}/auth/send")
         response = requests.post(
             f"{BACKEND_URL}/auth/send",
             json={"email": email},
             timeout=30
         )
         
-        print(f"DEBUG: Backend yanıtı: {response.status_code}")
         if response.status_code == 200:
             app_state['login_email'] = email
             app_state['login_sent'] = True
-            print("DEBUG: E-posta gönderildi, kod ekranına geçiliyor")
             return (
                 gr.update(visible=False),  # login_title
                 gr.update(visible=False),  # login_subtitle
@@ -71,12 +60,10 @@ def send_login_code(email):
                 gr.update(visible=True),  # code_subtitle
                 gr.update(visible=True),  # code_input
                 gr.update(visible=True),  # verify_btn
-                gr.update(visible=True),  # code_buttons
-                "✅ E-posta gönderildi! Lütfen e-postanızı kontrol edin."  # status_msg
+                gr.update(visible=True)  # code_buttons
             )
         else:
             error_data = response.json()
-            print(f"DEBUG: Backend hatası: {error_data}")
             return (
                 gr.update(visible=True),  # login_title
                 gr.update(visible=True),  # login_subtitle
@@ -87,11 +74,9 @@ def send_login_code(email):
                 gr.update(visible=False),  # code_subtitle
                 gr.update(visible=False),  # code_input
                 gr.update(visible=False),  # verify_btn
-                gr.update(visible=False),  # code_buttons
-                f"❌ {error_data.get('detail', 'Bilinmeyen hata')}"  # status_msg
+                gr.update(visible=False)  # code_buttons
             )
     except Exception as e:
-        print(f"DEBUG: Exception: {str(e)}")
         return (
             gr.update(visible=True),  # login_title
             gr.update(visible=True),  # login_subtitle
@@ -102,8 +87,7 @@ def send_login_code(email):
             gr.update(visible=False),  # code_subtitle
             gr.update(visible=False),  # code_input
             gr.update(visible=False),  # verify_btn
-            gr.update(visible=False),  # code_buttons
-            f"❌ Bağlantı hatası: {str(e)}"  # status_msg
+            gr.update(visible=False)  # code_buttons
         )
 
 def verify_login_code(email, code):
@@ -116,10 +100,13 @@ def verify_login_code(email, code):
                 gr.update(),  # code_input
                 gr.update(),  # verify_btn
                 gr.update(),  # code_buttons
+                gr.update(),  # email_input
+                gr.update(visible=False),  # user_info_row
                 gr.update(visible=False),  # user_info_html
                 gr.update(visible=False),  # logout_btn
                 gr.update(visible=False),  # main_app_area
-                "❌ 6 haneli kod gerekli!"  # status_msg
+                gr.update(visible=False),  # admin_panel
+                gr.update(visible=False)  # main_banner
             )
         
         response = requests.post(
@@ -149,10 +136,13 @@ def verify_login_code(email, code):
                 gr.update(visible=False),  # code_input
                 gr.update(visible=False),  # verify_btn
                 gr.update(visible=False),  # code_buttons
+                gr.update(visible=False),  # email_input
+                gr.update(visible=True),  # user_info_row
                 gr.update(visible=True, value=user_profile_html),  # user_info_html
                 gr.update(visible=True),  # logout_btn
                 gr.update(visible=True),  # main_app_area
-                "✅ Giriş başarılı!"  # status_msg
+                gr.update(visible=app_state['is_admin']),  # admin_panel
+                gr.update(visible=True)  # main_banner
             )
         else:
             error_data = response.json()
@@ -162,10 +152,13 @@ def verify_login_code(email, code):
                 gr.update(),  # code_input
                 gr.update(),  # verify_btn
                 gr.update(),  # code_buttons
+                gr.update(),  # email_input
+                gr.update(visible=False),  # user_info_row
                 gr.update(visible=False),  # user_info_html
                 gr.update(visible=False),  # logout_btn
                 gr.update(visible=False),  # main_app_area
-                f"❌ {error_data.get('detail', 'Bilinmeyen hata')}"  # status_msg
+                gr.update(visible=False),  # admin_panel
+                gr.update(visible=False)  # main_banner
             )
     except Exception as e:
         return (
@@ -174,10 +167,13 @@ def verify_login_code(email, code):
             gr.update(),  # code_input
             gr.update(),  # verify_btn
             gr.update(),  # code_buttons
+            gr.update(),  # email_input
+            gr.update(visible=False),  # user_info_row
             gr.update(visible=False),  # user_info_html
             gr.update(visible=False),  # logout_btn
             gr.update(visible=False),  # main_app_area
-            f"❌ Bağlantı hatası: {str(e)}"  # status_msg
+            gr.update(visible=False),  # admin_panel
+            gr.update(visible=False)  # main_banner
         )
 
 def logout_user():
@@ -209,10 +205,12 @@ def logout_user():
         gr.update(visible=False),  # code_input
         gr.update(visible=False),  # verify_btn
         gr.update(visible=False),  # code_buttons
+        gr.update(visible=False),  # user_info_row
         gr.update(visible=False),  # user_info_html
         gr.update(visible=False),  # logout_btn
         gr.update(visible=False),  # main_app_area
-        "Çıkış yapıldı!"  # status_msg
+        gr.update(visible=False),  # admin_panel
+        gr.update(visible=False)  # main_banner
     )
 
 def get_user_profile():
@@ -528,6 +526,14 @@ def copy_response_handler(response_text):
         else:
             print("❌ Response işaretlenemedi!")
     
+    # Panoya kopyala
+    try:
+        import pyperclip
+        pyperclip.copy(response_text)
+        print("✅ Yanıt panoya kopyalandı!")
+    except Exception as e:
+        print(f"❌ Panoya kopyalama hatası: {e}")
+    
     # Buton görünürlüğünü güncelle
     generate_visible = app_state['state'] == 'draft' and app_state['yanit_sayisi'] < 5
     new_request_visible = app_state['state'] == 'finalized' or app_state['yanit_sayisi'] >= 5
@@ -560,6 +566,14 @@ def copy_previous_response_handler(response_id):
                     # Seçilen yanıtı current_response olarak ayarla
                     app_state['current_response'] = resp
                     app_state['history'].remove(resp)
+                    
+                    # Panoya kopyala
+                    try:
+                        import pyperclip
+                        pyperclip.copy(resp['response_text'])
+                        print("✅ Önceki yanıt panoya kopyalandı!")
+                    except Exception as e:
+                        print(f"❌ Panoya kopyalama hatası: {e}")
                     
                     # Buton görünürlüğünü güncelle
                     generate_visible = app_state['state'] == 'draft' and app_state['yanit_sayisi'] < 5
@@ -652,7 +666,8 @@ with gr.Blocks(
     """
 ) as demo:
     
-    gr.HTML("""
+    # Ana banner - sadece giriş yapıldıktan sonra görünür
+    main_banner = gr.HTML("""
     <div style="text-align: center; padding: 2rem 0; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border-radius: 12px; margin-bottom: 2rem;">
         <h1 style="margin: 0; font-size: 2.5rem;">🤖 AI Helper</h1>
         <p style="margin: 0.5rem 0 0 0; font-size: 1.2rem; opacity: 0.9;">Nilüfer Belediyesi - Yapay Zeka Destekli Yanıt Üretim Sistemi</p>
@@ -681,7 +696,7 @@ with gr.Blocks(
     }
     
     </script>
-    """)
+    """, visible=False)
     
     # Login bölümü (başlangıçta görünür)
     login_title = gr.HTML("""
@@ -713,7 +728,6 @@ with gr.Blocks(
                     max_lines=1
                 )
                 send_code_btn = gr.Button("📧 Bağlantı ve Kod Gönder", variant="primary")
-                test_btn = gr.Button("🧪 Test", variant="secondary")
         with gr.Column(scale=1):
             pass
     
@@ -748,12 +762,10 @@ with gr.Blocks(
         resend_btn = gr.Button("🔄 Tekrar gönder", variant="secondary")
         back_btn = gr.Button("⬅️ Geri Dön", variant="secondary")
     
-    # Durum mesajı
-    status_msg = gr.Textbox(label="Durum", interactive=False, visible=True)
-    
     # Kullanıcı bilgileri ve çıkış butonu (başlangıçta gizli)
-    user_info_html = gr.HTML(visible=False)
-    logout_btn = gr.Button("🚪 Çıkış Yap", variant="secondary", visible=False)
+    with gr.Row(visible=False) as user_info_row:
+        user_info_html = gr.HTML(visible=False)
+        logout_btn = gr.Button("🚪 Çıkış Yap", variant="secondary", visible=False)
     
     # Ana uygulama alanı (başlangıçta gizli)
     main_app_area = gr.Column(visible=False)
@@ -850,26 +862,19 @@ with gr.Blocks(
                         prev_text_4 = gr.Textbox(visible=False, interactive=False, lines=8, show_label=False, max_lines=8)
                         prev_copy_btn_4 = gr.Button("📋 Seç ve Kopyala #4", variant="secondary", visible=False)
     
-    # Test butonu event handler
-    test_btn.click(
-        fn=test_button,
-        inputs=[],
-        outputs=[status_msg]
-    )
-    
     # Event handlers
     send_code_btn.click(
         fn=send_login_code,
         inputs=[email_input],
         outputs=[login_title, login_subtitle, login_instruction, email_input, send_code_btn, 
-                code_title, code_subtitle, code_input, verify_btn, code_buttons, status_msg]
+                code_title, code_subtitle, code_input, verify_btn, code_buttons]
     )
     
     verify_btn.click(
         fn=verify_login_code,
         inputs=[email_input, code_input],
         outputs=[code_title, code_subtitle, code_input, verify_btn, code_buttons, 
-                user_info_html, logout_btn, main_app_area, status_msg]
+                email_input, user_info_row, user_info_html, logout_btn, main_app_area, admin_panel, main_banner]
     )
     
     logout_btn.click(
@@ -877,7 +882,7 @@ with gr.Blocks(
         inputs=[],
         outputs=[login_title, login_subtitle, login_instruction, email_input, send_code_btn, 
                 code_title, code_subtitle, code_input, verify_btn, code_buttons, 
-                user_info_html, logout_btn, main_app_area, status_msg]
+                user_info_row, user_info_html, logout_btn, main_app_area, admin_panel, main_banner]
     )
     
     # Tekrar gönder butonu
@@ -885,7 +890,7 @@ with gr.Blocks(
         fn=lambda email: send_login_code(email),
         inputs=[email_input],
         outputs=[login_title, login_subtitle, login_instruction, email_input, send_code_btn, 
-                code_title, code_subtitle, code_input, verify_btn, code_buttons, status_msg]
+                code_title, code_subtitle, code_input, verify_btn, code_buttons]
     )
     
     # Geri dön butonu
@@ -900,12 +905,11 @@ with gr.Blocks(
             gr.update(visible=False),  # code_subtitle
             gr.update(visible=False),  # code_input
             gr.update(visible=False),  # verify_btn
-            gr.update(visible=False),  # code_buttons
-            "Geri dönüldü"  # status_msg
+            gr.update(visible=False)  # code_buttons
         ),
         inputs=[],
         outputs=[login_title, login_subtitle, login_instruction, email_input, send_code_btn, 
-                code_title, code_subtitle, code_input, verify_btn, code_buttons, status_msg]
+                code_title, code_subtitle, code_input, verify_btn, code_buttons]
     )
     
     # Ana uygulama event handlers
@@ -989,19 +993,6 @@ with gr.Blocks(
     )
     
     # Admin paneli görünürlüğünü kontrol et
-    def update_admin_panel_visibility():
-        if app_state['is_admin']:
-            return gr.update(visible=True)
-        else:
-            return gr.update(visible=False)
-    
-    # Verify butonundan sonra admin paneli görünürlüğünü güncelle
-    verify_btn.click(
-        fn=update_admin_panel_visibility,
-        inputs=[],
-        outputs=[admin_panel]
-    )
-
 # Launch the app
 if __name__ == "__main__":
     demo.launch(
