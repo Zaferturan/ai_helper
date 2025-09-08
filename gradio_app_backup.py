@@ -2,6 +2,7 @@ import gradio as gr
 import requests
 import json
 from datetime import datetime
+from urllib.parse import urlparse, parse_qs
 
 # Backend URL
 BACKEND_URL = "http://localhost:8000/api/v1"
@@ -23,6 +24,78 @@ app_state = {
     'yanit_sayisi': 0,  # Her istek için üretilen yanıt sayısı - eski koddan
     'has_copied': False  # Kopyalama durumu - eski koddan
 }
+
+def verify_token_from_url():
+    """URL'den token alıp doğrula"""
+    try:
+        # URL'den token'ı al
+        url_params = parse_qs(urlparse(window.location.href).query)
+        token = url_params.get('token', [None])[0] if url_params.get('token') else None
+        
+        if not token:
+            return False, "Token bulunamadı"
+        
+        # Backend'e token gönder
+        response = requests.post(
+            f"{BACKEND_URL}/auth/consume-token",
+            headers={
+                'Content-Type': 'application/json',
+                'Authorization': f'Bearer {token}'
+            },
+            json={'code': token},
+            timeout=10
+        )
+        
+        if response.status_code == 200:
+            data = response.json()
+            return True, data
+        else:
+            return False, f"Doğrulama hatası: {response.status_code}"
+            
+    except Exception as e:
+        return False, f"Hata: {str(e)}"
+
+def handle_token_login():
+    """Token ile otomatik giriş yap"""
+    try:
+        # URL'den token'ı al
+        url_params = parse_qs(urlparse(window.location.href).query)
+        token = url_params.get('token', [None])[0] if url_params.get('token') else None
+        
+        if not token:
+            return False, "Token bulunamadı"
+        
+        print(f"🔑 Token bulundu: {token[:20]}...")
+        
+        # Backend'e token gönder
+        response = requests.post(
+            f"{BACKEND_URL}/auth/consume-token",
+            headers={
+                'Content-Type': 'application/json',
+                'Authorization': f'Bearer {token}'
+            },
+            json={'code': token},
+            timeout=10
+        )
+        
+        if response.status_code == 200:
+            data = response.json()
+            print(f"✅ Token doğrulandı: {data.get('full_name', 'Kullanıcı')}")
+            
+            # Global state'i güncelle
+            app_state['authenticated'] = True
+            app_state['access_token'] = data.get('access_token')
+            app_state['user_email'] = data.get('email')
+            app_state['is_admin'] = data.get('is_admin', False)
+            
+            return True, data
+        else:
+            print(f"❌ Token doğrulama hatası: {response.status_code}")
+            return False, f"Doğrulama hatası: {response.status_code}"
+            
+    except Exception as e:
+        print(f"❌ Token handling hatası: {str(e)}")
+        return False, f"Hata: {str(e)}"
 
 def send_login_code(email):
     """E-posta ile giriş kodu gönder"""
@@ -88,6 +161,92 @@ def send_login_code(email):
             gr.update(visible=False),  # code_input
             gr.update(visible=False),  # verify_btn
             gr.update(visible=False)  # code_buttons
+        )
+
+def verify_login_token(token):
+    """Token ile giriş doğrula"""
+    try:
+        if not token:
+            return (
+                gr.update(),  # code_title
+                gr.update(),  # code_subtitle
+                gr.update(),  # code_input
+                gr.update(),  # verify_btn
+                gr.update(),  # code_buttons
+                gr.update(),  # email_input
+                gr.update(visible=False),  # user_info_row
+                gr.update(visible=False),  # user_info_html
+                gr.update(visible=False),  # logout_btn
+                gr.update(visible=False),  # main_app_area
+                gr.update(visible=False),  # admin_panel
+                gr.update(visible=False)  # main_banner
+            )
+        
+        response = requests.post(
+            f"{BACKEND_URL}/auth/consume-token",
+            json={"code": token},
+            timeout=30
+        )
+        
+        if response.status_code == 200:
+            data = response.json()
+            
+            # Session state'i set et
+            app_state['authenticated'] = True
+            app_state['access_token'] = data["access_token"]
+            app_state['user_email'] = data["email"]
+            app_state['login_sent'] = False
+            
+            # Admin durumunu kontrol et
+            app_state['is_admin'] = check_admin_status()
+            
+            # Kullanıcı profil bilgilerini al
+            user_profile_html = get_user_profile()
+            
+            return (
+                gr.update(visible=False),  # code_title
+                gr.update(visible=False),  # code_subtitle
+                gr.update(visible=False),  # code_input
+                gr.update(visible=False),  # verify_btn
+                gr.update(visible=False),  # code_buttons
+                gr.update(visible=False),  # email_input
+                gr.update(visible=True),  # user_info_row
+                gr.update(visible=True, value=user_profile_html),  # user_info_html
+                gr.update(visible=True),  # logout_btn
+                gr.update(visible=True),  # main_app_area
+                gr.update(visible=app_state['is_admin']),  # admin_panel
+                gr.update(visible=True)  # main_banner
+            )
+        else:
+            error_data = response.json()
+            return (
+                gr.update(),  # code_title
+                gr.update(),  # code_subtitle
+                gr.update(),  # code_input
+                gr.update(),  # verify_btn
+                gr.update(),  # code_buttons
+                gr.update(),  # email_input
+                gr.update(visible=False),  # user_info_row
+                gr.update(visible=False),  # user_info_html
+                gr.update(visible=False),  # logout_btn
+                gr.update(visible=False),  # main_app_area
+                gr.update(visible=False),  # admin_panel
+                gr.update(visible=False)  # main_banner
+            )
+    except Exception as e:
+        return (
+            gr.update(),  # code_title
+            gr.update(),  # code_subtitle
+            gr.update(),  # code_input
+            gr.update(),  # verify_btn
+            gr.update(),  # code_buttons
+            gr.update(),  # email_input
+            gr.update(visible=False),  # user_info_row
+            gr.update(visible=False),  # user_info_html
+            gr.update(visible=False),  # logout_btn
+            gr.update(visible=False),  # main_app_area
+            gr.update(visible=False),  # admin_panel
+            gr.update(visible=False)  # main_banner
         )
 
 def verify_login_code(email, code):
@@ -666,6 +825,180 @@ with gr.Blocks(
     """
 ) as demo:
     
+    # Token kontrolü için JavaScript - Doğrudan HTML içinde
+    token_checker = gr.HTML("""
+    <div id="token-checker" style="display: none;">
+        <p>Token kontrolü aktif...</p>
+    </div>
+    
+    <script>
+    console.log('=== STREAMLIT MANTIĞI İLE TOKEN AUTHENTICATION ===');
+    
+    // Streamlit'teki gibi token authentication
+    async function checkAuthentication() {
+        console.log('🔍 Token authentication başlatılıyor...');
+        
+        // URL'den token parametresini kontrol et
+        const urlParams = new URLSearchParams(window.location.search);
+        const token = urlParams.get('token');
+        
+        if (!token) {
+            console.log('❌ URL\'de token bulunamadı');
+            return false;
+        }
+        
+        console.log('🔑 Token bulundu:', token.substring(0, 20) + '...');
+        
+        // Token'ı backend'e gönderip doğrula (Streamlit mantığı)
+        try {
+            const response = await fetch('http://localhost:8000/api/v1/auth/consume-token', {
+                method: 'POST',
+                mode: 'cors',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ code: token })  // Streamlit'teki gibi code field
+            });
+            
+            console.log('📡 Backend response status:', response.status);
+            
+            if (response.status === 200) {
+                const userData = await response.json();
+                console.log('✅ Token doğrulandı:', userData);
+                
+                // Session state'i set et (localStorage ile)
+                localStorage.setItem('authenticated', 'true');
+                localStorage.setItem('access_token', userData.access_token);
+                localStorage.setItem('user_email', userData.email);
+                localStorage.setItem('user_full_name', userData.full_name || '');
+                localStorage.setItem('user_department', userData.department || '');
+                localStorage.setItem('profile_completed', userData.profile_completed || false);
+                
+                console.log('✅ Kullanıcı bilgileri localStorage\'a kaydedildi');
+                
+                // URL'den token'ı temizle (Streamlit mantığı)
+                const newUrl = window.location.origin + window.location.pathname;
+                window.history.replaceState({}, document.title, newUrl);
+                console.log('✅ URL\'den token temizlendi');
+                
+                // Sayfayı yenile
+                console.log('🔄 Sayfa yenileniyor...');
+                setTimeout(() => {
+                    window.location.reload();
+                }, 1000);
+                
+                return true;
+            } else {
+                console.error('❌ Token doğrulanamadı:', response.status);
+                alert('Geçersiz veya süresi dolmuş bağlantı');
+                return false;
+            }
+        } catch (error) {
+            console.error('❌ Token doğrulama hatası:', error);
+            alert('Token doğrulanamadı: ' + error.message);
+            return false;
+        }
+    }
+    
+    // Sayfa yüklendiğinde token kontrolü yap
+    window.addEventListener('load', function() {
+        console.log('🚀 Sayfa yüklendi, token kontrolü başlatılıyor...');
+        checkAuthentication();
+    });
+    
+    // Debug tools
+    window.debugTools = {
+        checkAuth: () => {
+            const auth = localStorage.getItem('authenticated');
+            const token = localStorage.getItem('access_token');
+            const email = localStorage.getItem('user_email');
+            console.log('Auth status:', auth);
+            console.log('Token:', token ? token.substring(0, 20) + '...' : 'None');
+            console.log('Email:', email);
+        },
+        
+        clearAuth: () => {
+            localStorage.removeItem('authenticated');
+            localStorage.removeItem('access_token');
+            localStorage.removeItem('user_email');
+            localStorage.removeItem('user_full_name');
+            localStorage.removeItem('user_department');
+            localStorage.removeItem('profile_completed');
+            console.log('✅ Auth bilgileri temizlendi');
+        },
+        
+        testBackend: async () => {
+            try {
+                const response = await fetch('http://localhost:8000/health');
+                console.log('Backend health:', response.status);
+            } catch (e) {
+                console.error('Backend test failed:', e);
+            }
+        }
+    };
+    
+    console.log('✅ Streamlit mantığı ile token authentication yüklendi');
+    console.log('🔧 Debug tools: window.debugTools');
+    </script>
+    """, visible=True)
+    
+    # Token kontrolü fonksiyonu
+    def check_token_on_load():
+        """Sayfa yüklendiğinde token kontrolü yap"""
+        try:
+            print("🔍 Token kontrolü başlatılıyor...")
+            
+            # Eğer URL'de token varsa ve henüz giriş yapılmamışsa
+            if not app_state['authenticated']:
+                print("❌ Henüz giriş yapılmamış")
+                return gr.update(visible=True), gr.update(visible=False)  # Login göster, main gizle
+            
+            print("✅ Zaten giriş yapılmış")
+            return gr.update(visible=False), gr.update(visible=True)  # Login gizle, main göster
+            
+        except Exception as e:
+            print(f"❌ Token kontrol hatası: {e}")
+            return gr.update(visible=True), gr.update(visible=False)  # Hata durumunda login göster
+    
+    # Token ile otomatik giriş fonksiyonu
+    def auto_login_with_token():
+        """Token ile otomatik giriş yap"""
+        try:
+            print("🔑 Otomatik token girişi başlatılıyor...")
+            
+            # Test token'ı kullan
+            test_token = "rZY_WDZMPn92mvXHaD9Kp_O07nquPLRAhJJJbiq9Vko"
+            
+            # Backend'e token gönder
+            response = requests.post(
+                f"{BACKEND_URL}/auth/consume-token",
+                headers={
+                    'Content-Type': 'application/json',
+                    'Authorization': f'Bearer {test_token}'
+                },
+                json={'code': test_token},
+                timeout=10
+            )
+            
+            if response.status_code == 200:
+                data = response.json()
+                print(f"✅ Token doğrulandı: {data.get('full_name', 'Kullanıcı')}")
+                
+                # Global state'i güncelle
+                app_state['authenticated'] = True
+                app_state['access_token'] = data.get('access_token')
+                app_state['user_email'] = data.get('email')
+                app_state['is_admin'] = data.get('is_admin', False)
+                
+                return gr.update(visible=False), gr.update(visible=True)  # Login gizle, main göster
+            else:
+                print(f"❌ Token doğrulama hatası: {response.status_code}")
+                return gr.update(visible=True), gr.update(visible=False)  # Login göster, main gizle
+                
+        except Exception as e:
+            print(f"❌ Otomatik giriş hatası: {e}")
+            return gr.update(visible=True), gr.update(visible=False)  # Hata durumunda login göster
+    
     # Ana banner - sadece giriş yapıldıktan sonra görünür
     main_banner = gr.HTML("""
     <div style="text-align: center; padding: 2rem 0; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border-radius: 12px; margin-bottom: 2rem;">
@@ -694,7 +1027,6 @@ with gr.Blocks(
             alert('❌ Kopyalama hatası!');
         });
     }
-    
     </script>
     """, visible=False)
     
@@ -992,6 +1324,8 @@ with gr.Blocks(
         outputs=[admin_stats_html]
     )
     
+    # JavaScript artık doğrudan HTML içinde çalışıyor
+
     # Admin paneli görünürlüğünü kontrol et
 # Launch the app
 if __name__ == "__main__":

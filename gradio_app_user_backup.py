@@ -8,225 +8,17 @@ BACKEND_URL = "http://localhost:8000/api/v1"
 
 # Global state
 app_state = {
-    'authenticated': False,
-    'access_token': None,
-    'user_email': None,
-    'login_email': None,
-    'login_sent': False,
     'show_admin_panel': False,
+    'access_token': 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMCIsImVtYWlsIjoiZW5naW5ha3lpbGRpekBuaWx1ZmVyLmJlbC50ciIsImV4cCI6MTc1NzA5ODgwMH0.MJ8prsbWo47xpI45W2pu8dxvrNbxKeTqh2Uo4kFhVdo',
     'history': [],  # Önceki yanıtlar
     'current_response': None,  # Mevcut yanıt
     'current_request_id': None,  # Mevcut request ID
     'response_count': 0,  # Bu request için üretilen yanıt sayısı
-    'is_admin': False,  # Admin kontrolü için
+    'is_admin': False,  # Admin kontrolü için - enginakyildiz kullanıcısı admin değil
     'state': 'draft',  # 'draft' veya 'finalized' - eski koddan
     'yanit_sayisi': 0,  # Her istek için üretilen yanıt sayısı - eski koddan
     'has_copied': False  # Kopyalama durumu - eski koddan
 }
-
-def send_login_code(email):
-    """E-posta ile giriş kodu gönder"""
-    try:
-        if not email or not email.endswith("@nilufer.bel.tr"):
-            return (
-                gr.update(visible=True),  # login_title
-                gr.update(visible=True),  # login_subtitle
-                gr.update(visible=True),  # login_instruction
-                gr.update(),  # email_input
-                gr.update(),  # send_code_btn
-                gr.update(visible=False),  # code_title
-                gr.update(visible=False),  # code_subtitle
-                gr.update(visible=False),  # code_input
-                gr.update(visible=False),  # verify_btn
-                gr.update(visible=False)  # code_buttons
-            )
-        
-        response = requests.post(
-            f"{BACKEND_URL}/auth/send",
-            json={"email": email},
-            timeout=30
-        )
-        
-        if response.status_code == 200:
-            app_state['login_email'] = email
-            app_state['login_sent'] = True
-            return (
-                gr.update(visible=False),  # login_title
-                gr.update(visible=False),  # login_subtitle
-                gr.update(visible=False),  # login_instruction
-                gr.update(),  # email_input
-                gr.update(visible=False),  # send_code_btn
-                gr.update(visible=True),  # code_title
-                gr.update(visible=True),  # code_subtitle
-                gr.update(visible=True),  # code_input
-                gr.update(visible=True),  # verify_btn
-                gr.update(visible=True)  # code_buttons
-            )
-        else:
-            error_data = response.json()
-            return (
-                gr.update(visible=True),  # login_title
-                gr.update(visible=True),  # login_subtitle
-                gr.update(visible=True),  # login_instruction
-                gr.update(),  # email_input
-                gr.update(),  # send_code_btn
-                gr.update(visible=False),  # code_title
-                gr.update(visible=False),  # code_subtitle
-                gr.update(visible=False),  # code_input
-                gr.update(visible=False),  # verify_btn
-                gr.update(visible=False)  # code_buttons
-            )
-    except Exception as e:
-        return (
-            gr.update(visible=True),  # login_title
-            gr.update(visible=True),  # login_subtitle
-            gr.update(visible=True),  # login_instruction
-            gr.update(),  # email_input
-            gr.update(),  # send_code_btn
-            gr.update(visible=False),  # code_title
-            gr.update(visible=False),  # code_subtitle
-            gr.update(visible=False),  # code_input
-            gr.update(visible=False),  # verify_btn
-            gr.update(visible=False)  # code_buttons
-        )
-
-def verify_login_code(email, code):
-    """6 haneli kod ile giriş doğrula"""
-    try:
-        if not code or len(code) != 6:
-            return (
-                gr.update(),  # code_title
-                gr.update(),  # code_subtitle
-                gr.update(),  # code_input
-                gr.update(),  # verify_btn
-                gr.update(),  # code_buttons
-                gr.update(),  # email_input
-                gr.update(visible=False),  # user_info_row
-                gr.update(visible=False),  # user_info_html
-                gr.update(visible=False),  # logout_btn
-                gr.update(visible=False),  # main_app_area
-                gr.update(visible=False),  # admin_panel
-                gr.update(visible=False)  # main_banner
-            )
-        
-        response = requests.post(
-            f"{BACKEND_URL}/auth/verify-code",
-            json={"email": email, "code": code},
-            timeout=30
-        )
-        
-        if response.status_code == 200:
-            data = response.json()
-            
-            # Session state'i set et
-            app_state['authenticated'] = True
-            app_state['access_token'] = data["access_token"]
-            app_state['user_email'] = data["email"]
-            app_state['login_sent'] = False
-            
-            # Admin durumunu kontrol et
-            app_state['is_admin'] = check_admin_status()
-            
-            # Kullanıcı profil bilgilerini al
-            user_profile_html = get_user_profile()
-            
-            return (
-                gr.update(visible=False),  # code_title
-                gr.update(visible=False),  # code_subtitle
-                gr.update(visible=False),  # code_input
-                gr.update(visible=False),  # verify_btn
-                gr.update(visible=False),  # code_buttons
-                gr.update(visible=False),  # email_input
-                gr.update(visible=True),  # user_info_row
-                gr.update(visible=True, value=user_profile_html),  # user_info_html
-                gr.update(visible=True),  # logout_btn
-                gr.update(visible=True),  # main_app_area
-                gr.update(visible=app_state['is_admin']),  # admin_panel
-                gr.update(visible=True)  # main_banner
-            )
-        else:
-            error_data = response.json()
-            return (
-                gr.update(),  # code_title
-                gr.update(),  # code_subtitle
-                gr.update(),  # code_input
-                gr.update(),  # verify_btn
-                gr.update(),  # code_buttons
-                gr.update(),  # email_input
-                gr.update(visible=False),  # user_info_row
-                gr.update(visible=False),  # user_info_html
-                gr.update(visible=False),  # logout_btn
-                gr.update(visible=False),  # main_app_area
-                gr.update(visible=False),  # admin_panel
-                gr.update(visible=False)  # main_banner
-            )
-    except Exception as e:
-        return (
-            gr.update(),  # code_title
-            gr.update(),  # code_subtitle
-            gr.update(),  # code_input
-            gr.update(),  # verify_btn
-            gr.update(),  # code_buttons
-            gr.update(),  # email_input
-            gr.update(visible=False),  # user_info_row
-            gr.update(visible=False),  # user_info_html
-            gr.update(visible=False),  # logout_btn
-            gr.update(visible=False),  # main_app_area
-            gr.update(visible=False),  # admin_panel
-            gr.update(visible=False)  # main_banner
-        )
-
-def logout_user():
-    """Kullanıcıyı çıkış yap"""
-    # Tüm state'i sıfırla
-    app_state['authenticated'] = False
-    app_state['access_token'] = None
-    app_state['user_email'] = None
-    app_state['login_email'] = None
-    app_state['login_sent'] = False
-    app_state['is_admin'] = False
-    app_state['show_admin_panel'] = False
-    app_state['history'] = []
-    app_state['current_response'] = None
-    app_state['current_request_id'] = None
-    app_state['response_count'] = 0
-    app_state['state'] = 'draft'
-    app_state['yanit_sayisi'] = 0
-    app_state['has_copied'] = False
-    
-    return (
-        gr.update(visible=True),  # login_title
-        gr.update(visible=True),  # login_subtitle
-        gr.update(visible=True),  # login_instruction
-        gr.update(value=""),  # email_input
-        gr.update(visible=True),  # send_code_btn
-        gr.update(visible=False),  # code_title
-        gr.update(visible=False),  # code_subtitle
-        gr.update(visible=False),  # code_input
-        gr.update(visible=False),  # verify_btn
-        gr.update(visible=False),  # code_buttons
-        gr.update(visible=False),  # user_info_row
-        gr.update(visible=False),  # user_info_html
-        gr.update(visible=False),  # logout_btn
-        gr.update(visible=False),  # main_app_area
-        gr.update(visible=False),  # admin_panel
-        gr.update(visible=False)  # main_banner
-    )
-
-def get_user_profile():
-    """Kullanıcı profil bilgilerini getir"""
-    try:
-        headers = {"Authorization": f"Bearer {app_state['access_token']}"}
-        response = requests.get(f"{BACKEND_URL}/auth/profile", headers=headers)
-        if response.status_code == 200:
-            data = response.json()
-            full_name = data.get('full_name', 'İsimsiz')
-            department = data.get('department', 'Departman Belirtilmemiş')
-            return f"<h3>👤 {full_name} - {department}</h3>"
-        else:
-            return "<h3>👤 Kullanıcı Bilgileri Alınamadı</h3>"
-    except Exception as e:
-        return f"<h3>👤 Hata: {str(e)}</h3>"
 
 def check_admin_status():
     """Admin durumunu kontrol et"""
@@ -260,6 +52,25 @@ def update_response_feedback(response_id, is_selected=False, copied=False):
     except Exception as e:
         print(f"Geri bildirim güncellenemedi: {e}")
         return False
+
+def update_user_info():
+    """Kullanıcı bilgilerini güncelle"""
+    try:
+        headers = {"Authorization": f"Bearer {app_state['access_token']}"}
+        response = requests.get(f"{BACKEND_URL}/auth/profile", headers=headers)
+        if response.status_code == 200:
+            data = response.json()
+            full_name = data.get('full_name', 'İsimsiz')
+            department = data.get('department', 'Departman Belirtilmemiş')
+            return f"<h3>👤 {full_name} - {department}</h3>"
+        else:
+            return "<h3>👤 Kullanıcı Bilgileri Alınamadı</h3>"
+    except Exception as e:
+        return f"<h3>👤 Hata: {str(e)}</h3>"
+
+def get_user_profile():
+    """Kullanıcı profil bilgilerini getir"""
+    return update_user_info()
 
 def get_admin_statistics():
     """Admin istatistiklerini al - eski kodun mantığını takip eder"""
@@ -505,10 +316,6 @@ def create_previous_responses_html():
 
 def copy_response_handler(response_text):
     """Mevcut yanıtı kopyala - eski koddan mantık"""
-    # İlk kopyalama kontrolü - eğer zaten kopyalanmışsa hiçbir şey yapma
-    if app_state['has_copied']:
-        return ("⚠️ Bu istek için zaten bir yanıt kopyalandı!", gr.update(), gr.update())
-    
     # Durum makinesini finalized yap - eski koddan
     app_state['state'] = 'finalized'
     app_state['has_copied'] = True  # Eski koddan
@@ -516,6 +323,10 @@ def copy_response_handler(response_text):
     # Veritabanında response'u kopyalandı olarak işaretle
     if app_state['current_response'] and app_state['current_response'].get('id'):
         response_id = app_state['current_response']['id']
+        
+        # İlk kopyalama kontrolü - eğer zaten kopyalanmışsa hiçbir şey yapma
+        if app_state['has_copied']:
+            return ("⚠️ Bu istek için zaten bir yanıt kopyalandı!", gr.update(), gr.update())
         
         # Response'u kopyalandı olarak işaretle
         result = mark_response_as_copied(response_id)
@@ -525,14 +336,6 @@ def copy_response_handler(response_text):
             print("✅ Response veritabanında kopyalandı olarak işaretlendi!")
         else:
             print("❌ Response işaretlenemedi!")
-    
-    # Panoya kopyala
-    try:
-        import pyperclip
-        pyperclip.copy(response_text)
-        print("✅ Yanıt panoya kopyalandı!")
-    except Exception as e:
-        print(f"❌ Panoya kopyalama hatası: {e}")
     
     # Buton görünürlüğünü güncelle
     generate_visible = app_state['state'] == 'draft' and app_state['yanit_sayisi'] < 5
@@ -566,14 +369,6 @@ def copy_previous_response_handler(response_id):
                     # Seçilen yanıtı current_response olarak ayarla
                     app_state['current_response'] = resp
                     app_state['history'].remove(resp)
-                    
-                    # Panoya kopyala
-                    try:
-                        import pyperclip
-                        pyperclip.copy(resp['response_text'])
-                        print("✅ Önceki yanıt panoya kopyalandı!")
-                    except Exception as e:
-                        print(f"❌ Panoya kopyalama hatası: {e}")
                     
                     # Buton görünürlüğünü güncelle
                     generate_visible = app_state['state'] == 'draft' and app_state['yanit_sayisi'] < 5
@@ -666,8 +461,7 @@ with gr.Blocks(
     """
 ) as demo:
     
-    # Ana banner - sadece giriş yapıldıktan sonra görünür
-    main_banner = gr.HTML("""
+    gr.HTML("""
     <div style="text-align: center; padding: 2rem 0; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border-radius: 12px; margin-bottom: 2rem;">
         <h1 style="margin: 0; font-size: 2.5rem;">🤖 AI Helper</h1>
         <p style="margin: 0.5rem 0 0 0; font-size: 1.2rem; opacity: 0.9;">Nilüfer Belediyesi - Yapay Zeka Destekli Yanıt Üretim Sistemi</p>
@@ -696,223 +490,114 @@ with gr.Blocks(
     }
     
     </script>
-    """, visible=False)
+    """)
     
-    # Login bölümü (başlangıçta görünür)
-    login_title = gr.HTML("""
-    <div style="text-align: center; padding: 2rem; background: #e8f5e8; border-radius: 12px; margin: 2rem 0;">
-        <h2 style="color: #2e7d32; margin-bottom: 1rem;">🔐 AI Helper - Giriş</h2>
-    </div>
-    """, visible=True)
-    
-    login_subtitle = gr.HTML("""
-    <div style="text-align: center; padding: 1rem; background: #f8f9fa; border-radius: 8px; margin: 1rem 0;">
-        <p style="color: #666; font-size: 1.1rem; margin-bottom: 0.5rem;">Bursa Nilüfer Belediyesi AI Yardımcı sistemine hoş geldiniz</p>
-    </div>
-    """, visible=True)
-    
-    login_instruction = gr.HTML("""
-    <div style="text-align: center; padding: 1rem; background: #fff3cd; border-radius: 8px; margin: 1rem 0;">
-        <p style="color: #888; font-size: 0.9rem;">E-posta adresinizi girin, giriş için gerekli link ve kodu gönderelim</p>
-    </div>
-    """, visible=True)
-    
+    # Kullanıcı bilgileri ve butonlar
     with gr.Row():
-        with gr.Column(scale=1):
-            pass
         with gr.Column(scale=2):
-            with gr.Group():
-                email_input = gr.Textbox(
-                    label="E-posta Adresi",
-                    placeholder="ornek@nilufer.bel.tr",
-                    max_lines=1
-                )
-                send_code_btn = gr.Button("📧 Bağlantı ve Kod Gönder", variant="primary")
+            user_info_html = gr.HTML(f"<h3>{get_user_profile()}</h3>")
         with gr.Column(scale=1):
-            pass
+            logout_btn = gr.Button("🚪 Çıkış Yap", variant="secondary")
     
-    # Kod doğrulama bölümü (başlangıçta gizli)
-    code_title = gr.HTML("""
-    <div style="text-align: center; padding: 2rem; background: #e3f2fd; border-radius: 12px; margin: 2rem 0;">
-        <h2 style="color: #1976d2; margin-bottom: 1rem;">📧 Giriş için gerekli link ve kodu gönderdik</h2>
-    </div>
-    """, visible=False)
-    
-    code_subtitle = gr.HTML("""
-    <div style="text-align: center; padding: 1rem; background: #f8f9fa; border-radius: 8px; margin: 1rem 0;">
-        <p style="color: #666; font-size: 1.1rem;">E-postandaki bağlantıya tıkla ya da aşağıya 6 haneli giriş kodunu yaz</p>
-    </div>
-    """, visible=False)
-    
-    with gr.Row():
-        with gr.Column(scale=3):
-            code_input = gr.Textbox(
-                label="6 Haneli Giriş Kodu",
-                placeholder="000000",
-                max_lines=1,
-                value="",
-                visible=False
-            )
-        with gr.Column(scale=1):
-            verify_btn = gr.Button("✅ Doğrula", variant="primary", visible=False)
-    
-    # Tekrar gönder ve geri dön butonları
-    code_buttons = gr.Row(visible=False)
-    with code_buttons:
-        resend_btn = gr.Button("🔄 Tekrar gönder", variant="secondary")
-        back_btn = gr.Button("⬅️ Geri Dön", variant="secondary")
-    
-    # Kullanıcı bilgileri ve çıkış butonu (başlangıçta gizli)
-    with gr.Row(visible=False) as user_info_row:
-        user_info_html = gr.HTML(visible=False)
-        logout_btn = gr.Button("🚪 Çıkış Yap", variant="secondary", visible=False)
-    
-    # Ana uygulama alanı (başlangıçta gizli)
-    main_app_area = gr.Column(visible=False)
-    with main_app_area:
-        # Admin İstatistikler Paneli - sadece admin kullanıcılarda görünür
-        admin_panel = gr.Accordion("📊 İstatistikler", open=False, visible=False)
-        with admin_panel:
-            admin_stats_html = gr.HTML(value="")
+    # Admin İstatistikler Paneli - sadece admin kullanıcılarda görünür
+    if app_state['is_admin']:
+        with gr.Accordion("📊 İstatistikler", open=False):
+            admin_panel = gr.HTML(value=get_admin_statistics())
             refresh_admin_btn = gr.Button("🔄 Yenile", variant="secondary")
-        
-        # İki sütunlu layout
-        with gr.Row():
-            # Sol sütun - Giriş ve ayarlar
-            with gr.Column(scale=1):
-                gr.HTML("<h3>📝 Gelen İstek/Öneri</h3>")
-                original_text = gr.Textbox(
-                    label="Gelen istek/öneri metnini buraya yapıştırın:",
-                    value="Bursa Nilüfer'de bir dükkanım var ve yönetim planından tahsisli otoparkımda bulunan dubaları, belediye ekipleri mafyavari şekilde tahsisli alanımdan alıp götürebiliyor. Geri aradığımda ise belediye zabıtası, görevliyi mahkemeye vermemi söylüyor. Bu nasıl bir hizmet anlayışı? Benim tahsisli alanımdan eşyamı alıyorsunuz, buna ne denir? Herkes biliyordur. Bir yeri koruduğunu zannedip başka bir yeri mağdur etmek mi belediyecilik?",
-                    lines=6
-                )
-                
-                gr.HTML("<h3>✍️ Hazırladığınız Cevap</h3>")
-                custom_input = gr.Textbox(
-                    label="Hazırladığınız cevap taslağını buraya yazın:",
-                    value="Orası size tahsis edilmiş bir yer değil. Nilüfer halkının ortak kullanım alanı. Kaldırımlar da öyle.",
-                    lines=4
-                )
-                
-                # Model ayarları - açılır kapanır
-                with gr.Accordion("⚙️ Yanıt Ayarları", open=False):
-                    with gr.Row():
-                        model = gr.Dropdown(
-                            choices=["gemini-2.5-flash", "gemini-1.5-flash-002", "gemini-2.0-flash-001", "gpt-oss:latest"],
-                            value="gemini-2.5-flash",
-                            label="Model"
-                        )
-                        temperature = gr.Slider(
-                            minimum=0.1,
-                            maximum=2.0,
-                            value=0.7,
-                            step=0.1,
-                            label="Yaratıcılık (Temperature)"
-                        )
-                    
-                    max_tokens = gr.Slider(
-                        minimum=100,
-                        maximum=4000,
-                        value=2000,
-                        step=100,
-                        label="Maksimum Token Sayısı"
+    
+    # İki sütunlu layout
+    with gr.Row():
+        # Sol sütun - Giriş ve ayarlar
+        with gr.Column(scale=1):
+            gr.HTML("<h3>📝 Gelen İstek/Öneri</h3>")
+            original_text = gr.Textbox(
+                label="Gelen istek/öneri metnini buraya yapıştırın:",
+                value="Bursa Nilüfer'de bir dükkanım var ve yönetim planından tahsisli otoparkımda bulunan dubaları, belediye ekipleri mafyavari şekilde tahsisli alanımdan alıp götürebiliyor. Geri aradığımda ise belediye zabıtası, görevliyi mahkemeye vermemi söylüyor. Bu nasıl bir hizmet anlayışı? Benim tahsisli alanımdan eşyamı alıyorsunuz, buna ne denir? Herkes biliyordur. Bir yeri koruduğunu zannedip başka bir yeri mağdur etmek mi belediyecilik?",
+                lines=6
+            )
+            
+            gr.HTML("<h3>✍️ Hazırladığınız Cevap</h3>")
+            custom_input = gr.Textbox(
+                label="Hazırladığınız cevap taslağını buraya yazın:",
+                value="Orası size tahsis edilmiş bir yer değil. Nilüfer halkının ortak kullanım alanı. Kaldırımlar da öyle.",
+                lines=4
+            )
+            
+            # Model ayarları - açılır kapanır
+            with gr.Accordion("⚙️ Yanıt Ayarları", open=False):
+                with gr.Row():
+                    model = gr.Dropdown(
+                        choices=["gemini-2.5-flash", "gemini-1.5-flash-002", "gemini-2.0-flash-001", "gpt-oss:latest"],
+                        value="gemini-2.5-flash",
+                        label="Model"
+                    )
+                    temperature = gr.Slider(
+                        minimum=0.1,
+                        maximum=2.0,
+                        value=0.7,
+                        step=0.1,
+                        label="Yaratıcılık (Temperature)"
                     )
                 
-                # Yanıt üret butonu
-                generate_btn = gr.Button("🚀 Yanıt Üret", variant="primary", size="lg", visible=True)
-            
-            # Sağ sütun - Sonuçlar
-            with gr.Column(scale=1):
-                response_text = gr.Textbox(
-                    label="Son Üretilen Yanıt",
-                    lines=8,
-                    interactive=False,
-                    placeholder="Henüz yanıt üretilmedi..."
+                max_tokens = gr.Slider(
+                    minimum=100,
+                    maximum=4000,
+                    value=2000,
+                    step=100,
+                    label="Maksimum Token Sayısı"
                 )
-                
-                # Ana Seç ve Kopyala butonu
-                main_copy_btn = gr.Button("📋 Seç ve Kopyala", variant="secondary", visible=False)
-                copy_result = gr.Textbox(label="Kopyalama Durumu", interactive=False, visible=False)
-                
-                # Yeni istek öneri butonu
+            
+            # Yanıt üret butonu - durum makinesine ve yanıt sayısına göre kontrol
+            if app_state['state'] == 'draft' and app_state['yanit_sayisi'] < 5:
+                generate_btn = gr.Button("🚀 Yanıt Üret", variant="primary", size="lg", visible=True)
+            else:
+                generate_btn = gr.Button("🚀 Yanıt Üret", variant="primary", size="lg", visible=False)
+        
+        # Sağ sütun - Sonuçlar
+        with gr.Column(scale=1):
+            response_text = gr.Textbox(
+                label="Son Üretilen Yanıt",
+                lines=8,
+                interactive=False,
+                placeholder="Henüz yanıt üretilmedi..."
+            )
+            
+            # Ana Seç ve Kopyala butonu - önceki yanıtlar butonları gibi
+            main_copy_btn = gr.Button("📋 Seç ve Kopyala", variant="secondary", visible=False)
+            copy_result = gr.Textbox(label="Kopyalama Durumu", interactive=False, visible=False)
+            
+            # Yeni istek öneri butonu - durum makinesine göre kontrol
+            if app_state['state'] == 'finalized' or app_state['yanit_sayisi'] >= 5:
+                new_request_btn = gr.Button("🆕 Yeni İstek Öneri Cevapla", variant="secondary", visible=True)
+            else:
                 new_request_btn = gr.Button("🆕 Yeni İstek Öneri Cevapla", variant="secondary", visible=False)
+            
+            # Önceki yanıtlar - dinamik HTML olarak göster
+            previous_responses = gr.HTML()
+            
+            # Önceki yanıtlar için Gradio akordiyonları (maksimum 4 önceki yanıt)
+            with gr.Column():
+                prev_accordion_1 = gr.Accordion("📄 Yanıt #1", open=False, visible=False)
+                with prev_accordion_1:
+                    prev_text_1 = gr.Textbox(visible=False, interactive=False, lines=8, show_label=False, max_lines=8)
+                    prev_copy_btn_1 = gr.Button("📋 Seç ve Kopyala #1", variant="secondary", visible=False)
                 
-                # Önceki yanıtlar - dinamik HTML olarak göster
-                previous_responses = gr.HTML()
+                prev_accordion_2 = gr.Accordion("📄 Yanıt #2", open=False, visible=False)
+                with prev_accordion_2:
+                    prev_text_2 = gr.Textbox(visible=False, interactive=False, lines=8, show_label=False, max_lines=8)
+                    prev_copy_btn_2 = gr.Button("📋 Seç ve Kopyala #2", variant="secondary", visible=False)
                 
-                # Önceki yanıtlar için Gradio akordiyonları (maksimum 4 önceki yanıt)
-                with gr.Column():
-                    prev_accordion_1 = gr.Accordion("📄 Yanıt #1", open=False, visible=False)
-                    with prev_accordion_1:
-                        prev_text_1 = gr.Textbox(visible=False, interactive=False, lines=8, show_label=False, max_lines=8)
-                        prev_copy_btn_1 = gr.Button("📋 Seç ve Kopyala #1", variant="secondary", visible=False)
-                    
-                    prev_accordion_2 = gr.Accordion("📄 Yanıt #2", open=False, visible=False)
-                    with prev_accordion_2:
-                        prev_text_2 = gr.Textbox(visible=False, interactive=False, lines=8, show_label=False, max_lines=8)
-                        prev_copy_btn_2 = gr.Button("📋 Seç ve Kopyala #2", variant="secondary", visible=False)
-                    
-                    prev_accordion_3 = gr.Accordion("📄 Yanıt #3", open=False, visible=False)
-                    with prev_accordion_3:
-                        prev_text_3 = gr.Textbox(visible=False, interactive=False, lines=8, show_label=False, max_lines=8)
-                        prev_copy_btn_3 = gr.Button("📋 Seç ve Kopyala #3", variant="secondary", visible=False)
-                    
-                    prev_accordion_4 = gr.Accordion("📄 Yanıt #4", open=False, visible=False)
-                    with prev_accordion_4:
-                        prev_text_4 = gr.Textbox(visible=False, interactive=False, lines=8, show_label=False, max_lines=8)
-                        prev_copy_btn_4 = gr.Button("📋 Seç ve Kopyala #4", variant="secondary", visible=False)
+                prev_accordion_3 = gr.Accordion("📄 Yanıt #3", open=False, visible=False)
+                with prev_accordion_3:
+                    prev_text_3 = gr.Textbox(visible=False, interactive=False, lines=8, show_label=False, max_lines=8)
+                    prev_copy_btn_3 = gr.Button("📋 Seç ve Kopyala #3", variant="secondary", visible=False)
+                
+                prev_accordion_4 = gr.Accordion("📄 Yanıt #4", open=False, visible=False)
+                with prev_accordion_4:
+                    prev_text_4 = gr.Textbox(visible=False, interactive=False, lines=8, show_label=False, max_lines=8)
+                    prev_copy_btn_4 = gr.Button("📋 Seç ve Kopyala #4", variant="secondary", visible=False)
     
     # Event handlers
-    send_code_btn.click(
-        fn=send_login_code,
-        inputs=[email_input],
-        outputs=[login_title, login_subtitle, login_instruction, email_input, send_code_btn, 
-                code_title, code_subtitle, code_input, verify_btn, code_buttons]
-    )
-    
-    verify_btn.click(
-        fn=verify_login_code,
-        inputs=[email_input, code_input],
-        outputs=[code_title, code_subtitle, code_input, verify_btn, code_buttons, 
-                email_input, user_info_row, user_info_html, logout_btn, main_app_area, admin_panel, main_banner]
-    )
-    
-    logout_btn.click(
-        fn=logout_user,
-        inputs=[],
-        outputs=[login_title, login_subtitle, login_instruction, email_input, send_code_btn, 
-                code_title, code_subtitle, code_input, verify_btn, code_buttons, 
-                user_info_row, user_info_html, logout_btn, main_app_area, admin_panel, main_banner]
-    )
-    
-    # Tekrar gönder butonu
-    resend_btn.click(
-        fn=lambda email: send_login_code(email),
-        inputs=[email_input],
-        outputs=[login_title, login_subtitle, login_instruction, email_input, send_code_btn, 
-                code_title, code_subtitle, code_input, verify_btn, code_buttons]
-    )
-    
-    # Geri dön butonu
-    back_btn.click(
-        fn=lambda: (
-            gr.update(visible=True),  # login_title
-            gr.update(visible=True),  # login_subtitle
-            gr.update(visible=True),  # login_instruction
-            gr.update(),  # email_input
-            gr.update(visible=True),  # send_code_btn
-            gr.update(visible=False),  # code_title
-            gr.update(visible=False),  # code_subtitle
-            gr.update(visible=False),  # code_input
-            gr.update(visible=False),  # verify_btn
-            gr.update(visible=False)  # code_buttons
-        ),
-        inputs=[],
-        outputs=[login_title, login_subtitle, login_instruction, email_input, send_code_btn, 
-                code_title, code_subtitle, code_input, verify_btn, code_buttons]
-    )
-    
-    # Ana uygulama event handlers
     generate_btn.click(
         fn=generate_response_handler,
         inputs=[original_text, custom_input, model, temperature, max_tokens],
@@ -923,7 +608,7 @@ with gr.Blocks(
                 prev_copy_btn_1, prev_copy_btn_2, prev_copy_btn_3, prev_copy_btn_4]
     )
     
-    # Ana Seç ve Kopyala butonu event handler
+    # Ana Seç ve Kopyala butonu event handler - önceki yanıtlar butonları gibi
     main_copy_btn.click(
         fn=lambda: copy_previous_response_handler(app_state['current_response']['id'] if app_state['current_response'] and app_state['current_response'].get('id') else None),
         inputs=[],
@@ -985,19 +670,19 @@ with gr.Blocks(
                 prev_copy_btn_1, prev_copy_btn_2, prev_copy_btn_3, prev_copy_btn_4]
     )
     
-    # Admin paneli event handlers
-    refresh_admin_btn.click(
-        fn=refresh_admin_panel_handler,
-        inputs=[],
-        outputs=[admin_stats_html]
-    )
-    
-    # Admin paneli görünürlüğünü kontrol et
+    # Admin paneli event handlers - sadece admin kullanıcılarda
+    if app_state['is_admin']:
+        refresh_admin_btn.click(
+            fn=refresh_admin_panel_handler,
+            inputs=[],
+            outputs=[admin_panel]
+        )
+
 # Launch the app
 if __name__ == "__main__":
     demo.launch(
         server_name="0.0.0.0",
-        server_port=8500,
+        server_port=8504,
         share=False,
         show_error=True
     )
