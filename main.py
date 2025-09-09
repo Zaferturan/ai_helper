@@ -92,6 +92,14 @@ async def send_email_and_wait_for_verification(request: dict):
     except Exception as e:
         return {"success": False, "message": f"Hata: {str(e)}"}
 
+@app.get("/auth")
+async def auth_redirect_legacy(token: str = Query(None)):
+    """Legacy /auth endpoint - redirect to /api/v1/auth"""
+    if token:
+        return RedirectResponse(url=f"/api/v1/auth?token={token}", status_code=302)
+    else:
+        return RedirectResponse(url=f"{PRODUCTION_URL}/?error=no_token", status_code=302)
+
 @app.get("/api/v1/auth")
 async def auth_redirect(token: str = Query(None)):
     """
