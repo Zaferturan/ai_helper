@@ -89,6 +89,7 @@ def check_auth_token():
             # Session'ı kullanarak giriş yap
             app_state['authenticated'] = True
             app_state['user_email'] = latest_session.get('email')
+            app_state['access_token'] = latest_session.get('jwt_token')
             app_state['is_admin'] = check_admin_status()
             
             # Session'ı temizle (tek kullanımlık)
@@ -99,18 +100,14 @@ def check_auth_token():
             print("Otomatik giriş başarılı!")
             
             # UI'yi ana uygulamaya geçir
-            user_profile_html = f"""
-            <div style="text-align: center; padding: 1rem; background: #e8f5e8; border-radius: 8px;">
-                <h3 style="color: #2e7d32; margin-bottom: 0.5rem;">🎉 Otomatik Giriş Başarılı!</h3>
-                <p style="color: #666; margin: 0;">Hoş geldiniz: {latest_session.get('email', 'Kullanıcı')}</p>
-            </div>
-            """
+            # Session'dan kullanıcı bilgilerini al
+            user_profile_html = f"<h3>👤 {latest_session.get('full_name', 'İsimsiz')} - {latest_session.get('department', 'Departman Belirtilmemiş')}</h3>"
             
             return (
                 gr.update(visible=False),  # login_title
                 gr.update(visible=False),  # login_subtitle
                 gr.update(visible=False),  # login_instruction
-                gr.update(),  # email_input
+                gr.update(visible=False),  # email_input
                 gr.update(visible=False),  # send_code_btn
                 gr.update(visible=False),  # code_title
                 gr.update(visible=False),  # code_subtitle
@@ -120,17 +117,18 @@ def check_auth_token():
                 gr.update(visible=True),   # user_info_row
                 gr.update(visible=True, value=user_profile_html),  # user_info_html
                 gr.update(visible=True),   # logout_btn
-                gr.update(visible=True),   # force_show_btn
+                gr.update(visible=False),  # force_show_btn
                 gr.update(visible=True),   # main_app_area
-                gr.update(visible=True)    # admin_panel
+                gr.update(visible=True),   # admin_panel
+                gr.update(visible=True)    # main_banner
             )
         else:
             print("Otomatik giriş bulunamadı")
-            return tuple([gr.update() for _ in range(16)])
+            return tuple([gr.update() for _ in range(17)])
             
     except Exception as e:
         print(f"Otomatik giriş hatası: {e}")
-        return tuple([gr.update() for _ in range(16)])
+        return tuple([gr.update() for _ in range(17)])
         
         if auth_token:
             # JWT token'ı backend'e gönder ve doğrula
@@ -1401,7 +1399,7 @@ with gr.Blocks(
         outputs=[
             login_title, login_subtitle, login_instruction, email_input, send_code_btn,
             code_title, code_subtitle, code_input, verify_btn, code_buttons,
-            user_info_row, user_info_html, logout_btn, force_show_btn, main_app_area, admin_panel
+            user_info_row, user_info_html, logout_btn, force_show_btn, main_app_area, admin_panel, main_banner
         ]
     )
 
