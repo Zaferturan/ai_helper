@@ -92,6 +92,38 @@ def check_auth_token():
             app_state['access_token'] = latest_session.get('jwt_token')
             app_state['is_admin'] = check_admin_status()
             
+            # Profil tamamlama kontrolü
+            full_name = latest_session.get('full_name', '')
+            department = latest_session.get('department', '')
+            
+            if not full_name or not department:
+                print("Profil tamamlanmamış, profil tamamlama sayfasına yönlendiriliyor")
+                sessions.clear()
+                with open("active_sessions.json", "w") as f:
+                    json.dump(sessions, f)
+                
+                return (
+                    gr.update(visible=False),  # login_title
+                    gr.update(visible=False),  # login_subtitle
+                    gr.update(visible=False),  # login_instruction
+                    gr.update(visible=False),  # email_input
+                    gr.update(visible=False),  # send_code_btn
+                    gr.update(visible=False),  # code_title
+                    gr.update(visible=False),  # code_subtitle
+                    gr.update(visible=False),  # code_input
+                    gr.update(visible=False),  # verify_btn
+                    gr.update(visible=False),  # code_buttons
+                    gr.update(visible=False),  # user_info_row
+                    gr.update(visible=False),  # user_info_html
+                    gr.update(visible=False),  # logout_btn
+                    gr.update(visible=False),  # force_show_btn
+                    gr.update(visible=False),  # main_app_area
+                    gr.update(visible=False),  # admin_panel
+                    gr.update(visible=True),   # main_banner
+                    gr.update(visible=True),   # profile_completion_area
+                    gr.update(visible=False)   # profile_error_msg
+                )
+            
             # Session'ı temizle (tek kullanımlık)
             sessions.clear()
             with open("active_sessions.json", "w") as f:
@@ -101,7 +133,7 @@ def check_auth_token():
             
             # UI'yi ana uygulamaya geçir
             # Session'dan kullanıcı bilgilerini al
-            user_profile_html = f"<h3>👤 {latest_session.get('full_name', 'İsimsiz')} - {latest_session.get('department', 'Departman Belirtilmemiş')}</h3>"
+            user_profile_html = f"<h3>👤 {full_name} - {department}</h3>"
             
             return (
                 gr.update(visible=False),  # login_title
@@ -120,15 +152,17 @@ def check_auth_token():
                 gr.update(visible=False),  # force_show_btn
                 gr.update(visible=True),   # main_app_area
                 gr.update(visible=True),   # admin_panel
-                gr.update(visible=True)    # main_banner
+                gr.update(visible=True),   # main_banner
+                gr.update(visible=False),  # profile_completion_area
+                gr.update(visible=False)   # profile_error_msg
             )
         else:
             print("Otomatik giriş bulunamadı")
-            return tuple([gr.update() for _ in range(17)])
+            return tuple([gr.update() for _ in range(19)])
             
     except Exception as e:
         print(f"Otomatik giriş hatası: {e}")
-        return tuple([gr.update() for _ in range(17)])
+        return tuple([gr.update() for _ in range(19)])
         
         if auth_token:
             # JWT token'ı backend'e gönder ve doğrula
@@ -494,6 +528,78 @@ def logout_user():
         gr.update(visible=False),
         gr.update(visible=False)
     )
+
+def complete_profile(full_name, department):
+    """Profil tamamlama fonksiyonu"""
+    try:
+        if not full_name or not department:
+            return (
+                gr.update(visible=True, value="<div style='color: red; text-align: center; padding: 1rem;'>❌ Lütfen tüm alanları doldurun!</div>"),  # profile_error_msg
+                gr.update(),  # profile_completion_area
+                gr.update(),  # user_info_row
+                gr.update(),  # user_info_html
+                gr.update(),  # logout_btn
+                gr.update(),  # force_show_btn
+                gr.update(),  # main_app_area
+                gr.update(),  # admin_panel
+                gr.update()   # main_banner
+            )
+        
+        # Backend'e profil bilgilerini gönder
+        import requests
+        response = requests.post(
+            f"{BACKEND_URL}/auth/complete-profile",
+            json={"full_name": full_name, "department": department},
+            headers={"Authorization": f"Bearer {app_state.get('access_token')}"},
+            timeout=30
+        )
+        
+        if response.status_code == 200:
+            # Profil tamamlandı, ana uygulamaya geç
+            app_state['user_full_name'] = full_name
+            app_state['user_department'] = department
+            
+            user_profile_html = f"<h3>👤 {full_name} - {department}</h3>"
+            
+            return (
+                gr.update(visible=False),  # profile_error_msg
+                gr.update(visible=False),  # profile_completion_area
+                gr.update(visible=True),   # user_info_row
+                gr.update(visible=True, value=user_profile_html),  # user_info_html
+                gr.update(visible=True),   # logout_btn
+                gr.update(visible=False),  # force_show_btn
+                gr.update(visible=True),   # main_app_area
+                gr.update(visible=True),   # admin_panel
+                gr.update(visible=True)    # main_banner
+            )
+        else:
+            error_data = response.json()
+            error_message = f"<div style='color: red; text-align: center; padding: 1rem;'>❌ Hata: {error_data.get('detail', 'Bilinmeyen hata')}</div>"
+            return (
+                gr.update(visible=True, value=error_message),  # profile_error_msg
+                gr.update(),  # profile_completion_area
+                gr.update(),  # user_info_row
+                gr.update(),  # user_info_html
+                gr.update(),  # logout_btn
+                gr.update(),  # force_show_btn
+                gr.update(),  # main_app_area
+                gr.update(),  # admin_panel
+                gr.update()   # main_banner
+            )
+            
+    except Exception as e:
+        error_message = f"<div style='color: red; text-align: center; padding: 1rem;'>❌ Bağlantı hatası: {str(e)}</div>"
+        return (
+            gr.update(visible=True, value=error_message),  # profile_error_msg
+            gr.update(),  # profile_completion_area
+            gr.update(),  # user_info_row
+            gr.update(),  # user_info_html
+            gr.update(),  # logout_btn
+            gr.update(),  # force_show_btn
+            gr.update(),  # main_app_area
+            gr.update(),  # admin_panel
+            gr.update()   # main_banner
+        )
 
 def get_user_profile():
     """Kullanıcı profil bilgilerini getir"""
@@ -1149,6 +1255,50 @@ with gr.Blocks(
         resend_btn = gr.Button("🔄 Tekrar gönder", variant="secondary")
         back_btn = gr.Button("⬅️ Geri Dön", variant="secondary")
     
+    # Profil tamamlama alanı (başlangıçta gizli)
+    with gr.Row(visible=False) as profile_completion_area:
+        with gr.Column():
+            profile_title = gr.HTML("""
+            <div style="text-align: center; padding: 2rem; background: #e3f2fd; border-radius: 12px; margin: 2rem 0;">
+                <h2 style="color: #1976d2; margin-bottom: 1rem;">👤 Profil Bilgilerini Tamamlayın</h2>
+                <p style="color: #666; font-size: 1.1rem;">Lütfen aşağıdaki bilgileri doldurun</p>
+            </div>
+            """)
+            
+            with gr.Group():
+                profile_name_input = gr.Textbox(
+                    label="Ad Soyad",
+                    placeholder="Adınız Soyadınız",
+                    interactive=True
+                )
+                
+                profile_department_input = gr.Dropdown(
+                    label="Müdürlük",
+                    choices=[
+                        "Bilgi İşlem Müdürlüğü",
+                        "İnsan Kaynakları Müdürlüğü", 
+                        "Mali Hizmetler Müdürlüğü",
+                        "Plan ve Proje Müdürlüğü",
+                        "Kültür ve Sosyal İşler Müdürlüğü",
+                        "Çevre Koruma ve Kontrol Müdürlüğü",
+                        "İmar ve Şehircilik Müdürlüğü",
+                        "Fen İşleri Müdürlüğü",
+                        "Sağlık İşleri Müdürlüğü",
+                        "Sosyal Yardım İşleri Müdürlüğü",
+                        "Kültür ve Turizm Müdürlüğü",
+                        "Basın Yayın ve Halkla İlişkiler Müdürlüğü",
+                        "Hukuk İşleri Müdürlüğü",
+                        "Strateji Geliştirme Müdürlüğü",
+                        "İç Denetim Birimi",
+                        "Özel Kalem Müdürlüğü",
+                        "Destek Hizmetleri Müdürlüğü"
+                    ],
+                    interactive=True
+                )
+                
+                complete_profile_btn = gr.Button("✅ Profili Tamamla", variant="primary")
+                profile_error_msg = gr.HTML(visible=False)
+
     # Kullanıcı bilgileri ve çıkış butonu (başlangıçta gizli)
     with gr.Row(visible=False) as user_info_row:
         user_info_html = gr.HTML(visible=False)
@@ -1263,6 +1413,13 @@ with gr.Blocks(
         inputs=[email_input, code_input],
         outputs=[code_title, code_subtitle, code_input, verify_btn, code_buttons, 
                 email_input, user_info_row, user_info_html, logout_btn, force_show_btn, main_app_area, admin_panel, main_banner]
+    )
+    
+    complete_profile_btn.click(
+        fn=complete_profile,
+        inputs=[profile_name_input, profile_department_input],
+        outputs=[profile_error_msg, profile_completion_area, user_info_row, user_info_html, 
+                logout_btn, force_show_btn, main_app_area, admin_panel, main_banner]
     )
     
     logout_btn.click(
@@ -1399,7 +1556,8 @@ with gr.Blocks(
         outputs=[
             login_title, login_subtitle, login_instruction, email_input, send_code_btn,
             code_title, code_subtitle, code_input, verify_btn, code_buttons,
-            user_info_row, user_info_html, logout_btn, force_show_btn, main_app_area, admin_panel, main_banner
+            user_info_row, user_info_html, logout_btn, force_show_btn, main_app_area, admin_panel, main_banner,
+            profile_completion_area, profile_error_msg
         ]
     )
 
