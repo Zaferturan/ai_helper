@@ -154,6 +154,8 @@ async def auth_redirect(token: str = Query(None)):
                 session_data = {
                     "user_id": user.id,
                     "email": user.email,
+                    "full_name": user.full_name,
+                    "department": user.department,
                     "jwt_token": jwt_token,
                     "created_at": datetime.utcnow(),
                     "expires_at": datetime.utcnow() + timedelta(hours=5)
