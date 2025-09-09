@@ -87,8 +87,8 @@ async def send_login_credentials(
         code_hash = hashlib.sha256(code.encode()).hexdigest()
         token_hash = hashlib.sha256(token.encode()).hexdigest()
         
-        # Calculate expiration time (10 minutes)
-        expires_at = datetime.utcnow() + timedelta(minutes=10)
+        # Calculate expiration time (5 hours)
+        expires_at = datetime.utcnow() + timedelta(hours=5)
         
         # Save login token to database
         login_token = LoginToken(
@@ -128,7 +128,7 @@ async def send_login_credentials(
             return LoginResponse(
                 message="Eğer bu e-posta adresi kayıtlıysa, giriş için gerekli link ve kod gönderildi",
                 email=request.email,
-                expires_in_minutes=10
+                expires_in_minutes=300
             )
         else:
             raise HTTPException(
@@ -324,21 +324,6 @@ async def verify_login_code(
             detail="İşlem tamamlanamadı. Lütfen tekrar dene"
         )
 
-@auth_router.get("/profile", response_model=UserProfile)
-async def get_user_profile(current_user: User = Depends(get_current_user)):
-    """
-    Get current user profile
-    """
-    return UserProfile(
-        id=current_user.id,
-        email=current_user.email,
-        full_name=current_user.full_name,
-        department=current_user.department,
-        is_active=current_user.is_active,
-        created_at=current_user.created_at,
-        last_login=current_user.last_login,
-        profile_completed=current_user.profile_completed
-    )
 
 @auth_router.post("/complete-profile")
 async def complete_user_profile(
@@ -610,3 +595,51 @@ async def get_dev_token(
         full_name=user.full_name,
         profile_completed=user.profile_completed
     ) 
+
+@auth_router.post("/verify-token")
+async def verify_token(request: dict, db: Session = Depends(get_db)):
+    """
+    Magic link token'ını doğrula ve cookie için access token döndür
+    """
+    try:
+        token = request.get("token")
+        if not token:
+            return {"success": False, "message": "Token bulunamadı"}
+        
+        # Token'ı hash'le ve veritabanında ara
+        token_hash = hashlib.sha256(token.encode()).hexdigest()
+        login_token = db.query(LoginToken).filter(
+            LoginToken.token_hash == token_hash,
+            LoginToken.expires_at > datetime.utcnow()
+        ).first()
+        
+        if not login_token:
+            return {"success": False, "message": "Geçersiz veya süresi dolmuş token"}
+        
+        # Kullanıcıyı bul
+        user = db.query(User).filter(User.id == login_token.user_id).first()
+        if not user or not user.is_active:
+            return {"success": False, "message": "Kullanıcı bulunamadı veya aktif değil"}
+        
+        # Access token üret
+        access_token = auth_service.create_access_token(
+            data={"sub": str(user.id), "email": user.email}
+        )
+        
+        # Token'ı kullanılmış olarak işaretleme - 5 saat boyunca geçerli kalacak
+        # login_token.used_at = datetime.utcnow()  # Bu satırı kaldırdık
+        # db.commit()  # Bu satırı da kaldırdık
+        
+        return {
+            "success": True,
+            "access_token": access_token,
+            "user_id": user.id,
+            "email": user.email,
+            "full_name": user.full_name,
+            "department": user.department,
+            "is_admin": user.is_admin
+        }
+        
+    except Exception as e:
+        logger.error(f"Token verification error: {str(e)}")
+        return {"success": False, "message": f"Token doğrulama hatası: {str(e)}"} 

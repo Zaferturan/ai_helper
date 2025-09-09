@@ -2,6 +2,7 @@ import gradio as gr
 import requests
 import json
 from datetime import datetime
+import urllib.parse
 
 # Backend URL
 BACKEND_URL = "http://localhost:8000/api/v1"
@@ -24,8 +25,289 @@ app_state = {
     'has_copied': False  # Kopyalama durumu - eski koddan
 }
 
+
+def force_show_main_app():
+    """LocalStorage'dan auth bilgilerini al ve ana uygulamayı göster"""
+    try:
+        # State'i güncelle (localStorage'dan gelecek)
+        app_state['authenticated'] = True
+        app_state['access_token'] = "from_localStorage"  # JavaScript'ten gelecek
+        app_state['user_email'] = "from_localStorage"    # JavaScript'ten gelecek
+        app_state['is_admin'] = check_admin_status()
+        
+        user_profile_html = "<h3>🎉 Giriş Başarılı! Hoş geldiniz.</h3>"
+        
+        return (
+            gr.update(visible=False),  # login_title
+            gr.update(visible=False),  # login_subtitle
+            gr.update(visible=False),  # login_instruction
+            gr.update(visible=False),  # email_input
+            gr.update(visible=False),  # send_code_btn
+            gr.update(visible=False),  # code_title
+            gr.update(visible=False),  # code_subtitle
+            gr.update(visible=False),  # code_input
+            gr.update(visible=False),  # verify_btn
+            gr.update(visible=False),  # code_buttons
+            gr.update(visible=True),   # user_info_row
+            gr.update(visible=True, value=user_profile_html),  # user_info_html
+            gr.update(visible=True),   # logout_btn
+            gr.update(visible=False),  # force_show_btn
+            gr.update(visible=True),   # main_app_area
+            gr.update(visible=app_state['is_admin']),  # admin_panel
+            gr.update(visible=True)    # main_banner
+        )
+    except Exception as e:
+        print(f"Force show error: {e}")
+        return tuple([gr.update() for _ in range(16)])
+
+
+def check_auth_token():
+    """Backend'den session kontrolü yap ve otomatik giriş yap"""
+    try:
+        import requests
+        import json
+        
+        # Backend'den aktif session'ları al
+        try:
+            with open("active_sessions.json", "r") as f:
+                sessions = json.load(f)
+        except:
+            sessions = {}
+        
+        # En son session'ı bul
+        latest_session = None
+        latest_time = None
+        
+        for user_id, session_data in sessions.items():
+            if latest_time is None or session_data.get('created_at', '') > latest_time:
+                latest_session = session_data
+                latest_time = session_data.get('created_at', '')
+        
+        if latest_session:
+            print(f"Otomatik giriş bulundu: {latest_session.get('email')}")
+            
+            # Session'ı kullanarak giriş yap
+            app_state['authenticated'] = True
+            app_state['user_email'] = latest_session.get('email')
+            app_state['is_admin'] = check_admin_status()
+            
+            # Session'ı temizle (tek kullanımlık)
+            sessions.clear()
+            with open("active_sessions.json", "w") as f:
+                json.dump(sessions, f)
+            
+            print("Otomatik giriş başarılı!")
+            
+            # UI'yi ana uygulamaya geçir
+            user_profile_html = f"""
+            <div style="text-align: center; padding: 1rem; background: #e8f5e8; border-radius: 8px;">
+                <h3 style="color: #2e7d32; margin-bottom: 0.5rem;">🎉 Otomatik Giriş Başarılı!</h3>
+                <p style="color: #666; margin: 0;">Hoş geldiniz: {latest_session.get('email', 'Kullanıcı')}</p>
+            </div>
+            """
+            
+            return (
+                gr.update(visible=False),  # login_title
+                gr.update(visible=False),  # login_subtitle
+                gr.update(visible=False),  # login_instruction
+                gr.update(),  # email_input
+                gr.update(visible=False),  # send_code_btn
+                gr.update(visible=False),  # code_title
+                gr.update(visible=False),  # code_subtitle
+                gr.update(visible=False),  # code_input
+                gr.update(visible=False),  # verify_btn
+                gr.update(visible=False),  # code_buttons
+                gr.update(visible=True),   # user_info_row
+                gr.update(visible=True, value=user_profile_html),  # user_info_html
+                gr.update(visible=True),   # logout_btn
+                gr.update(visible=True),   # force_show_btn
+                gr.update(visible=True),   # main_app_area
+                gr.update(visible=True)    # admin_panel
+            )
+        else:
+            print("Otomatik giriş bulunamadı")
+            return tuple([gr.update() for _ in range(16)])
+            
+    except Exception as e:
+        print(f"Otomatik giriş hatası: {e}")
+        return tuple([gr.update() for _ in range(16)])
+        
+        if auth_token:
+            # JWT token'ı backend'e gönder ve doğrula
+            response = requests.post(f"{BACKEND_URL}/auth/verify-token", 
+                                   json={"token": auth_token})
+            if response.status_code == 200:
+                data = response.json()
+                if data.get("success"):
+                    # Giriş başarılı, state'i güncelle
+                    app_state['authenticated'] = True
+                    app_state['access_token'] = auth_token
+                    app_state['user_email'] = data.get("email")
+                    app_state['is_admin'] = data.get("is_admin", False)
+                    print(f"Magic link ile giriş başarılı: {data.get('email')}")
+    except Exception as e:
+        print(f"Auth token kontrol hatası: {e}")
+
+
+def handle_complete_login_flow(email_or_code, current_step="email"):
+    """
+    Tek fonksiyonla tüm login akışını yönet
+    UI geçişi yok, sadece mesaj değişimi
+    """
+    try:
+        if current_step == "email":
+            # Email gönderme aşaması
+            if not email_or_code or not email_or_code.strip():
+                return (
+                    gr.update(visible=True),  # login_title
+                    gr.update(visible=True),  # login_subtitle
+                    gr.update(visible=True),  # login_instruction
+                    gr.update(),  # email_input
+                    gr.update(),  # send_code_btn
+                    gr.update(visible=False),  # code_title
+                    gr.update(visible=False),  # code_subtitle
+                    gr.update(visible=False),  # code_input
+                    gr.update(visible=False),  # verify_btn
+                    gr.update(visible=False)  # code_buttons
+                )
+
+            # Backend'e email gönder
+            response = requests.post(
+                f"{BACKEND_URL}/auth/send",
+                json={"email": email_or_code},
+                timeout=30
+            )
+
+            if response.status_code == 200:
+                data = response.json()
+                if data.get("success"):
+                    app_state['login_email'] = email_or_code
+                    return (
+                        gr.update(visible=False),  # login_title
+                        gr.update(visible=False),  # login_subtitle
+                        gr.update(visible=False),  # login_instruction
+                        gr.update(),  # email_input
+                        gr.update(visible=False),  # send_code_btn
+                        gr.update(visible=True),  # code_title
+                        gr.update(visible=True),  # code_subtitle
+                        gr.update(visible=True),  # code_input
+                        gr.update(visible=True),  # verify_btn
+                        gr.update(visible=True)  # code_buttons
+                    )
+                else:
+                    return (
+                        gr.update(visible=True),  # login_title
+                        gr.update(visible=True),  # login_subtitle
+                        gr.update(visible=True),  # login_instruction
+                        gr.update(),  # email_input
+                        gr.update(),  # send_code_btn
+                        gr.update(visible=False),  # code_title
+                        gr.update(visible=False),  # code_subtitle
+                        gr.update(visible=False),  # code_input
+                        gr.update(visible=False),  # verify_btn
+                        gr.update(visible=False)  # code_buttons
+                    )
+            else:
+                return (
+                    gr.update(visible=True),  # login_title
+                    gr.update(visible=True),  # login_subtitle
+                    gr.update(visible=True),  # login_instruction
+                    gr.update(),  # email_input
+                    gr.update(),  # send_code_btn
+                    gr.update(visible=False),  # code_title
+                    gr.update(visible=False),  # code_subtitle
+                    gr.update(visible=False),  # code_input
+                    gr.update(visible=False),  # verify_btn
+                    gr.update(visible=False)  # code_buttons
+                )
+
+        elif current_step == "code":
+            # Kod doğrulama aşaması
+            if not email_or_code or len(email_or_code) != 6:
+                return (
+                    gr.update(),  # code_title
+                    gr.update(),  # code_subtitle
+                    gr.update(),  # code_input
+                    gr.update(),  # verify_btn
+                    gr.update(),  # code_buttons
+                    gr.update(),  # email_input
+                    gr.update(visible=False),  # user_info_row
+                    gr.update(visible=False),  # user_info_html
+                    gr.update(visible=False),  # logout_btn
+                    gr.update(visible=False),  # main_app_area
+                    gr.update(visible=False),  # admin_panel
+                    gr.update(visible=False)  # main_banner
+                )
+
+            # Backend'de kod doğrula
+            response = requests.post(
+                f"{BACKEND_URL}/auth/verify-code",
+                json={"email": app_state.get('login_email'), "code": email_or_code},
+                timeout=30
+            )
+
+            if response.status_code == 200:
+                data = response.json()
+                # Giriş başarılı - state'i güncelle
+                app_state['authenticated'] = True
+                app_state['access_token'] = data.get("access_token")
+                app_state['user_email'] = data.get("email")
+                app_state['is_admin'] = check_admin_status()
+
+                user_profile_html = f"""
+                <div style="text-align: center; padding: 1rem; background: #e8f5e8; border-radius: 8px;">
+                    <h3 style="color: #2e7d32; margin-bottom: 0.5rem;">🎉 Giriş Başarılı!</h3>
+                    <p style="color: #666; margin: 0;">Hoş geldiniz: {data.get('email', 'Kullanıcı')}</p>
+                </div>
+                """
+
+                return (
+                    gr.update(),  # code_title
+                    gr.update(),  # code_subtitle
+                    gr.update(),  # code_input
+                    gr.update(),  # verify_btn
+                    gr.update(),  # code_buttons
+                    gr.update(),  # email_input
+                    gr.update(visible=True),   # user_info_row
+                    gr.update(visible=True, value=user_profile_html),  # user_info_html
+                    gr.update(visible=True),   # logout_btn
+                    gr.update(visible=False),  # force_show_btn
+                    gr.update(visible=True),   # main_app_area
+                    gr.update(visible=app_state['is_admin']),  # admin_panel
+                    gr.update(visible=True)    # main_banner
+                )
+            else:
+                return (
+                    gr.update(),  # code_title
+                    gr.update(),  # code_subtitle
+                    gr.update(value=""),  # code_input
+                    gr.update(),  # verify_btn
+                    gr.update(),  # code_buttons
+                    gr.update(),  # email_input
+                    gr.update(visible=False),  # user_info_row
+                    gr.update(visible=False),  # user_info_html
+                    gr.update(visible=False),  # logout_btn
+                    gr.update(visible=False),  # main_app_area
+                    gr.update(visible=False),  # admin_panel
+                    gr.update(visible=False)  # main_banner
+                )
+
+    except Exception as e:
+        return (
+            gr.update(visible=True),  # login_title
+            gr.update(visible=True),  # login_subtitle
+            gr.update(visible=True),  # login_instruction
+            gr.update(),  # email_input
+            gr.update(),  # send_code_btn
+            gr.update(visible=False),  # code_title
+            gr.update(visible=False),  # code_subtitle
+            gr.update(visible=False),  # code_input
+            gr.update(visible=False),  # verify_btn
+            gr.update(visible=False)  # code_buttons
+        )
+
 def send_login_code(email):
-    """E-posta ile giriş kodu gönder"""
+    """E-posta ile giriş kodu gönder - mevcut arayüzü koruyarak"""
     try:
         if not email or not email.endswith("@nilufer.bel.tr"):
             return (
@@ -48,6 +330,8 @@ def send_login_code(email):
         )
         
         if response.status_code == 200:
+            data = response.json()
+            print(f"Email gönderildi, response: {data}")
             app_state['login_email'] = email
             app_state['login_sent'] = True
             return (
@@ -63,7 +347,6 @@ def send_login_code(email):
                 gr.update(visible=True)  # code_buttons
             )
         else:
-            error_data = response.json()
             return (
                 gr.update(visible=True),  # login_title
                 gr.update(visible=True),  # login_subtitle
@@ -91,7 +374,7 @@ def send_login_code(email):
         )
 
 def verify_login_code(email, code):
-    """6 haneli kod ile giriş doğrula"""
+    """6 haneli kod ile giriş doğrula - mevcut arayüzü koruyarak"""
     try:
         if not code or len(code) != 6:
             return (
@@ -137,12 +420,13 @@ def verify_login_code(email, code):
                 gr.update(visible=False),  # verify_btn
                 gr.update(visible=False),  # code_buttons
                 gr.update(visible=False),  # email_input
-                gr.update(visible=True),  # user_info_row
+                gr.update(visible=True),   # user_info_row
                 gr.update(visible=True, value=user_profile_html),  # user_info_html
-                gr.update(visible=True),  # logout_btn
-                gr.update(visible=True),  # main_app_area
+                gr.update(visible=True),   # logout_btn
+                gr.update(visible=False),  # force_show_btn
+                gr.update(visible=True),   # main_app_area
                 gr.update(visible=app_state['is_admin']),  # admin_panel
-                gr.update(visible=True)  # main_banner
+                gr.update(visible=True)    # main_banner
             )
         else:
             error_data = response.json()
@@ -156,6 +440,7 @@ def verify_login_code(email, code):
                 gr.update(visible=False),  # user_info_row
                 gr.update(visible=False),  # user_info_html
                 gr.update(visible=False),  # logout_btn
+                gr.update(visible=False),  # force_show_btn
                 gr.update(visible=False),  # main_app_area
                 gr.update(visible=False),  # admin_panel
                 gr.update(visible=False)  # main_banner
@@ -171,46 +456,45 @@ def verify_login_code(email, code):
             gr.update(visible=False),  # user_info_row
             gr.update(visible=False),  # user_info_html
             gr.update(visible=False),  # logout_btn
+            gr.update(visible=False),  # force_show_btn
             gr.update(visible=False),  # main_app_area
             gr.update(visible=False),  # admin_panel
             gr.update(visible=False)  # main_banner
         )
 
 def logout_user():
-    """Kullanıcıyı çıkış yap"""
-    # Tüm state'i sıfırla
-    app_state['authenticated'] = False
-    app_state['access_token'] = None
-    app_state['user_email'] = None
-    app_state['login_email'] = None
-    app_state['login_sent'] = False
-    app_state['is_admin'] = False
-    app_state['show_admin_panel'] = False
-    app_state['history'] = []
-    app_state['current_response'] = None
-    app_state['current_request_id'] = None
-    app_state['response_count'] = 0
-    app_state['state'] = 'draft'
-    app_state['yanit_sayisi'] = 0
-    app_state['has_copied'] = False
+    """Logout - localStorage temizle"""
+    # Server state temizle
+    for key in app_state:
+        if key in ['authenticated', 'access_token', 'user_email', 'is_admin']:
+            app_state[key] = False if key == 'authenticated' or key == 'is_admin' else None
+    
+    # JavaScript ile localStorage temizle (sayfa yüklendiğinde çalışacak)
+    logout_html = """
+    <script>
+    localStorage.clear();
+    setTimeout(() => location.reload(), 100);
+    </script>
+    """
     
     return (
-        gr.update(visible=True),  # login_title
-        gr.update(visible=True),  # login_subtitle
-        gr.update(visible=True),  # login_instruction
-        gr.update(value=""),  # email_input
-        gr.update(visible=True),  # send_code_btn
-        gr.update(visible=False),  # code_title
-        gr.update(visible=False),  # code_subtitle
-        gr.update(visible=False),  # code_input
-        gr.update(visible=False),  # verify_btn
-        gr.update(visible=False),  # code_buttons
-        gr.update(visible=False),  # user_info_row
-        gr.update(visible=False),  # user_info_html
-        gr.update(visible=False),  # logout_btn
-        gr.update(visible=False),  # main_app_area
-        gr.update(visible=False),  # admin_panel
-        gr.update(visible=False)  # main_banner
+        gr.update(visible=True),   # login ekranını göster
+        gr.update(visible=True),
+        gr.update(visible=True),
+        gr.update(value=""),       # email_input temizle
+        gr.update(visible=True),
+        gr.update(visible=False),  # code ekranını gizle
+        gr.update(visible=False),
+        gr.update(visible=False),
+        gr.update(visible=False),
+        gr.update(visible=False),
+        gr.update(visible=False),  # user info gizle
+        gr.update(visible=False, value=logout_html),  # logout script çalıştır
+        gr.update(visible=False),
+        gr.update(visible=False),  # force_show_btn gizle
+        gr.update(visible=False),  # main app gizle
+        gr.update(visible=False),
+        gr.update(visible=False)
     )
 
 def get_user_profile():
@@ -666,35 +950,140 @@ with gr.Blocks(
     """
 ) as demo:
     
-    # Ana banner - sadece giriş yapıldıktan sonra görünür
-    main_banner = gr.HTML("""
+    
+    
+    # Ana banner - JavaScript auth handler ile
+    main_banner = gr.HTML(f"""
     <div style="text-align: center; padding: 2rem 0; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border-radius: 12px; margin-bottom: 2rem;">
         <h1 style="margin: 0; font-size: 2.5rem;">🤖 AI Helper</h1>
         <p style="margin: 0.5rem 0 0 0; font-size: 1.2rem; opacity: 0.9;">Nilüfer Belediyesi - Yapay Zeka Destekli Yanıt Üretim Sistemi</p>
     </div>
     
     <script>
-    function copyToClipboard(text) {
-        navigator.clipboard.writeText(text).then(function() {
+    function handleAuthFromUrl() {{
+        console.log('Auth URL handler başlatıldı');
+        
+        const urlParams = new URLSearchParams(window.location.search);
+        const authToken = urlParams.get('auth_token');
+        const userEmail = urlParams.get('user_email');
+        const userName = urlParams.get('user_name');
+        const loginSuccess = urlParams.get('login_success');
+        const error = urlParams.get('error');
+        
+        // Error handling
+        if (error) {{
+            let message = 'Giriş hatası';
+            if (error === 'invalid_token') message = 'Geçersiz token';
+            if (error === 'no_token') message = 'Token bulunamadı';
+            if (error === 'auth_failed') message = 'Kimlik doğrulama başarısız';
+            
+            alert(message);
+            window.history.replaceState({{}}, document.title, '/');
+            return;
+        }}
+        
+        // Başarılı giriş - Magic Link ile
+        if (loginSuccess === 'true' && authToken && userEmail) {{
+            console.log('Magic link ile başarılı giriş tespit edildi:', userEmail);
+            console.log('Auth token:', authToken);
+            console.log('User email:', userEmail);
+            
+            // LocalStorage'a kaydet
+            localStorage.setItem('auth_token', authToken);
+            localStorage.setItem('user_email', userEmail);
+            localStorage.setItem('user_name', userName || '');
+            localStorage.setItem('authenticated', 'true');
+            localStorage.setItem('login_time', Date.now().toString());
+            
+            // URL'i temizle
+            window.history.replaceState({{}}, document.title, '/');
+            
+            // Backend'e token doğrulama isteği gönder
+            fetch('/api/v1/auth/verify-token', {{
+                method: 'POST',
+                headers: {{
+                    'Content-Type': 'application/json',
+                }},
+                body: JSON.stringify({{ token: authToken }})
+            }})
+            .then(response => response.json())
+            .then(data => {{
+                if (data.success) {{
+                    console.log('Token backend\'de doğrulandı');
+                    // Force show main app
+                    setTimeout(() => {{
+                        triggerMainApp();
+                    }}, 500);
+                }} else {{
+                    console.error('Token doğrulama başarısız:', data.message);
+                    alert('Token doğrulama başarısız');
+                }}
+            }})
+            .catch(error => {{
+                console.error('Token doğrulama hatası:', error);
+                alert('Token doğrulama hatası');
+            }});
+        }}
+    }}
+
+    function triggerMainApp() {{
+        // Force show button'ı bul ve tetikle
+        const forceBtn = document.querySelector('button[data-testid*="force"]') ||
+                        document.querySelector('button[aria-label*="Force"]') ||
+                        Array.from(document.querySelectorAll('button')).find(btn => 
+                            btn.textContent.includes('Force Show') || btn.textContent.includes('Ana Uygulama'));
+        
+        if (forceBtn) {{
+            console.log('Force show button bulundu, tetikleniyor');
+            forceBtn.click();
+        }} else {{
+            console.log('Force show button bulunamadı, sayfa yenileniyor');
+            setTimeout(() => location.reload(), 1000);
+        }}
+    }}
+
+    function checkExistingAuth() {{
+        const authenticated = localStorage.getItem('authenticated');
+        const authToken = localStorage.getItem('auth_token');
+        
+        if (authenticated === 'true' && authToken) {{
+            console.log('Mevcut auth bulundu');
+            setTimeout(() => triggerMainApp(), 1000);
+        }}
+    }}
+
+    function copyToClipboard(text) {{
+        navigator.clipboard.writeText(text).then(function() {{
             alert('✅ Yanıt kopyalandı! (Ctrl+V ile yapıştırabilirsiniz)');
-        }, function(err) {
+        }}, function(err) {{
             console.error('Kopyalama hatası: ', err);
             alert('❌ Kopyalama hatası!');
-        });
-    }
+        }});
+    }}
     
-    function copyPreviousResponse(responseId) {
+    function copyPreviousResponse(responseId) {{
         // Önceki yanıtı kopyala ve seç
-        navigator.clipboard.writeText('').then(function() {
+        navigator.clipboard.writeText('').then(function() {{
             // Gradio'ya önceki yanıtı kopyala sinyali gönder
             // Bu fonksiyon Gradio'nun event handler'ını tetikleyecek
             alert('✅ Önceki yanıt kopyalandı ve seçildi!');
-        }, function(err) {
+        }}, function(err) {{
             console.error('Kopyalama hatası: ', err);
             alert('❌ Kopyalama hatası!');
-        });
-    }
-    
+        }});
+    }}
+
+    // Sayfa yüklendiğinde çalıştır
+    document.addEventListener('DOMContentLoaded', function() {{
+        handleAuthFromUrl();
+        checkExistingAuth();
+    }});
+
+    // Global logout function
+    window.logoutUser = function() {{
+        localStorage.clear();
+        location.reload();
+    }};
     </script>
     """, visible=False)
     
@@ -766,6 +1155,7 @@ with gr.Blocks(
     with gr.Row(visible=False) as user_info_row:
         user_info_html = gr.HTML(visible=False)
         logout_btn = gr.Button("🚪 Çıkış Yap", variant="secondary", visible=False)
+        force_show_btn = gr.Button("🔓 Ana Uygulama", variant="primary", visible=False)
     
     # Ana uygulama alanı (başlangıçta gizli)
     main_app_area = gr.Column(visible=False)
@@ -874,7 +1264,7 @@ with gr.Blocks(
         fn=verify_login_code,
         inputs=[email_input, code_input],
         outputs=[code_title, code_subtitle, code_input, verify_btn, code_buttons, 
-                email_input, user_info_row, user_info_html, logout_btn, main_app_area, admin_panel, main_banner]
+                email_input, user_info_row, user_info_html, logout_btn, force_show_btn, main_app_area, admin_panel, main_banner]
     )
     
     logout_btn.click(
@@ -882,7 +1272,16 @@ with gr.Blocks(
         inputs=[],
         outputs=[login_title, login_subtitle, login_instruction, email_input, send_code_btn, 
                 code_title, code_subtitle, code_input, verify_btn, code_buttons, 
-                user_info_row, user_info_html, logout_btn, main_app_area, admin_panel, main_banner]
+                user_info_row, user_info_html, logout_btn, force_show_btn, main_app_area, admin_panel, main_banner]
+    )
+    
+    # Force show button
+    force_show_btn.click(
+        fn=force_show_main_app,
+        inputs=[],
+        outputs=[login_title, login_subtitle, login_instruction, email_input, send_code_btn, 
+                code_title, code_subtitle, code_input, verify_btn, code_buttons, 
+                user_info_row, user_info_html, logout_btn, force_show_btn, main_app_area, admin_panel, main_banner]
     )
     
     # Tekrar gönder butonu
@@ -992,7 +1391,20 @@ with gr.Blocks(
         outputs=[admin_stats_html]
     )
     
+    
     # Admin paneli görünürlüğünü kontrol et
+    
+    # Magic link kontrolü - sayfa yüklendiğinde auth_token'ı kontrol et
+    demo.load(
+        fn=check_auth_token,
+        inputs=[],
+        outputs=[
+            login_title, login_subtitle, login_instruction, email_input, send_code_btn,
+            code_title, code_subtitle, code_input, verify_btn, code_buttons,
+            user_info_row, user_info_html, logout_btn, force_show_btn, main_app_area, admin_panel
+        ]
+    )
+
 # Launch the app
 if __name__ == "__main__":
     demo.launch(
