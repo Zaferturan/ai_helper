@@ -293,7 +293,7 @@ class AuthService:
             remaining_minutes = int((expires_at - datetime.utcnow()).total_seconds() / 60)
             
             # Create login URL - frontend'e token parametresi ile yönlendir
-            login_url = f"{PRODUCTION_URL}?token={token}"
+            login_url = f"{PRODUCTION_URL}/auth?token={token}"
             
             # HTML version
             html_content = f"""
