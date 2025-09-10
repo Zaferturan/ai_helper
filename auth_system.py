@@ -196,16 +196,16 @@ class AuthService:
                         <h3 style="color: #2c5aa0; margin-top: 0;">Seçenek 1: Magic Link</h3>
                         <p>Aşağıdaki bağlantıya tıklayarak giriş yapın:</p>
                         <a href="{magic_link}" style="background: #2c5aa0; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; display: inline-block;">Giriş Yap</a>
-                        <p style="font-size: 12px; color: #666;">Bu bağlantı 10 dakika geçerlidir.</p>
+                        <p style="font-size: 12px; color: #666;">Bu bağlantı 5 saat geçerlidir.</p>
                     </div>
                     
                     <div style="background: #f8f9fa; padding: 20px; border-radius: 8px; margin: 20px 0;">
                         <h3 style="color: #2c5aa0; margin-top: 0;">Seçenek 2: Tek Kullanımlık Kod</h3>
                         <p>Kod: <strong style="font-size: 18px; color: #2c5aa0;">{otp}</strong></p>
-                        <p style="font-size: 12px; color: #666;">Bu kod 10 dakika geçerlidir.</p>
+                        <p style="font-size: 12px; color: #666;">Bu kod 5 saat geçerlidir.</p>
                     </div>
                     
-                    <p><strong>Not:</strong> Her iki seçenek de tek kullanımlıktır ve 10 dakika sonra geçersiz olur.</p>
+                    <p><strong>Not:</strong> Her iki seçenek de 5 saat geçerlidir.</p>
                     
                     <hr style="border: none; border-top: 1px solid #eee; margin: 30px 0;">
                     <p style="font-size: 12px; color: #666;">
@@ -227,13 +227,13 @@ class AuthService:
             
             Seçenek 1: Magic Link
             {magic_link}
-            Bu bağlantı 10 dakika geçerlidir.
+            Bu bağlantı 5 saat geçerlidir.
             
             Seçenek 2: Tek Kullanımlık Kod
             Kod: {otp}
-            Bu kod 10 dakika geçerlidir.
+            Bu kod 5 saat geçerlidir.
             
-            Not: Her iki seçenek de tek kullanımlıktır ve 10 dakika sonra geçersiz olur.
+            Not: Her iki seçenek de 5 saat geçerlidir.
             
             ---
             Bu e-posta AI Helper sistemi tarafından otomatik olarak gönderilmiştir.
@@ -342,8 +342,7 @@ class AuthService:
                         <strong>⚠️ Güvenlik Uyarısı:</strong>
                         <ul style="margin: 10px 0; padding-left: 20px;">
                             <li>Bu bilgileri kimseyle paylaşmayın</li>
-                            <li>Link ve kod tek kullanımlıktır</li>
-                            <li>10 dakika sonra geçersiz olur</li>
+                            <li>5 saat sonra geçersiz olur</li>
                         </ul>
                     </div>
                     
@@ -380,8 +379,7 @@ class AuthService:
             
             Güvenlik Uyarısı:
             - Bu bilgileri kimseyle paylaşmayın
-            - Link ve kod tek kullanımlıktır
-            - 10 dakika sonra geçersiz olur
+            - 5 saat sonra geçersiz olur
             
             Herhangi bir sorun yaşarsanız, lütfen sistem yöneticisi ile iletişime geçin.
             
