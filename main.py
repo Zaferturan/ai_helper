@@ -1,5 +1,7 @@
 from fastapi import FastAPI, Request, Query
 from fastapi.responses import RedirectResponse
+from fastapi.staticfiles import StaticFiles
+from fastapi.middleware.cors import CORSMiddleware
 from connection import engine
 import models
 from endpoints import router
@@ -16,9 +18,21 @@ app = FastAPI(
     version="1.0.0"
 )
 
+# CORS middleware
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
 # Include API endpoints
 app.include_router(router, prefix="/api/v1")
 app.include_router(auth_router, prefix="/api/v1")
+
+# Static file serving
+app.mount("/static", StaticFiles(directory="."), name="static")
 
 @app.get("/")
 async def root():
