@@ -1076,7 +1076,7 @@ def new_request_handler():
 # Gradio UI
 with gr.Blocks(
     title="AI Helper - Nilüfer Belediyesi",
-    theme=gr.themes.Soft(),
+    theme=gr.themes.Soft(primary_hue="blue"),
     css="""
     .gradio-container {
         max-width: 100% !important;
@@ -1091,32 +1091,93 @@ with gr.Blocks(
         max-width: none !important;
         width: 100% !important;
     }
-    /* Primary button rengi */
-    .gr-button-primary {
+    /* Tüm butonlar için güçlü CSS kuralları */
+    button[data-testid="button"] {
         background: #3B82F6 !important;
         border-color: #3B82F6 !important;
+        color: white !important;
     }
-    .gr-button-primary:hover {
+    button[data-testid="button"]:hover {
         background: #2563EB !important;
         border-color: #2563EB !important;
+        color: white !important;
+    }
+    /* Primary butonlar için ekstra güçlü kurallar */
+    .gr-button-primary, button.gr-button-primary {
+        background: #3B82F6 !important;
+        border-color: #3B82F6 !important;
+        color: white !important;
+    }
+    .gr-button-primary:hover, button.gr-button-primary:hover {
+        background: #2563EB !important;
+        border-color: #2563EB !important;
+        color: white !important;
+    }
+    /* Secondary butonlar için */
+    .gr-button-secondary, button.gr-button-secondary {
+        background: #3B82F6 !important;
+        border-color: #3B82F6 !important;
+        color: white !important;
+    }
+    .gr-button-secondary:hover, button.gr-button-secondary:hover {
+        background: #2563EB !important;
+        border-color: #2563EB !important;
+        color: white !important;
+    }
+    /* Gradio'nun kendi buton sınıfları için */
+    .gradio-button {
+        background: #3B82F6 !important;
+        border-color: #3B82F6 !important;
+        color: white !important;
+    }
+    .gradio-button:hover {
+        background: #2563EB !important;
+        border-color: #2563EB !important;
+        color: white !important;
     }
     """
 ) as demo:
     
     
     
+    # Logo'yu base64'e çevir
+    def get_logo_base64():
+        """Logo'yu base64'e çevir"""
+        try:
+            import base64
+            with open("logo.png", "rb") as f:
+                logo_data = base64.b64encode(f.read()).decode()
+                return f"data:image/png;base64,{logo_data}"
+        except FileNotFoundError:
+            return None
+    
     # Ana banner - JavaScript auth handler ile
-    main_banner = gr.HTML(f"""
-    <div style="text-align: center; padding: 2rem 0; background: #3B82F6; color: white; border-radius: 12px; margin-bottom: 2rem;">
-        <div style="display: flex; align-items: center; justify-content: center; gap: 1rem;">
-            <img src="file/logo.png" alt="Logo" style="height: 60px; width: auto;">
-            <div>
-                <h1 style="margin: 0; font-size: 2.5rem;">AI Helper</h1>
-                <p style="margin: 0.5rem 0 0 0; font-size: 1.2rem; opacity: 0.9;">Nilüfer Belediyesi - Yapay Zeka Destekli Yanıt Üretim Sistemi</p>
+    logo_base64 = get_logo_base64()
+    
+    if logo_base64:
+        main_banner_html = f"""
+        <div style="display: flex; align-items: center; padding: 2rem; background: #3B82F6; color: white; border-radius: 12px; margin-bottom: 2rem; box-shadow: 0 4px 8px rgba(0,0,0,0.1); font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;">
+            <div style="background: white; border-radius: 12px; padding: 15px; margin-right: 20px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+                <img src="{logo_base64}" alt="Nilüfer Belediyesi Logo" style="height: 150px; filter: brightness(1.1);">
+            </div>
+            <div style="flex: 1; text-align: center;">
+                <h1 style="margin: 0; font-size: 2.2rem; font-weight: 600; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;">AI Yardımcı</h1>
+                <p style="margin: 0.3rem 0 0 0; font-size: 1rem; opacity: 0.9; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;">Nilüfer Belediyesi - Yapay Zeka Destekli Yanıt Üretim Sistemi</p>
             </div>
         </div>
-    </div>
+        """
+    else:
+        main_banner_html = """
+        <div style="text-align: center; padding: 2rem; background: #3B82F6; color: white; border-radius: 12px; margin-bottom: 2rem; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;">
+            <h1 style="margin: 0; font-size: 2.2rem;">🏛️ AI Yardımcı</h1>
+            <p style="margin: 0.5rem 0 0 0; font-size: 1rem; opacity: 0.9;">Nilüfer Belediyesi - Yapay Zeka Destekli Yanıt Üretim Sistemi</p>
+        </div>
+        """
     
+    main_banner = gr.HTML(main_banner_html)
+    
+    # JavaScript auth handler
+    auth_script = """
     <script>
     function handleAuthFromUrl() {{
         console.log('Auth URL handler başlatıldı');
@@ -1243,20 +1304,22 @@ with gr.Blocks(
         location.reload();
     }};
     </script>
-    """, visible=False)
+    """
+    
+    auth_handler = gr.HTML(auth_script, visible=False)
     
     # Login bölümü (başlangıçta görünür)
     login_title = gr.HTML("""
     <div style="text-align: center; padding: 2rem; background: #e8f5e8; border-radius: 12px; margin: 2rem 0;">
         <h2 style="color: #2e7d32; margin-bottom: 1rem;">🔐 AI Helper - Giriş</h2>
     </div>
-    """, visible=True)
+    """, visible=False)
     
     login_subtitle = gr.HTML("""
     <div style="text-align: center; padding: 1rem; background: #f8f9fa; border-radius: 8px; margin: 1rem 0;">
         <p style="color: #666; font-size: 1.1rem; margin-bottom: 0.5rem;">Bursa Nilüfer Belediyesi AI Yardımcı sistemine hoş geldiniz</p>
     </div>
-    """, visible=True)
+    """, visible=False)
     
     login_instruction = gr.HTML("""
     <div style="text-align: center; padding: 1rem; background: #fff3cd; border-radius: 8px; margin: 1rem 0;">
@@ -1423,7 +1486,7 @@ with gr.Blocks(
                 )
                 
                 # Ana Seç ve Kopyala butonu
-                main_copy_btn = gr.Button("📋 Seç ve Kopyala", variant="secondary", visible=False)
+                main_copy_btn = gr.Button("📋 Seç ve Kopyala", variant="primary", visible=False)
                 copy_result = gr.Textbox(label="Kopyalama Durumu", interactive=False, visible=False)
                 
                 # Yeni istek öneri butonu
@@ -1437,22 +1500,22 @@ with gr.Blocks(
                     prev_accordion_1 = gr.Accordion("📄 Yanıt #1", open=False, visible=False)
                     with prev_accordion_1:
                         prev_text_1 = gr.Textbox(visible=False, interactive=False, lines=8, show_label=False, max_lines=8)
-                        prev_copy_btn_1 = gr.Button("📋 Seç ve Kopyala #1", variant="secondary", visible=False)
+                        prev_copy_btn_1 = gr.Button("📋 Seç ve Kopyala #1", variant="primary", visible=False)
                     
                     prev_accordion_2 = gr.Accordion("📄 Yanıt #2", open=False, visible=False)
                     with prev_accordion_2:
                         prev_text_2 = gr.Textbox(visible=False, interactive=False, lines=8, show_label=False, max_lines=8)
-                        prev_copy_btn_2 = gr.Button("📋 Seç ve Kopyala #2", variant="secondary", visible=False)
+                        prev_copy_btn_2 = gr.Button("📋 Seç ve Kopyala #2", variant="primary", visible=False)
                     
                     prev_accordion_3 = gr.Accordion("📄 Yanıt #3", open=False, visible=False)
                     with prev_accordion_3:
                         prev_text_3 = gr.Textbox(visible=False, interactive=False, lines=8, show_label=False, max_lines=8)
-                        prev_copy_btn_3 = gr.Button("📋 Seç ve Kopyala #3", variant="secondary", visible=False)
+                        prev_copy_btn_3 = gr.Button("📋 Seç ve Kopyala #3", variant="primary", visible=False)
                     
                     prev_accordion_4 = gr.Accordion("📄 Yanıt #4", open=False, visible=False)
                     with prev_accordion_4:
                         prev_text_4 = gr.Textbox(visible=False, interactive=False, lines=8, show_label=False, max_lines=8)
-                        prev_copy_btn_4 = gr.Button("📋 Seç ve Kopyala #4", variant="secondary", visible=False)
+                        prev_copy_btn_4 = gr.Button("📋 Seç ve Kopyala #4", variant="primary", visible=False)
     
     # Event handlers
     send_code_btn.click(
