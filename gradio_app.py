@@ -92,6 +92,13 @@ def check_auth_token():
             app_state['access_token'] = latest_session.get('jwt_token')
             app_state['is_admin'] = check_admin_status()
             
+            # Her linkle girişte yeni istek olarak başla
+            app_state['yanit_sayisi'] = 0
+            app_state['state'] = 'draft'
+            app_state['history'] = []
+            app_state['current_response'] = None
+            app_state['has_copied'] = False
+            
             # Profil tamamlama kontrolü
             full_name = latest_session.get('full_name', '')
             department = latest_session.get('department', '')
@@ -134,7 +141,7 @@ def check_auth_token():
             
             # UI'yi ana uygulamaya geçir
             # Session'dan kullanıcı bilgilerini al
-            user_profile_html = f"<h3>👤 {full_name} - {department}</h3>"
+            user_profile_html = f"<h3 style='font-family: \"Segoe UI\", Tahoma, Geneva, Verdana, sans-serif; font-weight: 600;'>👤 {full_name} - {department}</h3>"
             
             return (
                 gr.update(visible=False),  # login_title
@@ -290,8 +297,8 @@ def handle_complete_login_flow(email_or_code, current_step="email"):
 
                 user_profile_html = f"""
                 <div style="text-align: center; padding: 1rem; background: #e8f5e8; border-radius: 8px;">
-                    <h3 style="color: #2e7d32; margin-bottom: 0.5rem;">🎉 Giriş Başarılı!</h3>
-                    <p style="color: #666; margin: 0;">Hoş geldiniz: {data.get('email', 'Kullanıcı')}</p>
+                    <h3 style="color: #2e7d32; margin-bottom: 0.5rem; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; font-weight: 600;">🎉 Giriş Başarılı!</h3>
+                    <p style="color: #666; margin: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;">Hoş geldiniz: {data.get('email', 'Kullanıcı')}</p>
                 </div>
                 """
 
@@ -576,8 +583,8 @@ def complete_profile(full_name, department):
     """Profil tamamlama fonksiyonu"""
     try:
         if not full_name or not department:
-            return (
-                gr.update(visible=True, value="<div style='color: red; text-align: center; padding: 1rem;'>❌ Lütfen tüm alanları doldurun!</div>"),  # profile_error_msg
+                return (
+                    gr.update(visible=True, value="<div style='color: red; text-align: center; padding: 1rem; font-family: \"Segoe UI\", Tahoma, Geneva, Verdana, sans-serif;'>❌ Lütfen tüm alanları doldurun!</div>"),  # profile_error_msg
                 gr.update(),  # profile_completion_area
                 gr.update(),  # user_info_row
                 gr.update(),  # user_info_html
@@ -602,7 +609,7 @@ def complete_profile(full_name, department):
             app_state['user_full_name'] = full_name
             app_state['user_department'] = department
             
-            user_profile_html = f"<h3>👤 {full_name} - {department}</h3>"
+            user_profile_html = f"<h3 style='font-family: \"Segoe UI\", Tahoma, Geneva, Verdana, sans-serif; font-weight: 600;'>👤 {full_name} - {department}</h3>"
             
             return (
                 gr.update(visible=False),  # profile_error_msg
@@ -617,7 +624,7 @@ def complete_profile(full_name, department):
             )
         else:
             error_data = response.json()
-            error_message = f"<div style='color: red; text-align: center; padding: 1rem;'>❌ Hata: {error_data.get('detail', 'Bilinmeyen hata')}</div>"
+            error_message = f"<div style='color: red; text-align: center; padding: 1rem; font-family: \"Segoe UI\", Tahoma, Geneva, Verdana, sans-serif;'>❌ Hata: {error_data.get('detail', 'Bilinmeyen hata')}</div>"
             return (
                 gr.update(visible=True, value=error_message),  # profile_error_msg
                 gr.update(),  # profile_completion_area
@@ -631,7 +638,7 @@ def complete_profile(full_name, department):
             )
             
     except Exception as e:
-        error_message = f"<div style='color: red; text-align: center; padding: 1rem;'>❌ Bağlantı hatası: {str(e)}</div>"
+        error_message = f"<div style='color: red; text-align: center; padding: 1rem; font-family: \"Segoe UI\", Tahoma, Geneva, Verdana, sans-serif;'>❌ Bağlantı hatası: {str(e)}</div>"
         return (
             gr.update(visible=True, value=error_message),  # profile_error_msg
             gr.update(),  # profile_completion_area
@@ -653,11 +660,11 @@ def get_user_profile():
             data = response.json()
             full_name = data.get('full_name', 'İsimsiz')
             department = data.get('department', 'Departman Belirtilmemiş')
-            return f"<h3>👤 {full_name} - {department}</h3>"
+            return f"<h3 style='font-family: \"Segoe UI\", Tahoma, Geneva, Verdana, sans-serif; font-weight: 600;'>👤 {full_name} - {department}</h3>"
         else:
-            return "<h3>👤 Kullanıcı Bilgileri Alınamadı</h3>"
+            return "<h3 style='font-family: \"Segoe UI\", Tahoma, Geneva, Verdana, sans-serif; font-weight: 600;'>👤 Kullanıcı Bilgileri Alınamadı</h3>"
     except Exception as e:
-        return f"<h3>👤 Hata: {str(e)}</h3>"
+        return f"<h3 style='font-family: \"Segoe UI\", Tahoma, Geneva, Verdana, sans-serif; font-weight: 600;'>👤 Hata: {str(e)}</h3>"
 
 def check_admin_status():
     """Admin durumunu kontrol et"""
@@ -710,29 +717,29 @@ def get_admin_statistics():
                 # HTML tablosu oluştur
                 html = f"""
                 <div style="background: white; border: 1px solid #e0e0e0; border-radius: 12px; padding: 1.5rem; margin: 1rem 0; box-shadow: 0 2px 4px rgba(0,0,0,0.05), 0 4px 8px rgba(0,0,0,0.1);">
-                    <h2>📊 İstatistik Paneli</h2>
+                    <h2 style="font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; font-weight: 600;">📊 İstatistik Paneli</h2>
                     
-                    <h3>📈 Genel İstatistikler</h3>
+                    <h3 style="font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; font-weight: 600;">📈 Genel İstatistikler</h3>
                     <div style="display: flex; gap: 2rem; margin-bottom: 2rem;">
                         <div style="background: #e3f2fd; padding: 1rem; border-radius: 8px; text-align: center; flex: 1;">
-                            <h4>Toplam Üretilen Yanıt</h4>
-                            <div style="font-size: 2rem; font-weight: bold; color: #1976d2;">{total_generated_responses}</div>
+                            <h4 style="font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; font-weight: 600;">Toplam Üretilen Yanıt</h4>
+                            <div style="font-size: 2rem; font-weight: bold; color: #1976d2; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;">{total_generated_responses}</div>
                         </div>
                         <div style="background: #e8f5e8; padding: 1rem; border-radius: 8px; text-align: center; flex: 1;">
-                            <h4>Toplam Cevaplanan İstek Öneri</h4>
-                            <div style="font-size: 2rem; font-weight: bold; color: #2e7d32;">{total_answered_requests}</div>
+                            <h4 style="font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; font-weight: 600;">Toplam Cevaplanan İstek Öneri</h4>
+                            <div style="font-size: 2rem; font-weight: bold; color: #2e7d32; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;">{total_answered_requests}</div>
                         </div>
                     </div>
                     
-                    <h3>👥 Kullanıcı Detayları</h3>
+                    <h3 style="font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; font-weight: 600;">👥 Kullanıcı Detayları</h3>
                     <table style="width: 100%; border-collapse: collapse; margin-top: 1rem;">
                         <thead>
                             <tr style="background: #f5f5f5;">
-                                <th style="padding: 12px; border: 1px solid #ddd; text-align: left;">Ad Soyad</th>
-                                <th style="padding: 12px; border: 1px solid #ddd; text-align: left;">Müdürlük</th>
-                                <th style="padding: 12px; border: 1px solid #ddd; text-align: left;">E-posta</th>
-                                <th style="padding: 12px; border: 1px solid #ddd; text-align: center;">Toplam Ürettiği Yanıt</th>
-                                <th style="padding: 12px; border: 1px solid #ddd; text-align: center;">Cevapladığı İstek Sayısı</th>
+                                <th style="padding: 12px; border: 1px solid #ddd; text-align: left; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; font-weight: 600;">Ad Soyad</th>
+                                <th style="padding: 12px; border: 1px solid #ddd; text-align: left; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; font-weight: 600;">Müdürlük</th>
+                                <th style="padding: 12px; border: 1px solid #ddd; text-align: left; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; font-weight: 600;">E-posta</th>
+                                <th style="padding: 12px; border: 1px solid #ddd; text-align: center; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; font-weight: 600;">Toplam Ürettiği Yanıt</th>
+                                <th style="padding: 12px; border: 1px solid #ddd; text-align: center; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; font-weight: 600;">Cevapladığı İstek Sayısı</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -748,11 +755,11 @@ def get_admin_statistics():
                     
                     html += f"""
                             <tr>
-                                <td style="padding: 12px; border: 1px solid #ddd;">{full_name}</td>
-                                <td style="padding: 12px; border: 1px solid #ddd;">{department}</td>
-                                <td style="padding: 12px; border: 1px solid #ddd;">{email}</td>
-                                <td style="padding: 12px; border: 1px solid #ddd; text-align: center; font-weight: bold;">{total_requests}</td>
-                                <td style="padding: 12px; border: 1px solid #ddd; text-align: center; font-weight: bold;">{answered_requests}</td>
+                                <td style="padding: 12px; border: 1px solid #ddd; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;">{full_name}</td>
+                                <td style="padding: 12px; border: 1px solid #ddd; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;">{department}</td>
+                                <td style="padding: 12px; border: 1px solid #ddd; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;">{email}</td>
+                                <td style="padding: 12px; border: 1px solid #ddd; text-align: center; font-weight: bold; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;">{total_requests}</td>
+                                <td style="padding: 12px; border: 1px solid #ddd; text-align: center; font-weight: bold; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;">{answered_requests}</td>
                             </tr>
                     """
                 
@@ -765,11 +772,11 @@ def get_admin_statistics():
                 
                 return html
             else:
-                return "<div style='color: orange;'>ℹ️ Kullanıcı bulunamadı</div>"
+                return "<div style='color: orange; font-family: \"Segoe UI\", Tahoma, Geneva, Verdana, sans-serif;'>ℹ️ Kullanıcı bulunamadı</div>"
         else:
-            return "<div style='color: red;'>❌ Kullanıcı listesi alınamadı</div>"
+            return "<div style='color: red; font-family: \"Segoe UI\", Tahoma, Geneva, Verdana, sans-serif;'>❌ Kullanıcı listesi alınamadı</div>"
     except Exception as e:
-        return f"<div style='color: red;'>❌ Bağlantı hatası: {str(e)}</div>"
+        return f"<div style='color: red; font-family: \"Segoe UI\", Tahoma, Geneva, Verdana, sans-serif;'>❌ Bağlantı hatası: {str(e)}</div>"
 
 def refresh_admin_panel_handler():
     """Admin panelini yenile - verileri güncelle"""
@@ -927,9 +934,9 @@ def create_previous_responses_html():
     print(f"DEBUG: create_previous_responses_html çağrıldı. History uzunluğu: {len(app_state['history'])}")
     
     if len(app_state['history']) <= 1:  # Sadece 1 yanıt varsa önceki yanıt yok
-        return "<div style='color: #666; font-style: italic;'>Henüz önceki yanıt yok</div>"
+        return "<div style='color: #666; font-style: italic; font-family: \"Segoe UI\", Tahoma, Geneva, Verdana, sans-serif;'>Henüz önceki yanıt yok</div>"
     
-    return "<h3>📚 Önceki Yanıtlar</h3>"
+    return "<h3 style='font-family: \"Segoe UI\", Tahoma, Geneva, Verdana, sans-serif; font-weight: 600;'>📚 Önceki Yanıtlar</h3>"
 
 def copy_response_handler(response_text):
     """Mevcut yanıtı kopyala - eski koddan mantık"""
@@ -979,7 +986,8 @@ def copy_previous_response_handler(response_id):
                     return ("⚠️ Bu istek için zaten bir yanıt kopyalandı!", gr.update(), gr.update(),
                            gr.update(visible=False), gr.update(visible=False), gr.update(visible=False), gr.update(visible=False),
                            gr.update(visible=False), gr.update(visible=False), gr.update(visible=False), gr.update(visible=False),
-                           gr.update(visible=False), gr.update(visible=False), gr.update(visible=False), gr.update(visible=False))
+                           gr.update(visible=False), gr.update(visible=False), gr.update(visible=False), gr.update(visible=False),
+                           gr.update(visible=False), gr.update(visible=False))
                 
                 # Response'u kopyalandı olarak işaretle
                 result = mark_response_as_copied(response_id)
@@ -1011,7 +1019,7 @@ def copy_previous_response_handler(response_id):
                     
                     # UI güncellemeleri
                     selected_text = resp['response_text']
-                    previous_html = "<div style='color: #666; font-style: italic;'>Henüz önceki yanıt yok</div>"
+                    previous_html = "<div style='color: #666; font-style: italic; font-family: \"Segoe UI\", Tahoma, Geneva, Verdana, sans-serif;'>Henüz önceki yanıt yok</div>"
                     
                     # Tüm akordiyonları gizle
                     accordion_updates = [gr.update(visible=False)] * 4
@@ -1134,6 +1142,23 @@ with gr.Blocks(
         background: #2563EB !important;
         border-color: #2563EB !important;
         color: white !important;
+    }
+    /* Gradio footer'ını gizle */
+    footer {
+        display: none !important;
+    }
+    .gradio-footer {
+        display: none !important;
+    }
+    /* Gradio'nun alt kısmındaki linkleri gizle */
+    .gradio-container footer,
+    .gradio-container .footer,
+    .gradio-container [data-testid="footer"] {
+        display: none !important;
+    }
+    /* Gradio'nun alt kısmındaki tüm footer elementlerini gizle */
+    .gradio-container > div:last-child {
+        display: none !important;
     }
     """
 ) as demo:
@@ -1377,8 +1402,8 @@ with gr.Blocks(
         with gr.Column():
             profile_title = gr.HTML("""
             <div style="text-align: center; padding: 2rem; background: #e3f2fd; border-radius: 12px; margin: 2rem 0;">
-                <h2 style="color: #1976d2; margin-bottom: 1rem;">👤 Profil Bilgilerini Tamamlayın</h2>
-                <p style="color: #666; font-size: 1.1rem;">Lütfen aşağıdaki bilgileri doldurun</p>
+                <h2 style="color: #1976d2; margin-bottom: 1rem; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; font-weight: 600;">👤 Profil Bilgilerini Tamamlayın</h2>
+                <p style="color: #666; font-size: 1.1rem; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;">Lütfen aşağıdaki bilgileri doldurun</p>
             </div>
             """)
             
@@ -1435,14 +1460,14 @@ with gr.Blocks(
         with gr.Row():
             # Sol sütun - Giriş ve ayarlar
             with gr.Column(scale=1):
-                gr.HTML("<h3>📝 Gelen İstek/Öneri</h3>")
+                gr.HTML("<h3 style='font-family: \"Segoe UI\", Tahoma, Geneva, Verdana, sans-serif; font-weight: 600;'>📝 Gelen İstek/Öneri</h3>")
                 original_text = gr.Textbox(
                     label="Gelen istek/öneri metnini buraya yapıştırın:",
                     value="Bursa Nilüfer'de bir dükkanım var ve yönetim planından tahsisli otoparkımda bulunan dubaları, belediye ekipleri mafyavari şekilde tahsisli alanımdan alıp götürebiliyor. Geri aradığımda ise belediye zabıtası, görevliyi mahkemeye vermemi söylüyor. Bu nasıl bir hizmet anlayışı? Benim tahsisli alanımdan eşyamı alıyorsunuz, buna ne denir? Herkes biliyordur. Bir yeri koruduğunu zannedip başka bir yeri mağdur etmek mi belediyecilik?",
                     lines=6
                 )
                 
-                gr.HTML("<h3>✍️ Hazırladığınız Cevap</h3>")
+                gr.HTML("<h3 style='font-family: \"Segoe UI\", Tahoma, Geneva, Verdana, sans-serif; font-weight: 600;'>✍️ Hazırladığınız Cevap</h3>")
                 custom_input = gr.Textbox(
                     label="Hazırladığınız cevap taslağını buraya yazın:",
                     value="Orası size tahsis edilmiş bir yer değil. Nilüfer halkının ortak kullanım alanı. Kaldırımlar da öyle.",
