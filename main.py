@@ -1,5 +1,5 @@
 from fastapi import FastAPI, Request, Query
-from fastapi.responses import RedirectResponse
+from fastapi.responses import RedirectResponse, FileResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.middleware.cors import CORSMiddleware
 from connection import engine
@@ -40,6 +40,13 @@ async def root():
     Ana sayfa
     """
     return {"message": "AI Helper API çalışıyor"}
+
+@app.get("/manifest.json")
+async def get_manifest():
+    """
+    PWA manifest dosyası
+    """
+    return FileResponse("manifest.json")
 
 @app.get("/gradio_api/{path:path}")
 async def gradio_proxy(path: str):
