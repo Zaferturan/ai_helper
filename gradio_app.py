@@ -1493,7 +1493,7 @@ with gr.Blocks(
                     max_tokens = gr.Slider(
                         minimum=100,
                         maximum=4000,
-                        value=2000,
+                        value=4000,
                         step=100,
                         label="Maksimum Token Sayısı"
                     )
