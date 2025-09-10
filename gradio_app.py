@@ -121,7 +121,8 @@ def check_auth_token():
                     gr.update(visible=False),  # admin_panel
                     gr.update(visible=True),   # main_banner
                     gr.update(visible=True),   # profile_completion_area
-                    gr.update(visible=False)   # profile_error_msg
+                    gr.update(visible=False),  # profile_error_msg
+                    gr.update(visible=False)    # response_settings_accordion
                 )
             
             # Session'ı temizle (tek kullanımlık)
@@ -151,18 +152,19 @@ def check_auth_token():
                 gr.update(visible=True),   # logout_btn
                 gr.update(visible=False),  # force_show_btn
                 gr.update(visible=True),   # main_app_area
-                gr.update(visible=True),   # admin_panel
+                gr.update(visible=app_state['is_admin']),  # admin_panel
                 gr.update(visible=True),   # main_banner
                 gr.update(visible=False),  # profile_completion_area
-                gr.update(visible=False)   # profile_error_msg
+                gr.update(visible=False),  # profile_error_msg
+                gr.update(visible=app_state['is_admin'])  # response_settings_accordion
             )
         else:
             print("Otomatik giriş bulunamadı")
-            return tuple([gr.update() for _ in range(19)])
+            return tuple([gr.update() for _ in range(20)])
             
     except Exception as e:
         print(f"Otomatik giriş hatası: {e}")
-        return tuple([gr.update() for _ in range(19)])
+        return tuple([gr.update() for _ in range(20)])
         
         if auth_token:
             # JWT token'ı backend'e gönder ve doğrula
@@ -445,6 +447,38 @@ def verify_login_code(email, code):
             # Kullanıcı profil bilgilerini al
             user_profile_html = get_user_profile()
             
+            # Profil tamamlama kontrolü
+            try:
+                headers = {"Authorization": f"Bearer {app_state['access_token']}"}
+                profile_response = requests.get(f"{BACKEND_URL}/auth/profile", headers=headers)
+                if profile_response.status_code == 200:
+                    profile_data = profile_response.json()
+                    full_name = profile_data.get('full_name', '')
+                    department = profile_data.get('department', '')
+                    
+                    if not full_name or not department:
+                        print("Profil tamamlanmamış, profil tamamlama sayfasına yönlendiriliyor")
+                        return (
+                            gr.update(visible=False),  # code_title
+                            gr.update(visible=False),  # code_subtitle
+                            gr.update(visible=False),  # code_input
+                            gr.update(visible=False),  # verify_btn
+                            gr.update(visible=False),  # code_buttons
+                            gr.update(visible=False),  # email_input
+                            gr.update(visible=False),  # user_info_row
+                            gr.update(visible=False),  # user_info_html
+                            gr.update(visible=False),  # logout_btn
+                            gr.update(visible=False),  # force_show_btn
+                            gr.update(visible=False),  # main_app_area
+                            gr.update(visible=False),  # admin_panel
+                            gr.update(visible=True),   # main_banner
+                            gr.update(visible=True),   # profile_completion_area
+                            gr.update(visible=False),  # profile_error_msg
+                            gr.update(visible=False)    # response_settings_accordion
+                        )
+            except Exception as e:
+                print(f"Profil kontrolü hatası: {e}")
+            
             return (
                 gr.update(visible=False),  # code_title
                 gr.update(visible=False),  # code_subtitle
@@ -458,7 +492,10 @@ def verify_login_code(email, code):
                 gr.update(visible=False),  # force_show_btn
                 gr.update(visible=True),   # main_app_area
                 gr.update(visible=app_state['is_admin']),  # admin_panel
-                gr.update(visible=True)    # main_banner
+                gr.update(visible=True),   # main_banner
+                gr.update(visible=False),  # profile_completion_area
+                gr.update(visible=False),  # profile_error_msg
+                gr.update(visible=app_state['is_admin'])  # response_settings_accordion
             )
         else:
             error_data = response.json()
@@ -475,7 +512,10 @@ def verify_login_code(email, code):
                 gr.update(visible=False),  # force_show_btn
                 gr.update(visible=False),  # main_app_area
                 gr.update(visible=False),  # admin_panel
-                gr.update(visible=False)  # main_banner
+                gr.update(visible=False),  # main_banner
+                gr.update(visible=False),  # profile_completion_area
+                gr.update(visible=False),  # profile_error_msg
+                gr.update(visible=False)   # response_settings_accordion
             )
     except Exception as e:
         return (
@@ -491,7 +531,10 @@ def verify_login_code(email, code):
             gr.update(visible=False),  # force_show_btn
             gr.update(visible=False),  # main_app_area
             gr.update(visible=False),  # admin_panel
-            gr.update(visible=False)  # main_banner
+            gr.update(visible=False),  # main_banner
+            gr.update(visible=False),  # profile_completion_area
+            gr.update(visible=False),  # profile_error_msg
+            gr.update(visible=False)   # response_settings_accordion
         )
 
 def logout_user():
@@ -761,16 +804,13 @@ def create_request_handler(original_text, custom_input):
 def generate_response_handler(original_text, custom_input, model, temperature, max_tokens):
     """Yanıt üret - eski Streamlit mantığını takip eder"""
     try:
-        # Durum kontrolü - eski koddan
-        if app_state['state'] != 'draft':
-            return ("⚠️ Yeni istek için 'Yeni İstek Öneri Cevapla' butonuna basın", "", gr.update(visible=False), gr.update(visible=True),
-                   gr.update(visible=False),  # Ana copy butonu gizli olsun
-                   gr.update(visible=False), gr.update(visible=False), gr.update(visible=False), gr.update(visible=False),
-                   gr.update(visible=False), gr.update(visible=False), gr.update(visible=False), gr.update(visible=False),
-                   gr.update(visible=False), gr.update(visible=False), gr.update(visible=False), gr.update(visible=False))
+        print(f"DEBUG: generate_response_handler çağrıldı")
+        print(f"DEBUG: app_state['state'] = {app_state.get('state')}")
+        print(f"DEBUG: app_state['yanit_sayisi'] = {app_state.get('yanit_sayisi')}")
         
         # Maksimum 5 yanıt kontrolü - eski koddan
         if app_state['yanit_sayisi'] >= 5:
+            print(f"DEBUG: Maksimum 5 yanıt üretildi, hata mesajı döndürülüyor")
             return ("⚠️ Maksimum 5 yanıt üretildi! Yeni istek öneri için 'Yeni İstek Öneri Cevapla' butonuna basın.", "", gr.update(visible=False), gr.update(visible=True),
                    gr.update(visible=False),  # Ana copy butonu gizli olsun
                    gr.update(visible=False), gr.update(visible=False), gr.update(visible=False), gr.update(visible=False),
@@ -1051,6 +1091,15 @@ with gr.Blocks(
         max-width: none !important;
         width: 100% !important;
     }
+    /* Primary button rengi */
+    .gr-button-primary {
+        background: #3B82F6 !important;
+        border-color: #3B82F6 !important;
+    }
+    .gr-button-primary:hover {
+        background: #2563EB !important;
+        border-color: #2563EB !important;
+    }
     """
 ) as demo:
     
@@ -1058,9 +1107,14 @@ with gr.Blocks(
     
     # Ana banner - JavaScript auth handler ile
     main_banner = gr.HTML(f"""
-    <div style="text-align: center; padding: 2rem 0; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border-radius: 12px; margin-bottom: 2rem;">
-        <h1 style="margin: 0; font-size: 2.5rem;">🤖 AI Helper</h1>
-        <p style="margin: 0.5rem 0 0 0; font-size: 1.2rem; opacity: 0.9;">Nilüfer Belediyesi - Yapay Zeka Destekli Yanıt Üretim Sistemi</p>
+    <div style="text-align: center; padding: 2rem 0; background: #3B82F6; color: white; border-radius: 12px; margin-bottom: 2rem;">
+        <div style="display: flex; align-items: center; justify-content: center; gap: 1rem;">
+            <img src="file/logo.png" alt="Logo" style="height: 60px; width: auto;">
+            <div>
+                <h1 style="margin: 0; font-size: 2.5rem;">AI Helper</h1>
+                <p style="margin: 0.5rem 0 0 0; font-size: 1.2rem; opacity: 0.9;">Nilüfer Belediyesi - Yapay Zeka Destekli Yanıt Üretim Sistemi</p>
+            </div>
+        </div>
     </div>
     
     <script>
@@ -1332,8 +1386,8 @@ with gr.Blocks(
                     lines=4
                 )
                 
-                # Model ayarları - açılır kapanır
-                with gr.Accordion("⚙️ Yanıt Ayarları", open=False):
+                # Model ayarları - açılır kapanır (sadece admin için)
+                with gr.Accordion("⚙️ Yanıt Ayarları", open=False, visible=False) as response_settings_accordion:
                     with gr.Row():
                         model = gr.Dropdown(
                             choices=["gemini-2.5-flash", "gemini-1.5-flash-002", "gemini-2.0-flash-001", "gpt-oss:latest"],
@@ -1412,7 +1466,8 @@ with gr.Blocks(
         fn=verify_login_code,
         inputs=[email_input, code_input],
         outputs=[code_title, code_subtitle, code_input, verify_btn, code_buttons, 
-                email_input, user_info_row, user_info_html, logout_btn, force_show_btn, main_app_area, admin_panel, main_banner]
+                email_input, user_info_row, user_info_html, logout_btn, force_show_btn, main_app_area, admin_panel, main_banner,
+                profile_completion_area, profile_error_msg, response_settings_accordion]
     )
     
     complete_profile_btn.click(
@@ -1557,7 +1612,7 @@ with gr.Blocks(
             login_title, login_subtitle, login_instruction, email_input, send_code_btn,
             code_title, code_subtitle, code_input, verify_btn, code_buttons,
             user_info_row, user_info_html, logout_btn, force_show_btn, main_app_area, admin_panel, main_banner,
-            profile_completion_area, profile_error_msg
+            profile_completion_area, profile_error_msg, response_settings_accordion
         ]
     )
 
