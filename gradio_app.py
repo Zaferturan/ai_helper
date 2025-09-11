@@ -885,26 +885,10 @@ def generate_response_handler(original_text, custom_input, model, temperature, m
             # Önceki yanıtlar HTML'ini oluştur (history[1:] - ilk yanıt hariç)
             previous_html = create_previous_responses_html()
             
-            # Gradio akordiyonlarını güncelle
-            accordion_updates = []
-            text_updates = []
-            button_updates = []
-            
-            for i, resp in enumerate(app_state['history'][1:], 1):
-                if i <= 4:  # Maksimum 4 önceki yanıt
-                    accordion_updates.append(gr.update(visible=True, label=f"📄 Yanıt #{i} - {resp.get('created_at', '')[:19]}"))
-                    text_updates.append(gr.update(visible=True, value=resp.get('response_text', '')))
-                    button_updates.append(gr.update(visible=True))
-                else:
-                    accordion_updates.append(gr.update(visible=False))
-                    text_updates.append(gr.update(visible=False))
-                    button_updates.append(gr.update(visible=False))
-            
-            # Eksik olanları gizle
-            while len(accordion_updates) < 4:
-                accordion_updates.append(gr.update(visible=False))
-                text_updates.append(gr.update(visible=False))
-                button_updates.append(gr.update(visible=False))
+            # Gradio akordiyonlarını tamamen gizle (sadece HTML'de gösteriyoruz)
+            accordion_updates = [gr.update(visible=False)] * 4
+            text_updates = [gr.update(visible=False)] * 4
+            button_updates = [gr.update(visible=False)] * 4
             
             # Buton görünürlüğünü güncelle
             generate_visible = app_state['state'] == 'draft' and app_state['yanit_sayisi'] < 5
@@ -1103,7 +1087,7 @@ def copy_previous_response_handler(response_id):
                     # Önceki yanıtlar HTML'ini oluştur
                     previous_html = create_previous_responses_html()
                     
-                    # Tüm akordiyonları gizle
+                    # Tüm akordiyonları gizle (sadece HTML'de gösteriyoruz)
                     accordion_updates = [gr.update(visible=False)] * 4
                     text_updates = [gr.update(visible=False)] * 4
                     button_updates = [gr.update(visible=False)] * 4
