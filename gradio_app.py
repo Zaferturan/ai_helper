@@ -894,22 +894,22 @@ def generate_response_handler(original_text, custom_input, model, temperature, m
                 if i <= 4:  # Maksimum 4 önceki yanıt
                     # Accordion'ı görünür yap ama içeriği yeşil textarea ile değiştir
                     accordion_updates.append(gr.update(visible=True, label=f"📄 Yanıt #{i} - {resp.get('created_at', '')[:19]}"))
-                    # Normal textbox yerine yeşil textarea HTML'i gönder
-                    green_textarea_html = f"""
-                    <div style="background: #e8f5e8; padding: 15px; border-radius: 8px; margin: 10px 0; border: 1px solid #28a745;">
+                    # Normal textbox yerine normal renkli textarea HTML'i gönder
+                    normal_textarea_html = f"""
+                    <div style="padding: 15px; border-radius: 8px; margin: 10px 0;">
                         <textarea readonly onclick="this.select(); document.execCommand('copy'); showCopySuccess(this);" 
-                                  style="width: 100%; height: 150px; padding: 12px; border: 1px solid #28a745; 
+                                  style="width: 100%; height: 150px; padding: 12px; border: 1px solid #ccc; 
                                          border-radius: 6px; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
                                          font-size: 14px; line-height: 1.5; resize: vertical; cursor: pointer;
                                          background: white;">
 {resp.get('response_text', '')}
                         </textarea>
-                        <p style="color: #28a745; font-size: 12px; margin: 8px 0 0 0;">
+                        <p style="color: #666; font-size: 12px; margin: 8px 0 0 0;">
                             💡 Metne dokunarak otomatik kopyalayın
                         </p>
                     </div>
                     """
-                    text_updates.append(gr.update(visible=True, value=green_textarea_html))
+                    text_updates.append(gr.update(visible=True, value=normal_textarea_html))
                     button_updates.append(gr.update(visible=True))
                 else:
                     accordion_updates.append(gr.update(visible=False))
@@ -958,16 +958,16 @@ def create_copyable_response_display(response_text=""):
         """
     
     copyable_html = f"""
-    <div style="background: #e8f5e8; padding: 15px; border-radius: 8px; margin: 10px 0; border: 1px solid #28a745;">
-        <p style="margin: 0 0 10px 0; font-weight: bold; color: #28a745;">📝 Son Üretilen Yanıt:</p>
+    <div style="padding: 15px; border-radius: 8px; margin: 10px 0;">
+        <p style="margin: 0 0 10px 0; font-weight: bold;">📝 Son Üretilen Yanıt:</p>
         <textarea readonly onclick="this.select(); document.execCommand('copy'); showCopySuccess(this);" 
-                  style="width: 100%; height: 200px; padding: 12px; border: 1px solid #28a745; 
+                  style="width: 100%; height: 200px; padding: 12px; border: 1px solid #ccc; 
                          border-radius: 6px; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
                          font-size: 14px; line-height: 1.5; resize: vertical; cursor: pointer;
                          background: white;">
 {response_text}
         </textarea>
-        <p style="color: #28a745; font-size: 12px; margin: 8px 0 0 0;">
+        <p style="color: #666; font-size: 12px; margin: 8px 0 0 0;">
             💡 Metne dokunarak otomatik kopyalayın
         </p>
     </div>
@@ -975,13 +975,13 @@ def create_copyable_response_display(response_text=""):
     <script>
     function showCopySuccess(textarea) {{
         const originalBorder = textarea.style.border;
-        textarea.style.border = '2px solid #28a745';
-        textarea.style.background = '#f8fff8';
+        textarea.style.border = '2px solid #007bff';
+        textarea.style.background = '#f8f9fa';
         
         // Geçici mesaj göster
         const parent = textarea.parentElement;
         const successMsg = document.createElement('div');
-        successMsg.innerHTML = '<p style="color: #28a745; font-weight: bold; margin: 5px 0;">✅ Kopyalandı!</p>';
+        successMsg.innerHTML = '<p style="color: #007bff; font-weight: bold; margin: 5px 0;">✅ Kopyalandı!</p>';
         parent.appendChild(successMsg);
         
         setTimeout(() => {{
@@ -1006,15 +1006,15 @@ def create_previous_response_accordion(response_data, index):
         <summary style="background: #f8f9fa; padding: 12px; cursor: pointer; font-weight: bold;">
             📄 Yanıt #{index} - {created_at[:19] if created_at else 'Bilinmeyen zaman'} ({model_name})
         </summary>
-        <div style="background: #e8f5e8; padding: 15px;">
+        <div style="padding: 15px;">
             <textarea readonly onclick="this.select(); document.execCommand('copy'); showCopySuccess(this);" 
-                      style="width: 100%; height: 150px; padding: 12px; border: 1px solid #28a745; 
+                      style="width: 100%; height: 150px; padding: 12px; border: 1px solid #ccc; 
                              border-radius: 6px; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
                              font-size: 14px; line-height: 1.5; resize: vertical; cursor: pointer;
                              background: white;">
 {response_text}
             </textarea>
-            <p style="color: #28a745; font-size: 12px; margin: 8px 0 0 0;">
+            <p style="color: #666; font-size: 12px; margin: 8px 0 0 0;">
                 💡 Metne dokunarak da kopyalayabilirsiniz
             </p>
         </div>
