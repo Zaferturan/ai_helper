@@ -1022,17 +1022,14 @@ def create_previous_response_accordion(response_data, index):
     """
 
 def create_previous_responses_html():
-    """Önceki yanıtları HTML formatında oluştur"""
+    """Önceki yanıtları HTML formatında oluştur - sadece başlık"""
     print(f"DEBUG: create_previous_responses_html çağrıldı. History uzunluğu: {len(app_state['history'])}")
     
     if len(app_state['history']) <= 1:  # Sadece 1 yanıt varsa önceki yanıt yok
         return "<div style='color: #666; font-style: italic; font-family: \"Segoe UI\", Tahoma, Geneva, Verdana, sans-serif;'>Henüz önceki yanıt yok</div>"
     
-    previous_responses_html = "<h3 style='font-family: \"Segoe UI\", Tahoma, Geneva, Verdana, sans-serif; font-weight: 600;'>📚 Önceki Yanıtlar</h3>"
-    for i, resp in enumerate(app_state['history'][1:5], 1):  # Maksimum 4 önceki
-        previous_responses_html += create_previous_response_accordion(resp, i)
-    
-    return previous_responses_html
+    # Sadece başlık döndür, yeşil kutuları kaldır (accordion'larda zaten var)
+    return "<h3 style='font-family: \"Segoe UI\", Tahoma, Geneva, Verdana, sans-serif; font-weight: 600;'>📚 Önceki Yanıtlar</h3>"
 
 def copy_response_handler(response_text):
     """Mevcut yanıtı kopyala - eski koddan mantık"""
