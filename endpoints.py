@@ -7,6 +7,7 @@ from connection import get_db
 from ollama_client import OllamaClient
 from gemini_client import GeminiClient
 from auth_endpoints import get_current_user
+from models import User
 
 router = APIRouter()
 ollama_client = OllamaClient()
@@ -263,4 +264,48 @@ async def update_response_feedback(feedback: api_models.FeedbackRequest, db: Ses
         raise
     except Exception as e:
         db.rollback()
-        raise HTTPException(status_code=500, detail=f"Error updating feedback: {str(e)}") 
+        raise HTTPException(status_code=500, detail=f"Error updating feedback: {str(e)}")
+
+@router.get("/responses/history")
+async def get_user_response_history(
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+    skip: int = 0,
+    limit: int = 50
+):
+    """Kullanıcının önceki yanıtlarını getir"""
+    try:
+        # Bu kullanıcının tüm request'lerini al
+        user_requests = db.query(models.Request).filter(
+            models.Request.user_id == current_user.id
+        ).order_by(models.Request.created_at.desc()).offset(skip).limit(limit).all()
+        
+        # Her request için response'ları al
+        responses = []
+        for request in user_requests:
+            request_responses = db.query(models.Response).filter(
+                models.Response.request_id == request.id
+            ).order_by(models.Response.created_at.desc()).all()
+            
+            for response in request_responses:
+                responses.append({
+                    'id': response.id,
+                    'request_id': response.request_id,
+                    'response_text': response.response_text,
+                    'model_name': response.model_name,
+                    'created_at': response.created_at.isoformat(),
+                    'is_selected': response.is_selected,
+                    'copied': response.copied,
+                    'latency_ms': response.latency_ms
+                })
+        
+        # En yeni response'lara göre sırala
+        responses.sort(key=lambda x: x['created_at'], reverse=True)
+        
+        return {
+            'success': True,
+            'responses': responses,
+            'total': len(responses)
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error getting response history: {str(e)}") 
