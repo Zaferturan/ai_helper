@@ -44,6 +44,9 @@ app_state = {
     'is_admin': False
 }
 
+# User-based admin panel state
+user_admin_panels = {}  # email -> admin_panel_state
+
 
 def force_show_main_app():
     """LocalStorage'dan auth bilgilerini al ve ana uygulamayı göster"""
@@ -722,15 +725,37 @@ def update_response_feedback(response_id, is_selected=False, copied=False):
         return False
 
 def get_admin_statistics():
-    """Admin istatistiklerini al - eski kodun mantığını takip eder"""
+    """Admin istatistiklerini al - user-based token kullanır"""
     try:
         # Mevcut kullanıcının token'ını al
         current_user_email = app_state.get('user_email')
         if not current_user_email:
             return "❌ Kullanıcı bilgisi bulunamadı"
         
-        # Bu kullanıcının token'ını al
-        headers = {"Authorization": f"Bearer {app_state['access_token']}"}
+        # Bu kullanıcının token'ını al (global app_state'den değil, session'dan)
+        try:
+            with open('active_sessions.json', 'r') as f:
+                sessions = json.load(f)
+            
+            # Bu kullanıcının en son session'ını bul
+            user_sessions = [s for s in sessions if s.get('email') == current_user_email]
+            if not user_sessions:
+                return "❌ Kullanıcı session'ı bulunamadı"
+            
+            latest_session = max(user_sessions, key=lambda x: x.get('created_at', ''))
+            user_token = latest_session.get('jwt_token')
+            
+            if not user_token:
+                return "❌ Kullanıcı token'ı bulunamadı"
+            
+            print(f"DEBUG: {current_user_email} için token kullanılıyor")
+            
+        except Exception as e:
+            print(f"DEBUG: Session okuma hatası: {e}")
+            return "❌ Session okuma hatası"
+        
+        # Bu kullanıcının token'ı ile istek yap
+        headers = {"Authorization": f"Bearer {user_token}"}
         response = requests.get(f"{BACKEND_URL}/auth/admin/users", headers=headers, timeout=30)
         
         if response.status_code == 200:
