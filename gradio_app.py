@@ -1091,6 +1091,7 @@ def copy_previous_response_handler(response_id):
                     # Durum makinesini güncelle
                     app_state['state'] = 'finalized'
                     app_state['has_copied'] = True
+                    app_state['yanit_sayisi'] += 1  # Yanıt sayısını artır
                     
                     # Seçilen yanıtı current_response olarak ayarla
                     app_state['current_response'] = resp
