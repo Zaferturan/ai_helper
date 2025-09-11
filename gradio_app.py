@@ -114,6 +114,25 @@ def check_auth_token():
             app_state['access_token'] = latest_session.get('jwt_token')
             app_state['is_admin'] = check_admin_status()
             
+            # Session'ı active_sessions.json'a kaydet (istatistikler paneli için)
+            try:
+                session_data = {
+                    'email': latest_session.get('email'),
+                    'jwt_token': latest_session.get('jwt_token'),
+                    'full_name': latest_session.get('full_name', ''),
+                    'department': latest_session.get('department', ''),
+                    'created_at': latest_session.get('created_at', ''),
+                    'is_admin': latest_session.get('is_admin', False)
+                }
+                
+                # active_sessions.json'a kaydet
+                with open('active_sessions.json', 'w') as f:
+                    json.dump({latest_session.get('email'): session_data}, f)
+                
+                print(f"Session {latest_session.get('email')} için active_sessions.json'a kaydedildi")
+            except Exception as e:
+                print(f"Session kaydetme hatası: {e}")
+            
             # Her linkle girişte yeni istek olarak başla - önceki yanıtlar sıfırlanır
             user_state = get_user_state()
             user_state['yanit_sayisi'] = 0
