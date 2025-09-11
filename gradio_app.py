@@ -105,6 +105,48 @@ def check_auth_token():
                 latest_session = session_data
                 latest_time = session_data.get('created_at', '')
         
+        # Eğer active_sessions.json boşsa ama app_state'de giriş bilgileri varsa, kaydet
+        if not latest_session and app_state.get('authenticated') and app_state.get('user_email') and app_state.get('access_token'):
+            print(f"Magic link ile giriş yapılmış, session kaydediliyor: {app_state.get('user_email')}")
+            
+            # Mevcut app_state bilgilerini kullanarak session oluştur
+            session_data = {
+                'email': app_state.get('user_email'),
+                'jwt_token': app_state.get('access_token'),
+                'full_name': '',
+                'department': '',
+                'created_at': datetime.now().isoformat(),
+                'is_admin': app_state.get('is_admin', False)
+            }
+            
+            # active_sessions.json'a kaydet
+            with open('active_sessions.json', 'w') as f:
+                json.dump({app_state.get('user_email'): session_data}, f)
+            
+            print(f"Magic link session {app_state.get('user_email')} için kaydedildi")
+            
+            # Profil bilgilerini al ve session'ı güncelle
+            try:
+                headers = {"Authorization": f"Bearer {app_state['access_token']}"}
+                profile_response = requests.get(f"{BACKEND_URL}/auth/profile", headers=headers)
+                if profile_response.status_code == 200:
+                    profile_data = profile_response.json()
+                    full_name = profile_data.get('full_name', '')
+                    department = profile_data.get('department', '')
+                    
+                    # Session'ı profil bilgileri ile güncelle
+                    session_data['full_name'] = full_name
+                    session_data['department'] = department
+                    
+                    with open('active_sessions.json', 'w') as f:
+                        json.dump({app_state.get('user_email'): session_data}, f)
+                    
+                    print(f"Session {app_state.get('user_email')} profil bilgileri ile güncellendi")
+            except Exception as e:
+                print(f"Profil bilgileri alma hatası: {e}")
+            
+            return True
+        
         if latest_session:
             print(f"Otomatik giriş bulundu: {latest_session.get('email')}")
             
@@ -791,12 +833,13 @@ def get_admin_statistics():
             with open('active_sessions.json', 'r') as f:
                 sessions = json.load(f)
             
-            # Bu kullanıcının session'ını bul
-            if current_user_email not in sessions:
+            # Bu kullanıcının en son session'ını bul
+            user_sessions = [s for s in sessions if s.get('email') == current_user_email]
+            if not user_sessions:
                 return "❌ Kullanıcı session'ı bulunamadı"
             
-            user_session = sessions[current_user_email]
-            user_token = user_session.get('jwt_token')
+            latest_session = max(user_sessions, key=lambda x: x.get('created_at', ''))
+            user_token = latest_session.get('jwt_token')
             
             if not user_token:
                 return "❌ Kullanıcı token'ı bulunamadı"
