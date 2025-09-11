@@ -879,6 +879,9 @@ def generate_response_handler(original_text, custom_input, model, temperature, m
             
             print(f"DEBUG: Yeni yanıt eklendi. History: {len(app_state['history'])}, Current: {app_state['current_response'] is not None}")
             
+            # Ana yanıt için kopyalanabilir display oluştur
+            main_response_html = create_copyable_response_display(generated_text)
+            
             # Önceki yanıtlar HTML'ini oluştur (history[1:] - ilk yanıt hariç)
             previous_html = create_previous_responses_html()
             
@@ -907,7 +910,7 @@ def generate_response_handler(original_text, custom_input, model, temperature, m
             generate_visible = app_state['state'] == 'draft' and app_state['yanit_sayisi'] < 5
             new_request_visible = app_state['state'] == 'finalized' or app_state['yanit_sayisi'] >= 5
             
-            return (generated_text, previous_html, gr.update(visible=generate_visible), gr.update(visible=new_request_visible),
+            return (main_response_html, previous_html, gr.update(visible=generate_visible), gr.update(visible=new_request_visible),
                    gr.update(visible=True),  # Ana copy butonu görünür olsun
                    accordion_updates[0], accordion_updates[1], accordion_updates[2], accordion_updates[3],
                    text_updates[0], text_updates[1], text_updates[2], text_updates[3],
@@ -929,14 +932,91 @@ def generate_response_handler(original_text, custom_input, model, temperature, m
                gr.update(visible=False), gr.update(visible=False), gr.update(visible=False), gr.update(visible=False),
                gr.update(visible=False), gr.update(visible=False), gr.update(visible=False), gr.update(visible=False))
 
+def create_copyable_response_display(response_text=""):
+    """Kopyalanabilir yeşil kutu formatında yanıt göster"""
+    if not response_text:
+        return """
+        <div style="background: #f8f9fa; padding: 15px; border-radius: 8px; margin: 10px 0; min-height: 100px;">
+            <p style="color: #666; text-align: center; margin: 0;">Henüz yanıt üretilmedi...</p>
+        </div>
+        """
+    
+    copyable_html = f"""
+    <div style="background: #e8f5e8; padding: 15px; border-radius: 8px; margin: 10px 0; border: 1px solid #28a745;">
+        <p style="margin: 0 0 10px 0; font-weight: bold; color: #28a745;">📝 Son Üretilen Yanıt:</p>
+        <textarea readonly onclick="this.select(); document.execCommand('copy'); showCopySuccess(this);" 
+                  style="width: 100%; height: 200px; padding: 12px; border: 1px solid #28a745; 
+                         border-radius: 6px; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
+                         font-size: 14px; line-height: 1.5; resize: vertical; cursor: pointer;
+                         background: white;">
+{response_text}
+        </textarea>
+        <p style="color: #28a745; font-size: 12px; margin: 8px 0 0 0;">
+            💡 Metne dokunarak otomatik kopyalayın
+        </p>
+    </div>
+    
+    <script>
+    function showCopySuccess(textarea) {{
+        const originalBorder = textarea.style.border;
+        textarea.style.border = '2px solid #28a745';
+        textarea.style.background = '#f8fff8';
+        
+        // Geçici mesaj göster
+        const parent = textarea.parentElement;
+        const successMsg = document.createElement('div');
+        successMsg.innerHTML = '<p style="color: #28a745; font-weight: bold; margin: 5px 0;">✅ Kopyalandı!</p>';
+        parent.appendChild(successMsg);
+        
+        setTimeout(() => {{
+            textarea.style.border = originalBorder;
+            textarea.style.background = 'white';
+            parent.removeChild(successMsg);
+        }}, 2000);
+    }}
+    </script>
+    """
+    
+    return copyable_html
+
+def create_previous_response_accordion(response_data, index):
+    """Önceki yanıtlar için kopyalanabilir accordion"""
+    response_text = response_data.get('response_text', '')
+    created_at = response_data.get('created_at', '')
+    model_name = response_data.get('model_name', '')
+    
+    return f"""
+    <details style="margin: 10px 0; border: 1px solid #ddd; border-radius: 8px; overflow: hidden;">
+        <summary style="background: #f8f9fa; padding: 12px; cursor: pointer; font-weight: bold;">
+            📄 Yanıt #{index} - {created_at[:19] if created_at else 'Bilinmeyen zaman'} ({model_name})
+        </summary>
+        <div style="background: #e8f5e8; padding: 15px;">
+            <textarea readonly onclick="this.select(); document.execCommand('copy'); showCopySuccess(this);" 
+                      style="width: 100%; height: 150px; padding: 12px; border: 1px solid #28a745; 
+                             border-radius: 6px; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
+                             font-size: 14px; line-height: 1.5; resize: vertical; cursor: pointer;
+                             background: white;">
+{response_text}
+            </textarea>
+            <p style="color: #28a745; font-size: 12px; margin: 8px 0 0 0;">
+                💡 Metne dokunarak da kopyalayabilirsiniz
+            </p>
+        </div>
+    </details>
+    """
+
 def create_previous_responses_html():
-    """Önceki yanıtlar için HTML oluştur - sadece başlık"""
+    """Önceki yanıtları HTML formatında oluştur"""
     print(f"DEBUG: create_previous_responses_html çağrıldı. History uzunluğu: {len(app_state['history'])}")
     
     if len(app_state['history']) <= 1:  # Sadece 1 yanıt varsa önceki yanıt yok
         return "<div style='color: #666; font-style: italic; font-family: \"Segoe UI\", Tahoma, Geneva, Verdana, sans-serif;'>Henüz önceki yanıt yok</div>"
     
-    return "<h3 style='font-family: \"Segoe UI\", Tahoma, Geneva, Verdana, sans-serif; font-weight: 600;'>📚 Önceki Yanıtlar</h3>"
+    previous_responses_html = "<h3 style='font-family: \"Segoe UI\", Tahoma, Geneva, Verdana, sans-serif; font-weight: 600;'>📚 Önceki Yanıtlar</h3>"
+    for i, resp in enumerate(app_state['history'][1:5], 1):  # Maksimum 4 önceki
+        previous_responses_html += create_previous_response_accordion(resp, i)
+    
+    return previous_responses_html
 
 def copy_response_handler(response_text):
     """Mevcut yanıtı kopyala - eski koddan mantık"""
@@ -1017,16 +1097,18 @@ def copy_previous_response_handler(response_id):
                     
                     print("✅ Önceki yanıt response kopyalandı! Sayı 2 arttı.")
                     
-                    # UI güncellemeleri
-                    selected_text = resp['response_text']
-                    previous_html = "<div style='color: #666; font-style: italic; font-family: \"Segoe UI\", Tahoma, Geneva, Verdana, sans-serif;'>Henüz önceki yanıt yok</div>"
+                    # Ana yanıt için kopyalanabilir display oluştur
+                    main_response_html = create_copyable_response_display(resp['response_text'])
+                    
+                    # Önceki yanıtlar HTML'ini oluştur
+                    previous_html = create_previous_responses_html()
                     
                     # Tüm akordiyonları gizle
                     accordion_updates = [gr.update(visible=False)] * 4
                     text_updates = [gr.update(visible=False)] * 4
                     button_updates = [gr.update(visible=False)] * 4
                     
-                    return (gr.update(value=selected_text, label="Seçilen Yanıt"), previous_html, gr.update(visible=generate_visible), gr.update(visible=new_request_visible),
+                    return (main_response_html, previous_html, gr.update(visible=generate_visible), gr.update(visible=new_request_visible),
                            gr.update(visible=True),  # Ana copy butonu görünür olsun
                            accordion_updates[0], accordion_updates[1], accordion_updates[2], accordion_updates[3],
                            text_updates[0], text_updates[1], text_updates[2], text_updates[3],
@@ -1067,6 +1149,9 @@ def new_request_handler():
     generate_visible = app_state['state'] == 'draft' and app_state['yanit_sayisi'] < 5
     new_request_visible = app_state['state'] == 'finalized' or app_state['yanit_sayisi'] >= 5
     
+    # Ana yanıt için boş display
+    main_response_html = create_copyable_response_display()
+    
     # Önceki yanıtlar HTML'ini oluştur
     previous_html = create_previous_responses_html()
     
@@ -1075,7 +1160,7 @@ def new_request_handler():
     text_updates = [gr.update(visible=False)] * 4
     button_updates = [gr.update(visible=False)] * 4
     
-    return ("", previous_html, gr.update(visible=generate_visible), gr.update(visible=new_request_visible),
+    return (main_response_html, previous_html, gr.update(visible=generate_visible), gr.update(visible=new_request_visible),
            gr.update(visible=False),  # Ana copy butonu gizli olsun
            accordion_updates[0], accordion_updates[1], accordion_updates[2], accordion_updates[3],
            text_updates[0], text_updates[1], text_updates[2], text_updates[3],
@@ -1503,11 +1588,10 @@ with gr.Blocks(
             
             # Sağ sütun - Sonuçlar
             with gr.Column(scale=1):
-                response_text = gr.Textbox(
-                    label="Son Üretilen Yanıt",
-                    lines=8,
-                    interactive=False,
-                    placeholder="Henüz yanıt üretilmedi..."
+                # Ana yanıt alanını HTML ile değiştirin
+                main_response_html = gr.HTML(
+                    value=create_copyable_response_display(),
+                    label="Son Üretilen Yanıt"
                 )
                 
                 # Ana Seç ve Kopyala butonu
@@ -1613,7 +1697,7 @@ with gr.Blocks(
     generate_btn.click(
         fn=generate_response_handler,
         inputs=[original_text, custom_input, model, temperature, max_tokens],
-        outputs=[response_text, previous_responses, generate_btn, new_request_btn,
+        outputs=[main_response_html, previous_responses, generate_btn, new_request_btn,
                 main_copy_btn,  # Ana copy butonu
                 prev_accordion_1, prev_accordion_2, prev_accordion_3, prev_accordion_4,
                 prev_text_1, prev_text_2, prev_text_3, prev_text_4,
@@ -1624,7 +1708,7 @@ with gr.Blocks(
     main_copy_btn.click(
         fn=lambda: copy_previous_response_handler(app_state['current_response']['id'] if app_state['current_response'] and app_state['current_response'].get('id') else None),
         inputs=[],
-        outputs=[response_text, previous_responses, generate_btn, new_request_btn,
+        outputs=[main_response_html, previous_responses, generate_btn, new_request_btn,
                 main_copy_btn,  # Ana copy butonu
                 prev_accordion_1, prev_accordion_2, prev_accordion_3, prev_accordion_4,
                 prev_text_1, prev_text_2, prev_text_3, prev_text_4,
@@ -1634,7 +1718,7 @@ with gr.Blocks(
     new_request_btn.click(
         fn=new_request_handler,
         inputs=[],
-        outputs=[response_text, previous_responses, generate_btn, new_request_btn,
+        outputs=[main_response_html, previous_responses, generate_btn, new_request_btn,
                 main_copy_btn,  # Ana copy butonu
                 prev_accordion_1, prev_accordion_2, prev_accordion_3, prev_accordion_4,
                 prev_text_1, prev_text_2, prev_text_3, prev_text_4,
@@ -1645,7 +1729,7 @@ with gr.Blocks(
     prev_copy_btn_1.click(
         fn=lambda: copy_previous_response_handler(app_state['history'][1]['id'] if len(app_state['history']) > 1 else None),
         inputs=[],
-        outputs=[response_text, previous_responses, generate_btn, new_request_btn,
+        outputs=[main_response_html, previous_responses, generate_btn, new_request_btn,
                 main_copy_btn,  # Ana copy butonu
                 prev_accordion_1, prev_accordion_2, prev_accordion_3, prev_accordion_4,
                 prev_text_1, prev_text_2, prev_text_3, prev_text_4,
@@ -1655,7 +1739,7 @@ with gr.Blocks(
     prev_copy_btn_2.click(
         fn=lambda: copy_previous_response_handler(app_state['history'][2]['id'] if len(app_state['history']) > 2 else None),
         inputs=[],
-        outputs=[response_text, previous_responses, generate_btn, new_request_btn,
+        outputs=[main_response_html, previous_responses, generate_btn, new_request_btn,
                 main_copy_btn,  # Ana copy butonu
                 prev_accordion_1, prev_accordion_2, prev_accordion_3, prev_accordion_4,
                 prev_text_1, prev_text_2, prev_text_3, prev_text_4,
@@ -1665,7 +1749,7 @@ with gr.Blocks(
     prev_copy_btn_3.click(
         fn=lambda: copy_previous_response_handler(app_state['history'][3]['id'] if len(app_state['history']) > 3 else None),
         inputs=[],
-        outputs=[response_text, previous_responses, generate_btn, new_request_btn,
+        outputs=[main_response_html, previous_responses, generate_btn, new_request_btn,
                 main_copy_btn,  # Ana copy butonu
                 prev_accordion_1, prev_accordion_2, prev_accordion_3, prev_accordion_4,
                 prev_text_1, prev_text_2, prev_text_3, prev_text_4,
@@ -1675,7 +1759,7 @@ with gr.Blocks(
     prev_copy_btn_4.click(
         fn=lambda: copy_previous_response_handler(app_state['history'][4]['id'] if len(app_state['history']) > 4 else None),
         inputs=[],
-        outputs=[response_text, previous_responses, generate_btn, new_request_btn,
+        outputs=[main_response_html, previous_responses, generate_btn, new_request_btn,
                 main_copy_btn,  # Ana copy butonu
                 prev_accordion_1, prev_accordion_2, prev_accordion_3, prev_accordion_4,
                 prev_text_1, prev_text_2, prev_text_3, prev_text_4,
