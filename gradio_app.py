@@ -791,13 +791,12 @@ def get_admin_statistics():
             with open('active_sessions.json', 'r') as f:
                 sessions = json.load(f)
             
-            # Bu kullanıcının en son session'ını bul
-            user_sessions = [s for s in sessions if s.get('email') == current_user_email]
-            if not user_sessions:
+            # Bu kullanıcının session'ını bul
+            if current_user_email not in sessions:
                 return "❌ Kullanıcı session'ı bulunamadı"
             
-            latest_session = max(user_sessions, key=lambda x: x.get('created_at', ''))
-            user_token = latest_session.get('jwt_token')
+            user_session = sessions[current_user_email]
+            user_token = user_session.get('jwt_token')
             
             if not user_token:
                 return "❌ Kullanıcı token'ı bulunamadı"
