@@ -495,6 +495,25 @@ def verify_login_code(email, code):
             # Admin durumunu kontrol et
             app_state['is_admin'] = check_admin_status()
             
+            # Session'ı active_sessions.json'a kaydet (istatistikler paneli için)
+            try:
+                session_data = {
+                    'email': data["email"],
+                    'jwt_token': data["access_token"],
+                    'full_name': '',
+                    'department': '',
+                    'created_at': datetime.now().isoformat(),
+                    'is_admin': app_state['is_admin']
+                }
+                
+                # active_sessions.json'a kaydet
+                with open('active_sessions.json', 'w') as f:
+                    json.dump({data["email"]: session_data}, f)
+                
+                print(f"Session {data['email']} için active_sessions.json'a kaydedildi")
+            except Exception as e:
+                print(f"Session kaydetme hatası: {e}")
+            
             # Kullanıcı profil bilgilerini al
             user_profile_html = get_user_profile()
             
@@ -506,6 +525,22 @@ def verify_login_code(email, code):
                     profile_data = profile_response.json()
                     full_name = profile_data.get('full_name', '')
                     department = profile_data.get('department', '')
+                    
+                    # Session'ı profil bilgileri ile güncelle
+                    try:
+                        with open('active_sessions.json', 'r') as f:
+                            sessions = json.load(f)
+                        
+                        if data["email"] in sessions:
+                            sessions[data["email"]]['full_name'] = full_name
+                            sessions[data["email"]]['department'] = department
+                            
+                            with open('active_sessions.json', 'w') as f:
+                                json.dump(sessions, f)
+                            
+                            print(f"Session {data['email']} profil bilgileri ile güncellendi")
+                    except Exception as e:
+                        print(f"Session güncelleme hatası: {e}")
                     
                     if not full_name or not department:
                         print("Profil tamamlanmamış, profil tamamlama sayfasına yönlendiriliyor")
