@@ -92,25 +92,14 @@ def check_auth_token():
             app_state['access_token'] = latest_session.get('jwt_token')
             app_state['is_admin'] = check_admin_status()
             
-            # Her linkle girişte yeni istek olarak başla
+            # Her linkle girişte yeni istek olarak başla - önceki yanıtlar sıfırlanır
             app_state['yanit_sayisi'] = 0
             app_state['state'] = 'draft'
-            app_state['history'] = []
+            app_state['history'] = []  # Her seferinde temiz başla
             app_state['current_response'] = None
             app_state['has_copied'] = False
             
-            # Bu kullanıcının önceki yanıtlarını backend'den al
-            try:
-                headers = {"Authorization": f"Bearer {app_state['access_token']}"}
-                response = requests.get(f"{BACKEND_URL}/responses/history", headers=headers, timeout=30)
-                if response.status_code == 200:
-                    history_data = response.json()
-                    app_state['history'] = history_data.get('responses', [])
-                    print(f"Kullanıcı {app_state['user_email']} için {len(app_state['history'])} önceki yanıt yüklendi")
-                else:
-                    print(f"History yüklenemedi: {response.status_code}")
-            except Exception as e:
-                print(f"History yükleme hatası: {e}")
+            print(f"Kullanıcı {app_state['user_email']} için yeni istek başlatıldı - önceki yanıtlar sıfırlandı")
             
             # Profil tamamlama kontrolü
             full_name = latest_session.get('full_name', '')
