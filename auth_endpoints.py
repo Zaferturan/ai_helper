@@ -700,4 +700,54 @@ async def verify_magic_link(
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Magic link doğrulama hatası: {str(e)}"
+        )
+
+@auth_router.post("/save-session")
+async def save_session(
+    session_data: dict,
+    db: Session = Depends(get_db)
+):
+    """
+    Session bilgilerini active_sessions.json'a kaydet
+    """
+    try:
+        import json
+        import os
+        
+        email = session_data.get("email")
+        if not email:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Email gerekli"
+            )
+        
+        # active_sessions.json dosyasını oku veya oluştur
+        sessions_file = "active_sessions.json"
+        if os.path.exists(sessions_file):
+            with open(sessions_file, "r") as f:
+                sessions = json.load(f)
+        else:
+            sessions = {}
+        
+        # Session'ı kaydet
+        sessions[email] = {
+            "email": email,
+            "jwt_token": session_data.get("jwt_token"),
+            "full_name": session_data.get("full_name", ""),
+            "department": session_data.get("department", ""),
+            "created_at": session_data.get("created_at", ""),
+            "is_admin": session_data.get("is_admin", False)
+        }
+        
+        # Dosyaya yaz
+        with open(sessions_file, "w") as f:
+            json.dump(sessions, f, indent=2)
+        
+        return {"success": True, "message": "Session kaydedildi"}
+        
+    except Exception as e:
+        logger.error(f"Session kaydetme hatası: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Session kaydetme hatası: {str(e)}"
         ) 
