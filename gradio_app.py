@@ -1053,6 +1053,10 @@ def copy_response_handler(response_text):
     """Mevcut yanıtı kopyala - eski koddan mantık"""
     user_state = get_user_state()
     
+    print(f"DEBUG: copy_response_handler çağrıldı")
+    print(f"DEBUG: user_state['current_response'] = {user_state['current_response']}")
+    print(f"DEBUG: user_state['has_copied'] = {user_state['has_copied']}")
+    
     # İlk kopyalama kontrolü - eğer zaten kopyalanmışsa hiçbir şey yapma
     if user_state['has_copied']:
         return ("⚠️ Bu istek için zaten bir yanıt kopyalandı!", gr.update(), gr.update())
@@ -1073,6 +1077,8 @@ def copy_response_handler(response_text):
             print("✅ Response veritabanında kopyalandı olarak işaretlendi!")
         else:
             print("❌ Response işaretlenemedi!")
+    else:
+        print("⚠️ Current response bulunamadı, sadece panoya kopyalandı")
     
     # Panoya kopyala
     try:
@@ -1762,7 +1768,7 @@ with gr.Blocks(
     
     # Ana Seç ve Kopyala butonu event handler
     main_copy_btn.click(
-        fn=lambda: copy_previous_response_handler(app_state['current_response']['id'] if app_state['current_response'] and app_state['current_response'].get('id') else None),
+        fn=lambda: copy_previous_response_handler(get_user_state()['current_response']['id'] if get_user_state()['current_response'] and get_user_state()['current_response'].get('id') else None),
         inputs=[],
         outputs=[main_response_html, previous_responses, generate_btn, new_request_btn,
                 main_copy_btn,  # Ana copy butonu
