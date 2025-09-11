@@ -1123,7 +1123,7 @@ def copy_previous_response_handler(response_id):
                     button_updates = [gr.update(visible=False)] * 4
                     
                     return (main_response_html, previous_html, gr.update(visible=generate_visible), gr.update(visible=new_request_visible),
-                           gr.update(visible=True),  # Ana copy butonu görünür olsun
+                           gr.update(visible=False),  # Ana copy butonu gizli olsun (seçim yapıldı)
                            accordion_updates[0], accordion_updates[1], accordion_updates[2], accordion_updates[3],
                            text_updates[0], text_updates[1], text_updates[2], text_updates[3],
                            button_updates[0], button_updates[1], button_updates[2], button_updates[3])
