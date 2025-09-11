@@ -724,6 +724,12 @@ def update_response_feedback(response_id, is_selected=False, copied=False):
 def get_admin_statistics():
     """Admin istatistiklerini al - eski kodun mantığını takip eder"""
     try:
+        # Mevcut kullanıcının token'ını al
+        current_user_email = app_state.get('user_email')
+        if not current_user_email:
+            return "❌ Kullanıcı bilgisi bulunamadı"
+        
+        # Bu kullanıcının token'ını al
         headers = {"Authorization": f"Bearer {app_state['access_token']}"}
         response = requests.get(f"{BACKEND_URL}/auth/admin/users", headers=headers, timeout=30)
         
@@ -802,6 +808,9 @@ def get_admin_statistics():
 
 def refresh_admin_panel_handler():
     """Admin panelini yenile - verileri güncelle"""
+    print(f"DEBUG: refresh_admin_panel_handler çağrıldı")
+    print(f"DEBUG: Mevcut kullanıcı: {app_state.get('user_email')}")
+    print(f"DEBUG: Access token var mı: {bool(app_state.get('access_token'))}")
     return gr.update(value=get_admin_statistics())
 
 def create_request_handler(original_text, custom_input):
