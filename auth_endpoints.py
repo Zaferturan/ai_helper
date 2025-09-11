@@ -642,4 +642,62 @@ async def verify_token(request: dict, db: Session = Depends(get_db)):
         
     except Exception as e:
         logger.error(f"Token verification error: {str(e)}")
-        return {"success": False, "message": f"Token doğrulama hatası: {str(e)}"} 
+        return {"success": False, "message": f"Token doğrulama hatası: {str(e)}"}
+
+@auth_router.get("/verify-magic-link")
+async def verify_magic_link(
+    token: str,
+    db: Session = Depends(get_db)
+):
+    """
+    Magic link token'ını doğrula ve session bilgilerini döndür
+    """
+    try:
+        # Token hash'ini oluştur
+        token_hash = hashlib.sha256(token.encode()).hexdigest()
+        
+        # Token'ı bul
+        login_token = db.query(LoginToken).filter(
+            LoginToken.token_hash == token_hash,
+            LoginToken.used_at.is_(None),  # Kullanılmamış
+            LoginToken.expires_at > datetime.utcnow()
+        ).first()
+        
+        if not login_token:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Geçersiz veya süresi dolmuş token"
+            )
+        
+        # Kullanıcıyı bul
+        user = db.query(User).filter(User.email == login_token.email).first()
+        if not user:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Kullanıcı bulunamadı"
+            )
+        
+        # Token'ı kullanılmış olarak işaretle
+        login_token.used_at = datetime.utcnow()
+        
+        # JWT token oluştur
+        jwt_token = auth_service.create_access_token({"sub": user.email})
+        
+        # Session bilgilerini döndür
+        return {
+            "email": user.email,
+            "jwt_token": jwt_token,
+            "full_name": user.full_name or "",
+            "department": user.department or "",
+            "created_at": datetime.utcnow().isoformat(),
+            "is_admin": user.is_admin
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Magic link verification error: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Magic link doğrulama hatası: {str(e)}"
+        ) 
