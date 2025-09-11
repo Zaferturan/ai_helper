@@ -885,10 +885,42 @@ def generate_response_handler(original_text, custom_input, model, temperature, m
             # Önceki yanıtlar HTML'ini oluştur (history[1:] - ilk yanıt hariç)
             previous_html = create_previous_responses_html()
             
-            # Gradio akordiyonlarını tamamen gizle (sadece HTML'de gösteriyoruz)
-            accordion_updates = [gr.update(visible=False)] * 4
-            text_updates = [gr.update(visible=False)] * 4
-            button_updates = [gr.update(visible=False)] * 4
+            # Gradio akordiyonlarını tekrar görünür yap ama içlerinde yeşil textarea'lar olsun
+            accordion_updates = []
+            text_updates = []
+            button_updates = []
+            
+            for i, resp in enumerate(app_state['history'][1:], 1):
+                if i <= 4:  # Maksimum 4 önceki yanıt
+                    # Accordion'ı görünür yap ama içeriği yeşil textarea ile değiştir
+                    accordion_updates.append(gr.update(visible=True, label=f"📄 Yanıt #{i} - {resp.get('created_at', '')[:19]}"))
+                    # Normal textbox yerine yeşil textarea HTML'i gönder
+                    green_textarea_html = f"""
+                    <div style="background: #e8f5e8; padding: 15px; border-radius: 8px; margin: 10px 0; border: 1px solid #28a745;">
+                        <textarea readonly onclick="this.select(); document.execCommand('copy'); showCopySuccess(this);" 
+                                  style="width: 100%; height: 150px; padding: 12px; border: 1px solid #28a745; 
+                                         border-radius: 6px; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
+                                         font-size: 14px; line-height: 1.5; resize: vertical; cursor: pointer;
+                                         background: white;">
+{resp.get('response_text', '')}
+                        </textarea>
+                        <p style="color: #28a745; font-size: 12px; margin: 8px 0 0 0;">
+                            💡 Metne dokunarak otomatik kopyalayın
+                        </p>
+                    </div>
+                    """
+                    text_updates.append(gr.update(visible=True, value=green_textarea_html))
+                    button_updates.append(gr.update(visible=True))
+                else:
+                    accordion_updates.append(gr.update(visible=False))
+                    text_updates.append(gr.update(visible=False))
+                    button_updates.append(gr.update(visible=False))
+            
+            # Eksik olanları gizle
+            while len(accordion_updates) < 4:
+                accordion_updates.append(gr.update(visible=False))
+                text_updates.append(gr.update(visible=False))
+                button_updates.append(gr.update(visible=False))
             
             # Buton görünürlüğünü güncelle
             generate_visible = app_state['state'] == 'draft' and app_state['yanit_sayisi'] < 5
@@ -1087,7 +1119,7 @@ def copy_previous_response_handler(response_id):
                     # Önceki yanıtlar HTML'ini oluştur
                     previous_html = create_previous_responses_html()
                     
-                    # Tüm akordiyonları gizle (sadece HTML'de gösteriyoruz)
+                    # Tüm akordiyonları gizle (seçilen yanıt ana alana gittiği için)
                     accordion_updates = [gr.update(visible=False)] * 4
                     text_updates = [gr.update(visible=False)] * 4
                     button_updates = [gr.update(visible=False)] * 4
@@ -1592,22 +1624,22 @@ with gr.Blocks(
                 with gr.Column():
                     prev_accordion_1 = gr.Accordion("📄 Yanıt #1", open=False, visible=False)
                     with prev_accordion_1:
-                        prev_text_1 = gr.Textbox(visible=False, interactive=False, lines=8, show_label=False, max_lines=8)
+                        prev_text_1 = gr.HTML(visible=False, value="")
                         prev_copy_btn_1 = gr.Button("📋 Seç ve Kopyala #1", variant="primary", visible=False)
                     
                     prev_accordion_2 = gr.Accordion("📄 Yanıt #2", open=False, visible=False)
                     with prev_accordion_2:
-                        prev_text_2 = gr.Textbox(visible=False, interactive=False, lines=8, show_label=False, max_lines=8)
+                        prev_text_2 = gr.HTML(visible=False, value="")
                         prev_copy_btn_2 = gr.Button("📋 Seç ve Kopyala #2", variant="primary", visible=False)
                     
                     prev_accordion_3 = gr.Accordion("📄 Yanıt #3", open=False, visible=False)
                     with prev_accordion_3:
-                        prev_text_3 = gr.Textbox(visible=False, interactive=False, lines=8, show_label=False, max_lines=8)
+                        prev_text_3 = gr.HTML(visible=False, value="")
                         prev_copy_btn_3 = gr.Button("📋 Seç ve Kopyala #3", variant="primary", visible=False)
                     
                     prev_accordion_4 = gr.Accordion("📄 Yanıt #4", open=False, visible=False)
                     with prev_accordion_4:
-                        prev_text_4 = gr.Textbox(visible=False, interactive=False, lines=8, show_label=False, max_lines=8)
+                        prev_text_4 = gr.HTML(visible=False, value="")
                         prev_copy_btn_4 = gr.Button("📋 Seç ve Kopyala #4", variant="primary", visible=False)
     
     # Event handlers
