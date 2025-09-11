@@ -7,7 +7,33 @@ import urllib.parse
 # Backend URL
 BACKEND_URL = "http://localhost:8000/api/v1"
 
-# Global state
+# =============================================================================
+# MULTI-USER SORUNU - USER EMAIL İLE STATE AYIRMA
+# =============================================================================
+
+# Global state yerine user-based state:
+user_states = {}  # email -> state
+
+def get_user_state():
+    """Mevcut kullanıcının state'ini al"""
+    current_email = app_state.get('user_email')
+    if not current_email:
+        return app_state  # Fallback
+    
+    if current_email not in user_states:
+        user_states[current_email] = {
+            'history': [],
+            'current_response': None,
+            'current_request_id': None,
+            'response_count': 0,
+            'state': 'draft',
+            'yanit_sayisi': 0,
+            'has_copied': False
+        }
+    
+    return user_states[current_email]
+
+# Global app_state (sadece auth için)
 app_state = {
     'authenticated': False,
     'access_token': None,
@@ -15,14 +41,7 @@ app_state = {
     'login_email': None,
     'login_sent': False,
     'show_admin_panel': False,
-    'history': [],  # Önceki yanıtlar
-    'current_response': None,  # Mevcut yanıt
-    'current_request_id': None,  # Mevcut request ID
-    'response_count': 0,  # Bu request için üretilen yanıt sayısı
-    'is_admin': False,  # Admin kontrolü için
-    'state': 'draft',  # 'draft' veya 'finalized' - eski koddan
-    'yanit_sayisi': 0,  # Her istek için üretilen yanıt sayısı - eski koddan
-    'has_copied': False  # Kopyalama durumu - eski koddan
+    'is_admin': False
 }
 
 
@@ -93,11 +112,12 @@ def check_auth_token():
             app_state['is_admin'] = check_admin_status()
             
             # Her linkle girişte yeni istek olarak başla - önceki yanıtlar sıfırlanır
-            app_state['yanit_sayisi'] = 0
-            app_state['state'] = 'draft'
-            app_state['history'] = []  # Her seferinde temiz başla
-            app_state['current_response'] = None
-            app_state['has_copied'] = False
+            user_state = get_user_state()
+            user_state['yanit_sayisi'] = 0
+            user_state['state'] = 'draft'
+            user_state['history'] = []  # Her seferinde temiz başla
+            user_state['current_response'] = None
+            user_state['has_copied'] = False
             
             print(f"Kullanıcı {app_state['user_email']} için yeni istek başlatıldı - önceki yanıtlar sıfırlandı")
             
@@ -813,12 +833,15 @@ def create_request_handler(original_text, custom_input):
 def generate_response_handler(original_text, custom_input, model, temperature, max_tokens):
     """Yanıt üret - eski Streamlit mantığını takip eder"""
     try:
+        # User state'i al
+        user_state = get_user_state()
+        
         print(f"DEBUG: generate_response_handler çağrıldı")
-        print(f"DEBUG: app_state['state'] = {app_state.get('state')}")
-        print(f"DEBUG: app_state['yanit_sayisi'] = {app_state.get('yanit_sayisi')}")
+        print(f"DEBUG: user_state['state'] = {user_state.get('state')}")
+        print(f"DEBUG: user_state['yanit_sayisi'] = {user_state.get('yanit_sayisi')}")
         
         # Maksimum 5 yanıt kontrolü - eski koddan
-        if app_state['yanit_sayisi'] >= 5:
+        if user_state['yanit_sayisi'] >= 5:
             print(f"DEBUG: Maksimum 5 yanıt üretildi, hata mesajı döndürülüyor")
             return ("⚠️ Maksimum 5 yanıt üretildi! Yeni istek öneri için 'Yeni İstek Öneri Cevapla' butonuna basın.", "", gr.update(visible=False), gr.update(visible=True),
                    gr.update(visible=False),  # Ana copy butonu gizli olsun
@@ -827,16 +850,16 @@ def generate_response_handler(original_text, custom_input, model, temperature, m
                    gr.update(visible=False), gr.update(visible=False), gr.update(visible=False), gr.update(visible=False))
         
         # Eğer yeni istekse request oluştur
-        if app_state['current_request_id'] is None:
+        if user_state['current_request_id'] is None:
             request_id, create_msg = create_request_handler(original_text, custom_input)
             if not request_id:
                 return ("", "", gr.update(visible=False), gr.update(visible=True),
                        gr.update(visible=False), gr.update(visible=False), gr.update(visible=False), gr.update(visible=False),
                        gr.update(visible=False), gr.update(visible=False), gr.update(visible=False), gr.update(visible=False),
                        gr.update(visible=False), gr.update(visible=False), gr.update(visible=False), gr.update(visible=False))
-            app_state['current_request_id'] = request_id
+            user_state['current_request_id'] = request_id
         else:
-            request_id = app_state['current_request_id']
+            request_id = user_state['current_request_id']
         
         # Yanıt üret
         headers = {
@@ -871,15 +894,15 @@ def generate_response_handler(original_text, custom_input, model, temperature, m
             }
             
             # Eski Streamlit mantığını takip et: history'ye yeni yanıtı ekle
-            app_state['history'].insert(0, new_response)
-            print(f"DEBUG: History'ye eklendi. History uzunluğu: {len(app_state['history'])}")
+            user_state['history'].insert(0, new_response)
+            print(f"DEBUG: History'ye eklendi. History uzunluğu: {len(user_state['history'])}")
             
             # Current response'u güncelle (en yeni yanıt)
-            app_state['current_response'] = new_response
-            app_state['response_count'] += 1
-            app_state['yanit_sayisi'] += 1  # Eski koddan - yanıt sayısını artır
+            user_state['current_response'] = new_response
+            user_state['response_count'] += 1
+            user_state['yanit_sayisi'] += 1  # Eski koddan - yanıt sayısını artır
             
-            print(f"DEBUG: Yeni yanıt eklendi. History: {len(app_state['history'])}, Current: {app_state['current_response'] is not None}")
+            print(f"DEBUG: Yeni yanıt eklendi. History: {len(user_state['history'])}, Current: {user_state['current_response'] is not None}")
             
             # Ana yanıt için kopyalanabilir display oluştur
             main_response_html = create_copyable_response_display(generated_text)
@@ -892,7 +915,7 @@ def generate_response_handler(original_text, custom_input, model, temperature, m
             text_updates = []
             button_updates = []
             
-            for i, resp in enumerate(app_state['history'][1:], 1):
+            for i, resp in enumerate(user_state['history'][1:], 1):
                 if i <= 4:  # Maksimum 4 önceki yanıt
                     # Accordion'ı görünür yap ama içeriği yeşil textarea ile değiştir
                     accordion_updates.append(gr.update(visible=True, label=f"📄 Yanıt #{i} - {resp.get('created_at', '')[:19]}"))
@@ -922,8 +945,8 @@ def generate_response_handler(original_text, custom_input, model, temperature, m
                 button_updates.append(gr.update(visible=False))
             
             # Buton görünürlüğünü güncelle
-            generate_visible = app_state['state'] == 'draft' and app_state['yanit_sayisi'] < 5
-            new_request_visible = app_state['state'] == 'finalized' or app_state['yanit_sayisi'] >= 5
+            generate_visible = user_state['state'] == 'draft' and user_state['yanit_sayisi'] < 5
+            new_request_visible = user_state['state'] == 'finalized' or user_state['yanit_sayisi'] >= 5
             
             return (main_response_html, previous_html, gr.update(visible=generate_visible), gr.update(visible=new_request_visible),
                    gr.update(visible=True),  # Ana copy butonu görünür olsun
@@ -1017,9 +1040,10 @@ def create_previous_response_accordion(response_data, index):
 
 def create_previous_responses_html():
     """Önceki yanıtları HTML formatında oluştur - sadece başlık"""
-    print(f"DEBUG: create_previous_responses_html çağrıldı. History uzunluğu: {len(app_state['history'])}")
+    user_state = get_user_state()
+    print(f"DEBUG: create_previous_responses_html çağrıldı. History uzunluğu: {len(user_state['history'])}")
     
-    if len(app_state['history']) <= 1:  # Sadece 1 yanıt varsa önceki yanıt yok
+    if len(user_state['history']) <= 1:  # Sadece 1 yanıt varsa önceki yanıt yok
         return "<div style='color: #666; font-style: italic; font-family: \"Segoe UI\", Tahoma, Geneva, Verdana, sans-serif;'>Henüz önceki yanıt yok</div>"
     
     # Sadece başlık döndür, yeşil kutuları kaldır (accordion'larda zaten var)
@@ -1027,17 +1051,19 @@ def create_previous_responses_html():
 
 def copy_response_handler(response_text):
     """Mevcut yanıtı kopyala - eski koddan mantık"""
+    user_state = get_user_state()
+    
     # İlk kopyalama kontrolü - eğer zaten kopyalanmışsa hiçbir şey yapma
-    if app_state['has_copied']:
+    if user_state['has_copied']:
         return ("⚠️ Bu istek için zaten bir yanıt kopyalandı!", gr.update(), gr.update())
     
     # Durum makinesini finalized yap - eski koddan
-    app_state['state'] = 'finalized'
-    app_state['has_copied'] = True  # Eski koddan
+    user_state['state'] = 'finalized'
+    user_state['has_copied'] = True  # Eski koddan
     
     # Veritabanında response'u kopyalandı olarak işaretle
-    if app_state['current_response'] and app_state['current_response'].get('id'):
-        response_id = app_state['current_response']['id']
+    if user_state['current_response'] and user_state['current_response'].get('id'):
+        response_id = user_state['current_response']['id']
         
         # Response'u kopyalandı olarak işaretle
         result = mark_response_as_copied(response_id)
@@ -1057,19 +1083,21 @@ def copy_response_handler(response_text):
         print(f"❌ Panoya kopyalama hatası: {e}")
     
     # Buton görünürlüğünü güncelle
-    generate_visible = app_state['state'] == 'draft' and app_state['yanit_sayisi'] < 5
-    new_request_visible = app_state['state'] == 'finalized' or app_state['yanit_sayisi'] >= 5
+    generate_visible = user_state['state'] == 'draft' and user_state['yanit_sayisi'] < 5
+    new_request_visible = user_state['state'] == 'finalized' or user_state['yanit_sayisi'] >= 5
     
     return ("✅ Yanıt kopyalandı! (Ctrl+V ile yapıştırabilirsiniz)", gr.update(visible=generate_visible), gr.update(visible=new_request_visible))
 
 def copy_previous_response_handler(response_id):
     """Önceki yanıtı kopyala ve seç - eski koddan mantık"""
     try:
+        user_state = get_user_state()
+        
         # History'den yanıtı bul
-        for resp in app_state['history']:
+        for resp in user_state['history']:
             if resp['id'] == response_id:
                 # Durum makinesi kontrolü - eğer zaten kopyalanmışsa hiçbir şey yapma
-                if app_state['has_copied']:
+                if user_state['has_copied']:
                     return ("⚠️ Bu istek için zaten bir yanıt kopyalandı!", gr.update(), gr.update(),
                            gr.update(visible=False), gr.update(visible=False), gr.update(visible=False), gr.update(visible=False),
                            gr.update(visible=False), gr.update(visible=False), gr.update(visible=False), gr.update(visible=False),
@@ -1083,13 +1111,13 @@ def copy_previous_response_handler(response_id):
                     update_response_feedback(response_id, is_selected=True, copied=True)
                     
                     # Durum makinesini güncelle
-                    app_state['state'] = 'finalized'
-                    app_state['has_copied'] = True
-                    app_state['yanit_sayisi'] += 1  # Yanıt sayısını artır
+                    user_state['state'] = 'finalized'
+                    user_state['has_copied'] = True
+                    user_state['yanit_sayisi'] += 1  # Yanıt sayısını artır
                     
                     # Seçilen yanıtı current_response olarak ayarla
-                    app_state['current_response'] = resp
-                    app_state['history'].remove(resp)
+                    user_state['current_response'] = resp
+                    user_state['history'].remove(resp)
                     
                     # Panoya kopyala
                     try:
@@ -1100,8 +1128,8 @@ def copy_previous_response_handler(response_id):
                         print(f"❌ Panoya kopyalama hatası: {e}")
                     
                     # Buton görünürlüğünü güncelle
-                    generate_visible = app_state['state'] == 'draft' and app_state['yanit_sayisi'] < 5
-                    new_request_visible = app_state['state'] == 'finalized' or app_state['yanit_sayisi'] >= 5
+                    generate_visible = user_state['state'] == 'draft' and user_state['yanit_sayisi'] < 5
+                    new_request_visible = user_state['state'] == 'finalized' or user_state['yanit_sayisi'] >= 5
                     
                     print("✅ Önceki yanıt response kopyalandı! Sayı 2 arttı.")
                     
@@ -1142,20 +1170,22 @@ def copy_previous_response_handler(response_id):
 
 def new_request_handler():
     """Yeni istek - state'i temizle - eski koddan mantık"""
+    user_state = get_user_state()
+    
     # Session state'i temizle - eski koddan
-    app_state['history'] = []
-    app_state['current_response'] = None
-    app_state['current_request_id'] = None
-    app_state['response_count'] = 0
+    user_state['history'] = []
+    user_state['current_response'] = None
+    user_state['current_request_id'] = None
+    user_state['response_count'] = 0
     
     # Durum makinesini sıfırla - eski koddan
-    app_state['state'] = 'draft'
-    app_state['yanit_sayisi'] = 0  # Yanıt sayısını sıfırla
-    app_state['has_copied'] = False  # Kopyalama durumunu sıfırla
+    user_state['state'] = 'draft'
+    user_state['yanit_sayisi'] = 0  # Yanıt sayısını sıfırla
+    user_state['has_copied'] = False  # Kopyalama durumunu sıfırla
     
     # Buton görünürlüğünü güncelle
-    generate_visible = app_state['state'] == 'draft' and app_state['yanit_sayisi'] < 5
-    new_request_visible = app_state['state'] == 'finalized' or app_state['yanit_sayisi'] >= 5
+    generate_visible = user_state['state'] == 'draft' and user_state['yanit_sayisi'] < 5
+    new_request_visible = user_state['state'] == 'finalized' or user_state['yanit_sayisi'] >= 5
     
     # Ana yanıt için boş display
     main_response_html = create_copyable_response_display()
