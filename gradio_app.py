@@ -89,6 +89,36 @@ def check_auth_token():
         import requests
         import json
         
+        # JavaScript ile magic link token'ını al
+        js_code = """
+        <script>
+        function getMagicToken() {
+            const urlParams = new URLSearchParams(window.location.search);
+            const token = urlParams.get('token');
+            if (token) {
+                // Token'ı backend'e gönder
+                fetch('/api/v1/auth/verify-magic-link?token=' + token)
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.email) {
+                            // Session'ı kaydet
+                            localStorage.setItem('magic_session', JSON.stringify(data));
+                            console.log('Magic link session kaydedildi:', data.email);
+                        }
+                    })
+                    .catch(error => console.error('Magic link hatası:', error));
+            }
+        }
+        
+        // Sayfa yüklendiğinde çalıştır
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', getMagicToken);
+        } else {
+            getMagicToken();
+        }
+        </script>
+        """
+        
         # Backend'den aktif session'ları al
         try:
             with open("active_sessions.json", "r") as f:
@@ -1467,6 +1497,34 @@ with gr.Blocks(
                 <p style="margin: 0.3rem 0 0 0; font-size: 1rem; opacity: 0.9; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;">Nilüfer Belediyesi - Yapay Zeka Destekli Yanıt Üretim Sistemi</p>
             </div>
         </div>
+        
+        <script>
+        function getMagicToken() {{
+            const urlParams = new URLSearchParams(window.location.search);
+            const token = urlParams.get('token');
+            if (token) {{
+                console.log('Magic link token bulundu:', token);
+                // Token'ı backend'e gönder
+                fetch('http://localhost:8000/api/v1/auth/verify-magic-link?token=' + token)
+                    .then(response => response.json())
+                    .then(data => {{
+                        if (data.email) {{
+                            // Session'ı kaydet
+                            localStorage.setItem('magic_session', JSON.stringify(data));
+                            console.log('Magic link session kaydedildi:', data.email);
+                        }}
+                    }})
+                    .catch(error => console.error('Magic link hatası:', error));
+            }}
+        }}
+        
+        // Sayfa yüklendiğinde çalıştır
+        if (document.readyState === 'loading') {{
+            document.addEventListener('DOMContentLoaded', getMagicToken);
+        }} else {{
+            getMagicToken();
+        }}
+        </script>
         """
     else:
         main_banner_html = """
