@@ -898,10 +898,7 @@ def generate_response_handler(original_text, custom_input, model, temperature, m
                     normal_textarea_html = f"""
                     <div style="padding: 15px; border-radius: 8px; margin: 10px 0;">
                         <textarea readonly onclick="this.select(); document.execCommand('copy'); showCopySuccess(this);" 
-                                  style="width: 100%; height: 150px; padding: 12px; border: 1px solid #ccc; 
-                                         border-radius: 6px; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
-                                         font-size: 14px; line-height: 1.5; resize: vertical; cursor: pointer;
-                                         background: white;">
+                                  class="gradio-textbox">
 {resp.get('response_text', '')}
                         </textarea>
                         <p style="color: #666; font-size: 12px; margin: 8px 0 0 0;">
@@ -952,7 +949,7 @@ def create_copyable_response_display(response_text=""):
     """Kopyalanabilir yeşil kutu formatında yanıt göster"""
     if not response_text:
         return """
-        <div style="background: #f8f9fa; padding: 15px; border-radius: 8px; margin: 10px 0; min-height: 100px;">
+        <div style="background: transparent; padding: 15px; border-radius: 8px; margin: 10px 0; min-height: 100px;">
             <p style="color: #666; text-align: center; margin: 0;">Henüz yanıt üretilmedi...</p>
         </div>
         """
@@ -961,10 +958,7 @@ def create_copyable_response_display(response_text=""):
     <div style="padding: 15px; border-radius: 8px; margin: 10px 0;">
         <p style="margin: 0 0 10px 0; font-weight: bold;">📝 Son Üretilen Yanıt:</p>
         <textarea readonly onclick="this.select(); document.execCommand('copy'); showCopySuccess(this);" 
-                  style="width: 100%; height: 200px; padding: 12px; border: 1px solid #ccc; 
-                         border-radius: 6px; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
-                         font-size: 14px; line-height: 1.5; resize: vertical; cursor: pointer;
-                         background: white;">
+                  class="gradio-textbox">
 {response_text}
         </textarea>
         <p style="color: #666; font-size: 12px; margin: 8px 0 0 0;">
@@ -975,18 +969,19 @@ def create_copyable_response_display(response_text=""):
     <script>
     function showCopySuccess(textarea) {{
         const originalBorder = textarea.style.border;
-        textarea.style.border = '2px solid #007bff';
-        textarea.style.background = '#f8f9fa';
+        const originalBackground = textarea.style.background;
+        textarea.style.border = '2px solid #3B82F6';
+        textarea.style.background = '#f0f9ff';
         
         // Geçici mesaj göster
         const parent = textarea.parentElement;
         const successMsg = document.createElement('div');
-        successMsg.innerHTML = '<p style="color: #007bff; font-weight: bold; margin: 5px 0;">✅ Kopyalandı!</p>';
+        successMsg.innerHTML = '<p style="color: #3B82F6; font-weight: bold; margin: 5px 0;">✅ Kopyalandı!</p>';
         parent.appendChild(successMsg);
         
         setTimeout(() => {{
             textarea.style.border = originalBorder;
-            textarea.style.background = 'white';
+            textarea.style.background = originalBackground;
             parent.removeChild(successMsg);
         }}, 2000);
     }}
@@ -1008,10 +1003,7 @@ def create_previous_response_accordion(response_data, index):
         </summary>
         <div style="padding: 15px;">
             <textarea readonly onclick="this.select(); document.execCommand('copy'); showCopySuccess(this);" 
-                      style="width: 100%; height: 150px; padding: 12px; border: 1px solid #ccc; 
-                             border-radius: 6px; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
-                             font-size: 14px; line-height: 1.5; resize: vertical; cursor: pointer;
-                             background: white;">
+                      class="gradio-textbox">
 {response_text}
             </textarea>
             <p style="color: #666; font-size: 12px; margin: 8px 0 0 0;">
@@ -1258,6 +1250,24 @@ with gr.Blocks(
     /* Gradio'nun alt kısmındaki tüm footer elementlerini gizle */
     .gradio-container > div:last-child {
         display: none !important;
+    }
+    /* Kopyalanabilir textarea'ları gr.Textbox ile aynı yap */
+    .gradio-textbox {
+        background: var(--input-background-fill) !important;
+        color: var(--body-text-color) !important;
+        border-color: var(--border-color-primary) !important;
+        border-style: solid !important;
+        border-width: 1px !important;
+        border-radius: var(--radius-lg) !important;
+        padding: var(--spacing-lg) !important;
+        font-family: var(--body-text-font) !important;
+        font-size: var(--body-text-size) !important;
+        line-height: var(--body-text-line-height) !important;
+        box-shadow: var(--shadow-drop) !important;
+        width: 100% !important;
+        height: 200px !important;
+        resize: vertical !important;
+        cursor: pointer !important;
     }
     """
 ) as demo:
@@ -1559,14 +1569,14 @@ with gr.Blocks(
         with gr.Row():
             # Sol sütun - Giriş ve ayarlar
             with gr.Column(scale=1):
-                gr.HTML("<h3 style='font-family: \"Segoe UI\", Tahoma, Geneva, Verdana, sans-serif; font-weight: 600;'>📝 Gelen İstek/Öneri</h3>")
+                gr.HTML("<h3 style='font-family: \"Segoe UI\", Tahoma, Geneva, Verdana, sans-serif; font-weight: 600;'></h3>")
                 original_text = gr.Textbox(
                     label="Gelen istek/öneri metnini buraya yapıştırın:",
                     value="Bursa Nilüfer'de bir dükkanım var ve yönetim planından tahsisli otoparkımda bulunan dubaları, belediye ekipleri mafyavari şekilde tahsisli alanımdan alıp götürebiliyor. Geri aradığımda ise belediye zabıtası, görevliyi mahkemeye vermemi söylüyor. Bu nasıl bir hizmet anlayışı? Benim tahsisli alanımdan eşyamı alıyorsunuz, buna ne denir? Herkes biliyordur. Bir yeri koruduğunu zannedip başka bir yeri mağdur etmek mi belediyecilik?",
                     lines=6
                 )
                 
-                gr.HTML("<h3 style='font-family: \"Segoe UI\", Tahoma, Geneva, Verdana, sans-serif; font-weight: 600;'>✍️ Hazırladığınız Cevap</h3>")
+                gr.HTML("<h3 style='font-family: \"Segoe UI\", Tahoma, Geneva, Verdana, sans-serif; font-weight: 600;'></h3>")
                 custom_input = gr.Textbox(
                     label="Hazırladığınız cevap taslağını buraya yazın:",
                     value="Orası size tahsis edilmiş bir yer değil. Nilüfer halkının ortak kullanım alanı. Kaldırımlar da öyle.",
