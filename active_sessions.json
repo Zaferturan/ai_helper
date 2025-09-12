@@ -1,10 +1,1 @@
-{
-  "zaferturan@nilufer.bel.tr": {
-    "email": "zaferturan@nilufer.bel.tr",
-    "jwt_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJ6YWZlcnR1cmFuQG5pbHVmZXIuYmVsLnRyIiwiZXhwIjoxNzU3NjE3MjAwfQ.9qbOky_1_GRUk8cg0hxqAIxBUYNHdwSx3ZuYSOib0gk",
-    "full_name": "zafer turan",
-    "department": "Bilgi \u0130\u015flem M\u00fcd\u00fcrl\u00fc\u011f\u00fc",
-    "created_at": "2025-09-11T14:51:57",
-    "is_admin": true
-  }
-}
+{}

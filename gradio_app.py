@@ -83,227 +83,222 @@ def force_show_main_app():
         return tuple([gr.update() for _ in range(16)])
 
 
-def check_auth_token():
-    """Backend'den session kontrolü yap ve otomatik giriş yap"""
+def check_backend_session():
+    """
+    Backend'den aktif session'ı kontrol et ve app_state'i güncelle
+    Magic link ile giriş yapıldığında otomatik çalışacak
+    """
     try:
-        import requests
-        import json
-        
-        # JavaScript ile magic link token'ını al
-        js_code = """
-        <script>
-        function getMagicToken() {
-            const urlParams = new URLSearchParams(window.location.search);
-            const token = urlParams.get('token');
-            if (token) {
-                // Token'ı backend'e gönder
-                fetch('/api/v1/auth/verify-magic-link?token=' + token)
-                    .then(response => response.json())
-                    .then(data => {
-                        if (data.email) {
-                            // Session'ı kaydet
-                            localStorage.setItem('magic_session', JSON.stringify(data));
-                            console.log('Magic link session kaydedildi:', data.email);
-                        }
-                    })
-                    .catch(error => console.error('Magic link hatası:', error));
-            }
-        }
-        
-        // Sayfa yüklendiğinde çalıştır
-        if (document.readyState === 'loading') {
-            document.addEventListener('DOMContentLoaded', getMagicToken);
-        } else {
-            getMagicToken();
-        }
-        </script>
-        """
+        print("DEBUG: Backend session kontrolü başlatılıyor...")
         
         # Backend'den aktif session'ları al
-        try:
-            with open("active_sessions.json", "r") as f:
-                sessions = json.load(f)
-        except:
-            sessions = {}
+        response = requests.get(f"{BACKEND_URL}/auth/session-status", timeout=10)
+        print(f"DEBUG: Session status response: {response.status_code}")
         
-        # En son session'ı bul
-        latest_session = None
-        latest_time = None
-        
-        for user_id, session_data in sessions.items():
-            if latest_time is None or session_data.get('created_at', '') > latest_time:
-                latest_session = session_data
-                latest_time = session_data.get('created_at', '')
-        
-        # Eğer active_sessions.json boşsa ama app_state'de giriş bilgileri varsa, kaydet
-        if not latest_session and app_state.get('authenticated') and app_state.get('user_email') and app_state.get('access_token'):
-            print(f"Magic link ile giriş yapılmış, session kaydediliyor: {app_state.get('user_email')}")
+        if response.status_code == 200:
+            data = response.json()
+            sessions = data.get('sessions', [])
+            print(f"DEBUG: Bulunan session sayısı: {len(sessions)}")
             
-            # Mevcut app_state bilgilerini kullanarak session oluştur
-            session_data = {
-                'email': app_state.get('user_email'),
-                'jwt_token': app_state.get('access_token'),
-                'full_name': '',
-                'department': '',
-                'created_at': datetime.now().isoformat(),
-                'is_admin': app_state.get('is_admin', False)
-            }
-            
-            # active_sessions.json'a kaydet
-            with open('active_sessions.json', 'w') as f:
-                json.dump({app_state.get('user_email'): session_data}, f)
-            
-            print(f"Magic link session {app_state.get('user_email')} için kaydedildi")
-            
-            # Profil bilgilerini al ve session'ı güncelle
-            try:
-                headers = {"Authorization": f"Bearer {app_state['access_token']}"}
-                profile_response = requests.get(f"{BACKEND_URL}/auth/profile", headers=headers)
-                if profile_response.status_code == 200:
-                    profile_data = profile_response.json()
-                    full_name = profile_data.get('full_name', '')
-                    department = profile_data.get('department', '')
-                    
-                    # Session'ı profil bilgileri ile güncelle
-                    session_data['full_name'] = full_name
-                    session_data['department'] = department
-                    
-                    with open('active_sessions.json', 'w') as f:
-                        json.dump({app_state.get('user_email'): session_data}, f)
-                    
-                    print(f"Session {app_state.get('user_email')} profil bilgileri ile güncellendi")
-            except Exception as e:
-                print(f"Profil bilgileri alma hatası: {e}")
-            
-            return True
-        
-        if latest_session:
-            print(f"Otomatik giriş bulundu: {latest_session.get('email')}")
-            
-            # Session'ı kullanarak giriş yap
-            app_state['authenticated'] = True
-            app_state['user_email'] = latest_session.get('email')
-            app_state['access_token'] = latest_session.get('jwt_token')
-            app_state['is_admin'] = check_admin_status()
-            
-            # Session'ı active_sessions.json'a kaydet (istatistikler paneli için)
-            try:
-                session_data = {
-                    'email': latest_session.get('email'),
-                    'jwt_token': latest_session.get('jwt_token'),
-                    'full_name': latest_session.get('full_name', ''),
-                    'department': latest_session.get('department', ''),
-                    'created_at': latest_session.get('created_at', ''),
-                    'is_admin': latest_session.get('is_admin', False)
-                }
+            if sessions:
+                # En son session'ı al
+                latest_session = sessions[0]
+                session_id = latest_session.get('session_id')
                 
-                # active_sessions.json'a kaydet
-                with open('active_sessions.json', 'w') as f:
-                    json.dump({latest_session.get('email'): session_data}, f)
+                # Session detaylarını al
+                session_response = requests.get(f"{BACKEND_URL}/auth/session/{session_id}", timeout=10)
                 
-                print(f"Session {latest_session.get('email')} için active_sessions.json'a kaydedildi")
-            except Exception as e:
-                print(f"Session kaydetme hatası: {e}")
-            
-            # Her linkle girişte yeni istek olarak başla - önceki yanıtlar sıfırlanır
-            user_state = get_user_state()
-            user_state['yanit_sayisi'] = 0
-            user_state['state'] = 'draft'
-            user_state['history'] = []  # Her seferinde temiz başla
-            user_state['current_response'] = None
-            user_state['has_copied'] = False
-            
-            print(f"Kullanıcı {app_state['user_email']} için yeni istek başlatıldı - önceki yanıtlar sıfırlandı")
-            
-            # Profil tamamlama kontrolü
-            full_name = latest_session.get('full_name', '')
-            department = latest_session.get('department', '')
-            
-            if not full_name or not department:
-                print("Profil tamamlanmamış, profil tamamlama sayfasına yönlendiriliyor")
-                sessions.clear()
-                with open("active_sessions.json", "w") as f:
-                    json.dump(sessions, f)
-                
-                return (
-                    gr.update(visible=False),  # login_title
-                    gr.update(visible=False),  # login_subtitle
-                    gr.update(visible=False),  # login_instruction
-                    gr.update(visible=False),  # email_input
-                    gr.update(visible=False),  # send_code_btn
-                    gr.update(visible=False),  # code_title
-                    gr.update(visible=False),  # code_subtitle
-                    gr.update(visible=False),  # code_input
-                    gr.update(visible=False),  # verify_btn
-                    gr.update(visible=False),  # code_buttons
-                    gr.update(visible=False),  # user_info_row
-                    gr.update(visible=False),  # user_info_html
-                    gr.update(visible=False),  # logout_btn
-                    gr.update(visible=False),  # force_show_btn
-                    gr.update(visible=False),  # main_app_area
-                    gr.update(visible=False),  # admin_panel
-                    gr.update(visible=True),   # main_banner
-                    gr.update(visible=True),   # profile_completion_area
-                    gr.update(visible=False),  # profile_error_msg
-                    gr.update(visible=False)    # response_settings_accordion
-                )
-            
-            # Session'ı temizle (tek kullanımlık)
-            sessions.clear()
-            with open("active_sessions.json", "w") as f:
-                json.dump(sessions, f)
-            
-            print("Otomatik giriş başarılı!")
-            
-            # UI'yi ana uygulamaya geçir
-            # Session'dan kullanıcı bilgilerini al
-            user_profile_html = f"<h3 style='font-family: \"Segoe UI\", Tahoma, Geneva, Verdana, sans-serif; font-weight: 600;'>👤 {full_name} - {department}</h3>"
-            
-            return (
-                gr.update(visible=False),  # login_title
-                gr.update(visible=False),  # login_subtitle
-                gr.update(visible=False),  # login_instruction
-                gr.update(visible=False),  # email_input
-                gr.update(visible=False),  # send_code_btn
-                gr.update(visible=False),  # code_title
-                gr.update(visible=False),  # code_subtitle
-                gr.update(visible=False),  # code_input
-                gr.update(visible=False),  # verify_btn
-                gr.update(visible=False),  # code_buttons
-                gr.update(visible=True),   # user_info_row
-                gr.update(visible=True, value=user_profile_html),  # user_info_html
-                gr.update(visible=True),   # logout_btn
-                gr.update(visible=False),  # force_show_btn
-                gr.update(visible=True),   # main_app_area
-                gr.update(visible=app_state['is_admin']),  # admin_panel
-                gr.update(visible=True),   # main_banner
-                gr.update(visible=False),  # profile_completion_area
-                gr.update(visible=False),  # profile_error_msg
-                gr.update(visible=app_state['is_admin'])  # response_settings_accordion
-            )
-        else:
-            print("Otomatik giriş bulunamadı")
-            return tuple([gr.update() for _ in range(20)])
-            
-    except Exception as e:
-        print(f"Otomatik giriş hatası: {e}")
-        return tuple([gr.update() for _ in range(20)])
-        
-        if auth_token:
-            # JWT token'ı backend'e gönder ve doğrula
-            response = requests.post(f"{BACKEND_URL}/auth/verify-token", 
-                                   json={"token": auth_token})
-            if response.status_code == 200:
-                data = response.json()
-                if data.get("success"):
-                    # Giriş başarılı, state'i güncelle
+                if session_response.status_code == 200:
+                    session_data = session_response.json()
+                    user_email = session_data.get('user_email')
+                    access_token = session_data.get('access_token')
+                    is_admin = session_data.get('is_admin', False)
+                    
+                    print(f"DEBUG: Session bulundu - {user_email}, admin: {is_admin}")
+                    
+                    # app_state'i güncelle
                     app_state['authenticated'] = True
-                    app_state['access_token'] = auth_token
-                    app_state['user_email'] = data.get("email")
-                    app_state['is_admin'] = data.get("is_admin", False)
-                    print(f"Magic link ile giriş başarılı: {data.get('email')}")
+                    app_state['user_email'] = user_email
+                    app_state['access_token'] = access_token
+                    app_state['is_admin'] = is_admin
+                    
+                    print(f"DEBUG: app_state güncellendi - admin: {app_state['is_admin']}")
+                    
+                    # Profil bilgilerini al
+                    try:
+                        headers = {"Authorization": f"Bearer {access_token}"}
+                        profile_response = requests.get(f"{BACKEND_URL}/auth/profile", headers=headers)
+                        
+                        if profile_response.status_code == 200:
+                            profile_data = profile_response.json()
+                            full_name = profile_data.get('full_name', '')
+                            department = profile_data.get('department', '')
+                            
+                            # Profil tamamlama kontrolü
+                            if not full_name or not department:
+                                return show_profile_completion_ui()
+                            
+                            # Ana uygulamayı göster
+                            return show_main_application_ui(full_name, department)
+                        else:
+                            print(f"DEBUG: Profil bilgileri alınamadı: {profile_response.status_code}")
+                            return show_main_application_ui("Kullanıcı", "Bilinmiyor")
+                            
+                    except Exception as e:
+                        print(f"DEBUG: Profil kontrol hatası: {e}")
+                        return show_main_application_ui("Kullanıcı", "Bilinmiyor")
+                else:
+                    print(f"DEBUG: Session detayları alınamadı: {session_response.status_code}")
+            else:
+                print("DEBUG: Aktif session bulunamadı")
+        else:
+            print(f"DEBUG: Session status alınamadı: {response.status_code}")
+        
+        # Session bulunamazsa login ekranını göster
+        return show_login_ui()
+        
     except Exception as e:
-        print(f"Auth token kontrol hatası: {e}")
+        print(f"DEBUG: Backend session kontrol hatası: {e}")
+        return show_login_ui()
+
+def show_main_application_ui(full_name, department):
+    """Ana uygulamayı göster"""
+    user_profile_html = f"<h3 style='font-family: \"Segoe UI\", Tahoma, Geneva, Verdana, sans-serif; font-weight: 600;'>👤 {full_name} - {department}</h3>"
+    
+    return (
+        gr.update(visible=False),  # login_title
+        gr.update(visible=False),  # login_subtitle
+        gr.update(visible=False),  # login_instruction
+        gr.update(visible=False),  # email_input
+        gr.update(visible=False),  # send_code_btn
+        gr.update(visible=False),  # code_title
+        gr.update(visible=False),  # code_subtitle
+        gr.update(visible=False),  # code_input
+        gr.update(visible=False),  # verify_btn
+        gr.update(visible=False),  # code_buttons
+        gr.update(visible=True),   # user_info_row
+        gr.update(visible=True, value=user_profile_html),  # user_info_html
+        gr.update(visible=True),   # logout_btn
+        gr.update(visible=False),  # force_show_btn
+        gr.update(visible=True),   # main_app_area
+        gr.update(visible=app_state['is_admin']),  # admin_panel - KEY FIX!
+        gr.update(visible=True),   # main_banner
+        gr.update(visible=False),  # profile_completion_area
+        gr.update(visible=False),  # profile_error_msg
+        gr.update(visible=app_state['is_admin'])  # response_settings_accordion - KEY FIX!
+    )
+
+def show_profile_completion_ui():
+    """Profil tamamlama ekranını göster"""
+    return (
+        gr.update(visible=False),  # login_title
+        gr.update(visible=False),  # login_subtitle
+        gr.update(visible=False),  # login_instruction
+        gr.update(visible=False),  # email_input
+        gr.update(visible=False),  # send_code_btn
+        gr.update(visible=False),  # code_title
+        gr.update(visible=False),  # code_subtitle
+        gr.update(visible=False),  # code_input
+        gr.update(visible=False),  # verify_btn
+        gr.update(visible=False),  # code_buttons
+        gr.update(visible=False),  # user_info_row
+        gr.update(visible=False),  # user_info_html
+        gr.update(visible=False),  # logout_btn
+        gr.update(visible=False),  # force_show_btn
+        gr.update(visible=False),  # main_app_area
+        gr.update(visible=False),  # admin_panel
+        gr.update(visible=True),   # main_banner
+        gr.update(visible=True),   # profile_completion_area
+        gr.update(visible=False),  # profile_error_msg
+        gr.update(visible=False)    # response_settings_accordion
+    )
+
+def show_login_ui():
+    """Login ekranını göster"""
+    return (
+        gr.update(visible=True),   # login_title
+        gr.update(visible=True),   # login_subtitle
+        gr.update(visible=True),   # login_instruction
+        gr.update(visible=True),   # email_input
+        gr.update(visible=True),   # send_code_btn
+        gr.update(visible=False),  # code_title
+        gr.update(visible=False),  # code_subtitle
+        gr.update(visible=False),  # code_input
+        gr.update(visible=False),  # verify_btn
+        gr.update(visible=False),  # code_buttons
+        gr.update(visible=False),  # user_info_row
+        gr.update(visible=False),  # user_info_html
+        gr.update(visible=False),  # logout_btn
+        gr.update(visible=False),  # force_show_btn
+        gr.update(visible=False),  # main_app_area
+        gr.update(visible=False),  # admin_panel
+        gr.update(visible=True),   # main_banner
+        gr.update(visible=False),  # profile_completion_area
+        gr.update(visible=False),  # profile_error_msg
+        gr.update(visible=False)   # response_settings_accordion
+    )
+
+def debug_session_state():
+    print("=== SESSION DEBUG ===")
+    print(f"app_state: {app_state}")
+    
+    # Dosyadan session'ları oku
+    try:
+        if os.path.exists("user_sessions.json"):
+            with open("user_sessions.json", "r") as f:
+                sessions = json.load(f)
+                print(f"File sessions: {len(sessions)} session")
+                for sid, data in sessions.items():
+                    print(f"  {sid}: {data.get('user_email')} (admin: {data.get('is_admin', 'unknown')})")
+        else:
+            print("user_sessions.json not found")
+    except Exception as e:
+        print(f"File session read error: {e}")
+    
+    # Backend session'ları kontrol et
+    try:
+        response = requests.get(f"{BACKEND_URL}/auth/session-status", timeout=5)
+        if response.status_code == 200:
+            data = response.json()
+            sessions = data.get('sessions', [])
+            print(f"Backend sessions: {len(sessions)} session")
+            for session in sessions:
+                print(f"  {session.get('session_id')}: {session.get('user_email')}")
+        else:
+            print(f"Backend session status error: {response.status_code}")
+    except Exception as e:
+        print(f"Backend session check error: {e}")
+    
+    print("=== END DEBUG ===")
+
+def cleanup_all_sessions():
+    """Tüm session'ları temizle"""
+    try:
+        # Dosyadan temizle
+        with open("user_sessions.json", "w") as f:
+            json.dump({}, f)
+        
+        # active_sessions.json'ı da temizle
+        with open("active_sessions.json", "w") as f:
+            json.dump({}, f)
+        
+        # app_state'i sıfırla
+        app_state.clear()
+        app_state.update({
+            'authenticated': False,
+            'access_token': None,
+            'user_email': None,
+            'login_email': None,
+            'login_sent': False,
+            'show_admin_panel': False,
+            'is_admin': False
+        })
+        
+        print("Tüm session'lar temizlendi")
+        return "Sessions cleaned successfully"
+    except Exception as e:
+        print(f"Session temizleme hatası: {e}")
+        return f"Cleanup failed: {e}"
 
 
 def handle_complete_login_flow(email_or_code, current_step="email"):
@@ -696,11 +691,21 @@ def verify_login_code(email, code):
         )
 
 def logout_user():
-    """Logout - localStorage temizle"""
+    """Logout - session dosyalarını ve localStorage'ı temizle"""
     # Server state temizle
     for key in app_state:
         if key in ['authenticated', 'access_token', 'user_email', 'is_admin']:
             app_state[key] = False if key == 'authenticated' or key == 'is_admin' else None
+    
+    # Session dosyalarını temizle
+    try:
+        with open("user_sessions.json", "w") as f:
+            json.dump({}, f)
+        with open("active_sessions.json", "w") as f:
+            json.dump({}, f)
+        print("Session dosyaları temizlendi")
+    except Exception as e:
+        print(f"Session temizleme hatası: {e}")
     
     # JavaScript ile localStorage temizle (sayfa yüklendiğinde çalışacak)
     logout_html = """
@@ -863,13 +868,12 @@ def get_admin_statistics():
             with open('active_sessions.json', 'r') as f:
                 sessions = json.load(f)
             
-            # Bu kullanıcının en son session'ını bul
-            user_sessions = [s for s in sessions if s.get('email') == current_user_email]
-            if not user_sessions:
+            # Bu kullanıcının session'ını bul
+            if current_user_email not in sessions:
                 return "❌ Kullanıcı session'ı bulunamadı"
             
-            latest_session = max(user_sessions, key=lambda x: x.get('created_at', ''))
-            user_token = latest_session.get('jwt_token')
+            user_session = sessions[current_user_email]
+            user_token = user_session.get('jwt_token')
             
             if not user_token:
                 return "❌ Kullanıcı token'ı bulunamadı"
@@ -2028,7 +2032,7 @@ with gr.Blocks(
     
     # Magic link kontrolü - sayfa yüklendiğinde auth_token'ı kontrol et
     demo.load(
-        fn=check_auth_token,
+        fn=check_backend_session,  # CHANGED: check_auth_token yerine
         inputs=[],
         outputs=[
             login_title, login_subtitle, login_instruction, email_input, send_code_btn,

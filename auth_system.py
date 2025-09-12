@@ -1,6 +1,7 @@
 import os
 import secrets
 import string
+import hashlib
 from datetime import datetime, timedelta, time
 from typing import Optional, Dict, Any
 from fastapi import HTTPException, Depends, Request, Response
@@ -273,11 +274,13 @@ class AuthService:
     async def send_login_credentials_email(self, email: str, token: str, code: str, expires_at: datetime) -> bool:
         """Send login credentials email with token and code"""
         try:
-            logger.debug(f"Attempting to send login credentials email to: {email}")
-            logger.debug(f"Token: {token}")
-            logger.debug(f"Code: {code}")
-            logger.debug(f"SMTP settings - Host: {SMTP_HOST}, Port: {SMTP_PORT}, Username: {SMTP_USERNAME}")
-            logger.debug(f"SENDER_EMAIL value: {SENDER_EMAIL}")
+            logger.info(f"=== EMAIL DEBUG ===")
+            logger.info(f"Attempting to send login credentials email to: {email}")
+            logger.info(f"Token: {token}")
+            logger.info(f"Code: {code}")
+            logger.info(f"Code Hash: {hashlib.sha256(code.encode()).hexdigest()}")
+            logger.info(f"SMTP settings - Host: {SMTP_HOST}, Port: {SMTP_PORT}, Username: {SMTP_USERNAME}")
+            logger.info(f"SENDER_EMAIL value: {SENDER_EMAIL}")
             
             if not all([SMTP_HOST, SMTP_USERNAME, SMTP_PASSWORD, SENDER_EMAIL]):
                 logger.error("SMTP configuration incomplete")
@@ -480,9 +483,9 @@ def get_current_user(token = Depends(security), db: Session = Depends(get_db)):
         
         logger.debug(f"User ID from token: {user_id}")
         
-        # User ID'ye göre user bul
-        user = db.query(User).filter(User.id == int(user_id)).first()
-        logger.debug(f"User found by ID: {user.email if user else 'None'}")
+        # User email'e göre user bul
+        user = db.query(User).filter(User.email == user_id).first()
+        logger.debug(f"User found by email: {user.email if user else 'None'}")
         
         if user is None:
             logger.error(f"User with ID {user_id} not found in database")
@@ -503,4 +506,70 @@ def get_client_ip(request: Request) -> str:
         return forwarded_for
     
     # Fallback to direct connection
-    return request.client.host if request.client else "unknown" 
+    return request.client.host if request.client else "unknown"
+
+def save_user_session_to_file(user_email, access_token, request_info, user_id=None):
+    """User session'ını dosyaya kaydet - kullanıcı ID ile birlikte"""
+    try:
+        import json
+        import time
+        import hashlib
+        from pathlib import Path
+        
+        # Unique session ID oluştur
+        session_data_str = f"{request_info.client.host}_{request_info.headers.get('User-Agent', '')}"
+        session_id = hashlib.md5(session_data_str.encode()).hexdigest()[:12]
+        
+        # Mevcut sessions'ı oku
+        sessions_file = "user_sessions.json"
+        sessions = {}
+        if Path(sessions_file).exists():
+            with open(sessions_file, 'r', encoding='utf-8') as f:
+                sessions = json.load(f)
+        
+        # Kullanıcı bilgilerini veritabanından al
+        try:
+            from connection import get_db
+            from models import User
+            
+            db = next(get_db())
+            user = db.query(User).filter(User.email == user_email).first()
+            
+            is_admin = user.is_admin if user else False
+            full_name = user.full_name if user else ""
+            department = user.department if user else ""
+            profile_completed = user.profile_completed if user else False
+            
+            db.close()
+        except Exception as e:
+            print(f"Kullanıcı bilgileri alma hatası: {e}")
+            is_admin = False
+            full_name = ""
+            department = ""
+            profile_completed = False
+        
+        # Yeni session ekle - tam bilgiler ile
+        sessions[session_id] = {
+            'user_email': user_email,
+            'access_token': access_token,
+            'login_time': time.time(),
+            'user_agent': request_info.headers.get('User-Agent', ''),
+            'ip_address': request_info.client.host,
+            'last_activity': time.time(),
+            'is_admin': is_admin,
+            'full_name': full_name,
+            'department': department,
+            'profile_completed': profile_completed,
+            'user_id': user_id
+        }
+        
+        # Dosyaya kaydet
+        with open(sessions_file, 'w', encoding='utf-8') as f:
+            json.dump(sessions, f, indent=2, ensure_ascii=False)
+        
+        print(f"Session kaydedildi: {session_id} -> {user_email} (admin: {is_admin})")
+        return session_id
+        
+    except Exception as e:
+        print(f"Session kaydetme hatası: {e}")
+        return None 

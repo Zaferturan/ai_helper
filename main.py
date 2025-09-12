@@ -165,7 +165,7 @@ async def auth_redirect(token: str = Query(None)):
             if user and user.is_active:
                 # JWT token oluştur
                 jwt_token = jwt.encode({
-                    "sub": str(user.id),
+                    "sub": user.email,  # Email kullan (yeni sistem uyumlu)
                     "email": user.email,
                     "exp": datetime.utcnow().timestamp() + 18000  # 5 saat
                 }, JWT_SECRET_KEY, algorithm="HS256")
@@ -185,15 +185,32 @@ async def auth_redirect(token: str = Query(None)):
                 # Basit session storage (gerçek uygulamada Redis kullanılmalı)
                 import json
                 try:
-                    with open("active_sessions.json", "r") as f:
+                    with open("user_sessions.json", "r") as f:
                         sessions = json.load(f)
                 except:
                     sessions = {}
                 
-                sessions[str(user.id)] = session_data
+                # Session ID oluştur
+                import time
+                import hashlib
+                session_data_str = f"{user.email}_MagicLink_{time.time()}"
+                session_id = hashlib.md5(session_data_str.encode()).hexdigest()[:12]
                 
-                with open("active_sessions.json", "w") as f:
-                    json.dump(sessions, f, default=str)
+                sessions[session_id] = {
+                    "user_email": user.email,
+                    "access_token": jwt_token,
+                    "login_time": time.time(),
+                    "user_agent": "MagicLink",
+                    "ip_address": "127.0.0.1",
+                    "last_activity": time.time(),
+                    "is_admin": user.is_admin,
+                    "full_name": user.full_name,
+                    "department": user.department,
+                    "profile_completed": user.profile_completed
+                }
+                
+                with open("user_sessions.json", "w") as f:
+                    json.dump(sessions, f, indent=2, ensure_ascii=False)
                 
                 # Gradio'ya yönlendir
                 redirect_url = f"{PRODUCTION_URL}/?auto_login=true"
