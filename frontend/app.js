@@ -281,6 +281,15 @@ class APIClient {
         });
     }
 
+    // Session methods
+    async getSessionStatus() {
+        return this.request('/session-status');
+    }
+
+    async getSessionDetails(sessionId) {
+        return this.request(`/session/${sessionId}`);
+    }
+
     // Admin methods
     async getAdminStats() {
         return this.request('/admin/stats');
@@ -314,6 +323,7 @@ class AuthManager {
         const sessionId = urlParams.get('session_id');
         const userEmail = urlParams.get('user_email');
         const isAdmin = urlParams.get('is_admin') === 'true';
+        const autoLogin = urlParams.get('auto_login');
         
         if (token) {
             console.log('Magic link detected, verifying token...');
@@ -321,6 +331,9 @@ class AuthManager {
         } else if (sessionId && userEmail) {
             console.log('Session parameters detected, loading session...');
             await this.handleSessionParams(sessionId, userEmail, isAdmin);
+        } else if (autoLogin === 'true') {
+            console.log('Auto login detected, checking backend session...');
+            await this.checkBackendSession();
         } else if (appState.authenticated) {
             console.log('Existing session found, verifying...');
             await this.verifyExistingSession();
@@ -335,38 +348,104 @@ class AuthManager {
         try {
             ui.showLoading();
             
-            const response = await api.request('/auth/verify-magic-link', {
+            // Magic link'i backend'e gönder ve redirect'i takip et
+            const response = await fetch(`${CONFIG.BACKEND_URL.replace('/api/v1', '')}/api/v1/auth?token=${token}`, {
                 method: 'GET',
-                headers: {
-                    'Authorization': `Bearer ${token}`
-                }
+                redirect: 'manual' // Redirect'i manuel olarak takip et
             });
             
-            if (response.success) {
-                appState.authToken = response.access_token;
-                appState.userEmail = response.user_email;
-                appState.isAdmin = response.is_admin;
-                appState.userProfile = {
-                    full_name: response.full_name,
-                    department: response.department
-                };
+            if (response.type === 'opaqueredirect' || response.status === 302) {
+                console.log('Magic link redirect received, checking session...');
                 
-                appState.saveToStorage();
+                // Session kontrolü yap
+                const sessionResponse = await api.getSessionStatus();
                 
-                if (response.profile_completed) {
-                    this.showMainScreen();
-                } else {
-                    this.showProfileScreen();
+                if (sessionResponse.sessions && sessionResponse.sessions.length > 0) {
+                    const latestSession = sessionResponse.sessions[0];
+                    const sessionDetails = await api.getSessionDetails(latestSession.session_id);
+                    
+                    if (sessionDetails.user_email) {
+                        console.log('Magic link session found:', sessionDetails.user_email);
+                        
+                        appState.authToken = sessionDetails.access_token;
+                        appState.userEmail = sessionDetails.user_email;
+                        appState.isAdmin = sessionDetails.is_admin || false;
+                        appState.userProfile = {
+                            full_name: sessionDetails.full_name,
+                            department: sessionDetails.department
+                        };
+                        appState.saveToStorage();
+                        
+                        if (sessionDetails.profile_completed) {
+                            this.showMainScreen();
+                        } else {
+                            this.showProfileScreen();
+                        }
+                        
+                        ui.hideLoading();
+                        return;
+                    }
                 }
-            } else {
-                throw new Error(response.message || 'Magic link verification failed');
             }
+            
+            throw new Error('Magic link verification failed');
+            
         } catch (error) {
             console.error('Magic link error:', error);
-            ui.showError('login-error', 'Magic link doğrulaması başarısız oldu.');
+            ui.showError('login-error', 'Magic link doğrulaması başarısız. Lütfen tekrar deneyin.');
             this.showLoginScreen();
         } finally {
             ui.hideLoading();
+        }
+    }
+
+    // Check backend session for auto login
+    async checkBackendSession() {
+        try {
+            console.log('Checking backend session...');
+            
+            // Backend'den aktif session'ları kontrol et
+            const sessionResponse = await api.getSessionStatus();
+            
+            if (sessionResponse.sessions && sessionResponse.sessions.length > 0) {
+                console.log('Found active session on backend');
+                const latestSession = sessionResponse.sessions[0];
+                
+                // Session detaylarını al
+                const sessionDetails = await api.getSessionDetails(latestSession.session_id);
+                
+                if (sessionDetails.user_email) {
+                    console.log('Backend session found:', sessionDetails.user_email);
+                    
+                    // Session bilgilerini kaydet
+                    appState.authToken = sessionDetails.access_token;
+                    appState.userEmail = sessionDetails.user_email;
+                    appState.isAdmin = sessionDetails.is_admin || false;
+                    appState.userProfile = {
+                        full_name: sessionDetails.full_name,
+                        department: sessionDetails.department
+                    };
+                    appState.saveToStorage();
+                    
+                    // Profil tamamlanmış mı kontrol et
+                    if (sessionDetails.profile_completed) {
+                        this.showMainScreen();
+                    } else {
+                        this.showProfileScreen();
+                    }
+                    
+                    return true;
+                }
+            }
+            
+            console.log('No active session found on backend');
+            this.showLoginScreen();
+            return false;
+            
+        } catch (error) {
+            console.error('Backend session check error:', error);
+            this.showLoginScreen();
+            return false;
         }
     }
 
@@ -919,7 +998,17 @@ document.addEventListener('DOMContentLoaded', async () => {
     console.log('AI Yardımcı Frontend initialized');
     
     try {
-        await authManager.init();
+        // Check for magic link parameters
+        const urlParams = new URLSearchParams(window.location.search);
+        const autoLogin = urlParams.get('auto_login');
+        
+        if (autoLogin === 'true') {
+            console.log('Magic link detected, attempting auto-login...');
+            // Magic link ile giriş yapıldı, session kontrolü yap
+            await authManager.checkBackendSession();
+        } else {
+            await authManager.init();
+        }
     } catch (error) {
         console.error('App initialization error:', error);
         ui.showError('login-error', 'Uygulama başlatılırken hata oluştu.');
