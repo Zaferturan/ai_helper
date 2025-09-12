@@ -1,0 +1,256 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Yardımcı - Nilüfer Belediyesi</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="icon" href="../icon.ico" type="image/x-icon">
+</head>
+<body>
+    <!-- Login Ekranı -->
+    <div id="login-screen" class="screen">
+        <div class="container">
+            <div class="login-card">
+                <div class="login-header">
+                    <img src="../logo.png" alt="Nilüfer Belediyesi" class="logo">
+                    <h1>AI Yardımcı</h1>
+                    <p class="subtitle">Nilüfer Belediyesi Yapay Zeka Asistanı</p>
+                </div>
+                
+                <div id="email-section">
+                    <h2>📧 E-posta ile Giriş</h2>
+                    <p class="instruction">E-posta adresinizi girin, size giriş kodu gönderelim.</p>
+                    
+                    <div class="form-group">
+                        <input type="email" id="email-input" placeholder="ornek@nilufer.bel.tr" required>
+                        <button id="send-code-btn" class="btn btn-primary">📧 Bağlantı ve Kod Gönder</button>
+                    </div>
+                </div>
+                
+                <div id="code-section" class="hidden">
+                    <h2>🔐 Kod Doğrulama</h2>
+                    <p class="instruction">E-postanıza gelen 6 haneli kodu girin.</p>
+                    
+                    <div class="form-group">
+                        <input type="text" id="code-input" placeholder="123456" maxlength="6" required>
+                        <button id="verify-btn" class="btn btn-primary">✅ Doğrula</button>
+                    </div>
+                    
+                    <div class="code-actions">
+                        <button id="resend-btn" class="btn btn-secondary">🔄 Tekrar gönder</button>
+                        <button id="back-btn" class="btn btn-secondary">⬅️ Geri Dön</button>
+                    </div>
+                </div>
+                
+                <div id="login-error" class="error-message hidden"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Profil Tamamlama Ekranı -->
+    <div id="profile-screen" class="screen hidden">
+        <div class="container">
+            <div class="profile-card">
+                <h2>👤 Profil Bilgilerinizi Tamamlayın</h2>
+                <p class="instruction">Devam etmek için lütfen profil bilgilerinizi tamamlayın.</p>
+                
+                <div class="form-group">
+                    <label for="profile-name">Ad Soyad</label>
+                    <input type="text" id="profile-name" placeholder="Adınız Soyadınız" required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="profile-department">Birim/Müdürlük</label>
+                    <select id="profile-department" required>
+                        <option value="">Birim seçiniz</option>
+                        <option value="Başkanlık">Başkanlık</option>
+                        <option value="Genel Sekreterlik">Genel Sekreterlik</option>
+                        <option value="Mali Hizmetler Müdürlüğü">Mali Hizmetler Müdürlüğü</option>
+                        <option value="İnsan Kaynakları ve Eğitim Müdürlüğü">İnsan Kaynakları ve Eğitim Müdürlüğü</option>
+                        <option value="Bilgi İşlem Müdürlüğü">Bilgi İşlem Müdürlüğü</option>
+                        <option value="Hukuk Müdürlüğü">Hukuk Müdürlüğü</option>
+                        <option value="Strateji Geliştirme Müdürlüğü">Strateji Geliştirme Müdürlüğü</option>
+                        <option value="Dış İlişkiler Müdürlüğü">Dış İlişkiler Müdürlüğü</option>
+                        <option value="Kültür ve Sosyal İşler Müdürlüğü">Kültür ve Sosyal İşler Müdürlüğü</option>
+                        <option value="Basın Yayın ve Halkla İlişkiler Müdürlüğü">Basın Yayın ve Halkla İlişkiler Müdürlüğü</option>
+                        <option value="İmar ve Şehircilik Müdürlüğü">İmar ve Şehircilik Müdürlüğü</option>
+                        <option value="Fen İşleri Müdürlüğü">Fen İşleri Müdürlüğü</option>
+                        <option value="Çevre Koruma ve Kontrol Müdürlüğü">Çevre Koruma ve Kontrol Müdürlüğü</option>
+                        <option value="Park ve Bahçeler Müdürlüğü">Park ve Bahçeler Müdürlüğü</option>
+                        <option value="Ulaşım Hizmetleri Müdürlüğü">Ulaşım Hizmetleri Müdürlüğü</option>
+                        <option value="İtfaiye Müdürlüğü">İtfaiye Müdürlüğü</option>
+                        <option value="Zabıta Müdürlüğü">Zabıta Müdürlüğü</option>
+                        <option value="Temizlik İşleri Müdürlüğü">Temizlik İşleri Müdürlüğü</option>
+                        <option value="Su ve Kanalizasyon Müdürlüğü">Su ve Kanalizasyon Müdürlüğü</option>
+                        <option value="Sosyal Yardım İşleri Müdürlüğü">Sosyal Yardım İşleri Müdürlüğü</option>
+                        <option value="Kadın ve Aile Hizmetleri Müdürlüğü">Kadın ve Aile Hizmetleri Müdürlüğü</option>
+                        <option value="Gençlik ve Spor Hizmetleri Müdürlüğü">Gençlik ve Spor Hizmetleri Müdürlüğü</option>
+                        <option value="Kütüphane Müdürlüğü">Kütüphane Müdürlüğü</option>
+                        <option value="Müze Müdürlüğü">Müze Müdürlüğü</option>
+                        <option value="Tiyatro Müdürlüğü">Tiyatro Müdürlüğü</option>
+                        <option value="Konservatuvar Müdürlüğü">Konservatuvar Müdürlüğü</option>
+                        <option value="Diğer">Diğer</option>
+                    </select>
+                </div>
+                
+                <button id="complete-profile-btn" class="btn btn-primary">✅ Profili Tamamla</button>
+                <div id="profile-error" class="error-message hidden"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Ana Uygulama Ekranı -->
+    <div id="main-screen" class="screen hidden">
+        <div class="container">
+            <!-- Kullanıcı Bilgi Çubuğu -->
+            <div class="user-info-bar">
+                <div class="user-info">
+                    <span id="user-profile">👤 Kullanıcı</span>
+                </div>
+                <button id="logout-btn" class="btn btn-secondary">🚪 Çıkış Yap</button>
+            </div>
+
+            <!-- Ana Banner -->
+            <div class="main-banner">
+                <h2>🤖 AI Yardımcı</h2>
+                <p>Belediye işlerinizde size yardımcı olmak için buradayım. Sorularınızı sorun, önerilerinizi paylaşın!</p>
+            </div>
+
+            <!-- Admin İstatistikler Akordeonu -->
+            <div id="admin-panel" class="admin-panel hidden">
+                <div class="accordion-header" onclick="toggleAdminPanel()">
+                    <h3>📊 İstatistikler</h3>
+                    <span class="accordion-icon">▼</span>
+                </div>
+                <div class="accordion-content">
+                    <div id="admin-stats-content">
+                        <div class="loading">İstatistikler yükleniyor...</div>
+                    </div>
+                    <button id="refresh-admin-btn" class="btn btn-secondary">🔄 Yenile</button>
+                </div>
+            </div>
+
+            <!-- Ana Uygulama Alanı -->
+            <div class="main-app-area">
+                <!-- Örnek İstekler -->
+                <div class="request-section">
+                    <h3>📝 Örnek İstekler</h3>
+                    <textarea id="original-text" placeholder="Örnek: Belediye başkanına hitaben bir teşekkür mektubu yazabilir misiniz?"></textarea>
+                </div>
+
+                <!-- Özel İstek -->
+                <div class="request-section">
+                    <h3>✏️ Özel İsteğiniz</h3>
+                    <textarea id="custom-input" placeholder="Kendi isteğinizi buraya yazın..."></textarea>
+                </div>
+
+                <!-- Yanıt Ayarları -->
+                <div id="response-settings" class="response-settings hidden">
+                    <h3>⚙️ Yanıt Ayarları</h3>
+                    <div class="settings-grid">
+                        <div class="setting-item">
+                            <label for="temperature">Sıcaklık (0.0 - 1.0)</label>
+                            <input type="range" id="temperature" min="0" max="1" step="0.1" value="0.5">
+                            <span id="temperature-value">0.5</span>
+                        </div>
+                        <div class="setting-item">
+                            <label for="top-p">Top-p (0.0 - 1.0)</label>
+                            <input type="range" id="top-p" min="0" max="1" step="0.1" value="0.4">
+                            <span id="top-p-value">0.4</span>
+                        </div>
+                        <div class="setting-item">
+                            <label for="repetition-penalty">Tekrar Cezası (1.0 - 2.0)</label>
+                            <input type="range" id="repetition-penalty" min="1" max="2" step="0.1" value="2.0">
+                            <span id="repetition-penalty-value">2.0</span>
+                        </div>
+                        <div class="setting-item">
+                            <label for="answer-type">Yanıt Türü</label>
+                            <select id="answer-type">
+                                <option value="informative">Bilgilendirici</option>
+                                <option value="creative">Yaratıcı</option>
+                                <option value="formal">Resmi</option>
+                                <option value="casual">Samimi</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Yanıt Üretme -->
+                <div class="generate-section">
+                    <button id="generate-btn" class="btn btn-primary btn-large">🚀 Yanıt Üret</button>
+                </div>
+
+                <!-- Yanıt Gösterimi -->
+                <div id="response-area" class="response-area hidden">
+                    <div id="main-response" class="response-content"></div>
+                    <button id="main-copy-btn" class="btn btn-primary">📋 Seç ve Kopyala</button>
+                    <button id="new-request-btn" class="btn btn-secondary">🆕 Yeni İstek Öneri Cevapla</button>
+                </div>
+
+                <!-- Önceki Yanıtlar -->
+                <div id="previous-responses" class="previous-responses hidden">
+                    <h3>📚 Önceki Yanıtlar</h3>
+                    
+                    <div class="response-accordion">
+                        <div class="accordion-item">
+                            <div class="accordion-header" onclick="toggleAccordion('prev-1')">
+                                <h4>📄 Yanıt #1</h4>
+                                <span class="accordion-icon">▼</span>
+                            </div>
+                            <div class="accordion-content" id="prev-1-content">
+                                <div id="prev-text-1" class="response-content"></div>
+                                <button id="prev-copy-btn-1" class="btn btn-primary">📋 Seç ve Kopyala #1</button>
+                            </div>
+                        </div>
+                        
+                        <div class="accordion-item">
+                            <div class="accordion-header" onclick="toggleAccordion('prev-2')">
+                                <h4>📄 Yanıt #2</h4>
+                                <span class="accordion-icon">▼</span>
+                            </div>
+                            <div class="accordion-content" id="prev-2-content">
+                                <div id="prev-text-2" class="response-content"></div>
+                                <button id="prev-copy-btn-2" class="btn btn-primary">📋 Seç ve Kopyala #2</button>
+                            </div>
+                        </div>
+                        
+                        <div class="accordion-item">
+                            <div class="accordion-header" onclick="toggleAccordion('prev-3')">
+                                <h4>📄 Yanıt #3</h4>
+                                <span class="accordion-icon">▼</span>
+                            </div>
+                            <div class="accordion-content" id="prev-3-content">
+                                <div id="prev-text-3" class="response-content"></div>
+                                <button id="prev-copy-btn-3" class="btn btn-primary">📋 Seç ve Kopyala #3</button>
+                            </div>
+                        </div>
+                        
+                        <div class="accordion-item">
+                            <div class="accordion-header" onclick="toggleAccordion('prev-4')">
+                                <h4>📄 Yanıt #4</h4>
+                                <span class="accordion-icon">▼</span>
+                            </div>
+                            <div class="accordion-content" id="prev-4-content">
+                                <div id="prev-text-4" class="response-content"></div>
+                                <button id="prev-copy-btn-4" class="btn btn-primary">📋 Seç ve Kopyala #4</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Loading Overlay -->
+    <div id="loading-overlay" class="loading-overlay hidden">
+        <div class="loading-spinner">
+            <div class="spinner"></div>
+            <p>İşlem yapılıyor...</p>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="app.js?v=20250912"></script>
+</body>
+</html>

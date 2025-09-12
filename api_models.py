@@ -26,6 +26,7 @@ class CodeVerifyResponse(BaseModel):
     email: str
     full_name: Optional[str] = None
     profile_completed: bool = False
+    is_admin: bool = False
 
 class TokenConsumeResponse(BaseModel):
     access_token: str
@@ -34,6 +35,7 @@ class TokenConsumeResponse(BaseModel):
     email: str
     full_name: Optional[str] = None
     profile_completed: bool = False
+    is_admin: bool = False
 
 class UserProfile(BaseModel):
     id: int

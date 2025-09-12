@@ -29,7 +29,7 @@ from api_models import (
 from config import PRODUCTION_URL, FRONTEND_URL
 
 # Router for authentication endpoints
-auth_router = APIRouter(prefix="/auth", tags=["Authentication"])
+auth_router = APIRouter(tags=["Authentication"])
 
 # Logging
 logger = logging.getLogger(__name__)
@@ -86,6 +86,11 @@ async def send_login_credentials(
         # Hash the code and token
         code_hash = hashlib.sha256(code.encode()).hexdigest()
         token_hash = hashlib.sha256(token.encode()).hexdigest()
+        
+        # Debug logging
+        logger.info(f"=== CODE GENERATION DEBUG ===")
+        logger.info(f"Generated code: {code}")
+        logger.info(f"Generated code hash: {code_hash}")
         
         # Calculate expiration time (5 hours)
         expires_at = datetime.utcnow() + timedelta(hours=5)
@@ -208,7 +213,8 @@ async def consume_login_token(
             "email": user.email,
             "full_name": user.full_name,
             "department": user.department,
-            "profile_completed": user.profile_completed
+            "profile_completed": user.profile_completed,
+            "is_admin": user.is_admin
         }
         
     except Exception as e:
@@ -248,6 +254,12 @@ async def verify_login_code(
         # Hash the code
         code_hash = hashlib.sha256(request.code.encode()).hexdigest()
         
+        # Debug logging
+        logger.info(f"=== CODE VERIFICATION DEBUG ===")
+        logger.info(f"Email: {request.email}")
+        logger.info(f"Code: {request.code}")
+        logger.info(f"Code hash: {code_hash}")
+        
         # Find the login token
         login_token = db.query(LoginToken).filter(
             LoginToken.code_hash == code_hash,
@@ -258,10 +270,13 @@ async def verify_login_code(
         
         if not login_token:
             # Code bulunamadı, süresi dolmuş veya kullanılmış
+            logger.info(f"❌ Code verification failed: Token not found")
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail="Kod yanlış, süresi dolmuş veya kullanılmış"
             )
+        
+        logger.info(f"✅ Token found: ID {login_token.id}")
         
         # Check attempt count and rate limiting
         if login_token.attempt_count >= 5:
@@ -273,10 +288,6 @@ async def verify_login_code(
         # Update attempt count
         login_token.attempt_count += 1
         login_token.last_attempt_at = datetime.utcnow()
-        db.commit()
-        
-        # Mark token as used
-        login_token.used_at = datetime.utcnow()
         db.commit()
         
         # Get user
@@ -292,6 +303,10 @@ async def verify_login_code(
         access_token = auth_service.create_access_token(
             data={"sub": str(user.id), "email": user.email}
         )
+        
+        # Mark token as used ONLY after successful verification
+        login_token.used_at = datetime.utcnow()
+        db.commit()
         
         # Log successful login
         login_attempt = LoginAttempt(
@@ -312,7 +327,8 @@ async def verify_login_code(
             user_id=user.id,
             email=user.email,
             full_name=user.full_name,
-            profile_completed=user.profile_completed
+            profile_completed=user.profile_completed,
+            is_admin=user.is_admin
         )
         
     except HTTPException:
@@ -721,8 +737,8 @@ async def save_session(
                 detail="Email gerekli"
             )
         
-        # active_sessions.json dosyasını oku veya oluştur
-        sessions_file = "active_sessions.json"
+        # user_sessions.json dosyasını oku veya oluştur
+        sessions_file = "user_sessions.json"
         if os.path.exists(sessions_file):
             with open(sessions_file, "r") as f:
                 sessions = json.load(f)
@@ -730,13 +746,24 @@ async def save_session(
             sessions = {}
         
         # Session'ı kaydet
-        sessions[email] = {
-            "email": email,
-            "jwt_token": session_data.get("jwt_token"),
+        import time
+        import hashlib
+        
+        # Unique session ID oluştur
+        session_data_str = f"127.0.0.1_MagicLink"
+        session_id = hashlib.md5(session_data_str.encode()).hexdigest()[:12]
+        
+        sessions[session_id] = {
+            "user_email": email,
+            "access_token": session_data.get("jwt_token"),
+            "login_time": time.time(),
+            "user_agent": "MagicLink",
+            "ip_address": "127.0.0.1",
+            "last_activity": time.time(),
+            "is_admin": session_data.get("is_admin", False),
             "full_name": session_data.get("full_name", ""),
             "department": session_data.get("department", ""),
-            "created_at": session_data.get("created_at", ""),
-            "is_admin": session_data.get("is_admin", False)
+            "profile_completed": True
         }
         
         # Dosyaya yaz
@@ -750,4 +777,94 @@ async def save_session(
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Session kaydetme hatası: {str(e)}"
-        ) 
+        )
+
+@auth_router.get("/session-status")
+async def get_session_status():
+    """
+    Aktif session'ları listele
+    """
+    try:
+        import json
+        import os
+        
+        sessions_file = "user_sessions.json"
+        
+        if not os.path.exists(sessions_file):
+            return {"sessions": []}
+        
+        with open(sessions_file, "r") as f:
+            sessions = json.load(f)
+        
+        # Session'ları listeye çevir
+        session_list = []
+        for session_id, session_data in sessions.items():
+            session_list.append({
+                "session_id": session_id,
+                "user_email": session_data.get("user_email"),
+                "login_time": session_data.get("login_time"),
+                "last_activity": session_data.get("last_activity")
+            })
+        
+        # En son aktiviteye göre sırala
+        session_list.sort(key=lambda x: x.get("last_activity", 0), reverse=True)
+        
+        return {"sessions": session_list}
+        
+    except Exception as e:
+        logger.error(f"Session status hatası: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Session status hatası: {str(e)}"
+        )
+
+@auth_router.get("/session/{session_id}")
+async def get_session(session_id: str):
+    """Belirli session'ı döndür - admin durumu dahil"""
+    try:
+        import json
+        import os
+        
+        sessions_file = "user_sessions.json"
+        
+        if not os.path.exists(sessions_file):
+            return {"error": "Session bulunamadı"}
+        
+        with open(sessions_file, "r") as f:
+            sessions = json.load(f)
+        
+        if session_id not in sessions:
+            return {"error": "Session bulunamadı"}
+        
+        session_data = sessions[session_id]
+        
+        # Aktiviteyi güncelle
+        import time
+        session_data['last_activity'] = time.time()
+        
+        # Dosyaya geri yaz
+        with open(sessions_file, "w") as f:
+            json.dump(sessions, f, indent=2)
+        
+        # Admin durumunu kontrol et
+        user_email = session_data.get('user_email')
+        
+        # Veritabanından kullanıcı bilgilerini al
+        db = next(get_db())
+        user = db.query(User).filter(User.email == user_email).first()
+        
+        if user:
+            # Session'a admin bilgisini ekle
+            session_data['is_admin'] = user.is_admin
+            session_data['full_name'] = user.full_name
+            session_data['department'] = user.department
+            session_data['profile_completed'] = user.profile_completed
+            
+            print(f"DEBUG: Session returned - email: {user_email}, admin: {user.is_admin}")
+        
+        db.close()
+        return session_data
+        
+    except Exception as e:
+        logger.error(f"Session retrieval hatası: {str(e)}")
+        return {"error": "Session okuma hatası"} 
