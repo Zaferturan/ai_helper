@@ -46,8 +46,8 @@ RATE_LIMIT_LOGIN_PER_HOUR = int(os.getenv("RATE_LIMIT_LOGIN_PER_HOUR", "5"))  # 
 RATE_LIMIT_CODE_ATTEMPTS = int(os.getenv("RATE_LIMIT_CODE_ATTEMPTS", "5"))  # 5 attempts
 
 # Rate limiting configuration
-RATE_LIMIT_LOGIN_SECONDS = 30  # 30 seconds between login requests
-RATE_LIMIT_DAILY_LOGINS = 20   # Max 20 login attempts per day per IP+email
+RATE_LIMIT_LOGIN_SECONDS = 5  # 5 seconds between login requests (geçici olarak gevşetildi)
+RATE_LIMIT_DAILY_LOGINS = 50   # Max 50 login attempts per day per IP+email (geçici olarak artırıldı)
 RATE_LIMIT_LOCKOUT_MINUTES = 10  # 10 minutes lockout
 
 # Login token settings
