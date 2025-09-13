@@ -155,7 +155,7 @@ async def consume_login_token(
     client_request: Request = None
 ):
     """
-    6 haneli kod ile giriş yap (1 kere kullanılır)
+    Token ile giriş yap (POST method)
     """
     
     try:
@@ -643,7 +643,7 @@ async def get_dev_token(
 @auth_router.post("/verify-token")
 async def verify_token(request: dict, db: Session = Depends(get_db)):
     """
-    Magic link token'ını doğrula (1 kere kullanılır, 5 saat geçerli)
+    Magic link token'ını doğrula ve cookie için access token döndür
     """
     try:
         token = request.get("token")
@@ -654,8 +654,7 @@ async def verify_token(request: dict, db: Session = Depends(get_db)):
         token_hash = hashlib.sha256(token.encode()).hexdigest()
         login_token = db.query(LoginToken).filter(
             LoginToken.token_hash == token_hash,
-            LoginToken.expires_at > datetime.utcnow(),
-            LoginToken.used_at.is_(None)  # Kullanılmamış olmalı
+            LoginToken.expires_at > datetime.utcnow()
         ).first()
         
         if not login_token:
@@ -671,9 +670,9 @@ async def verify_token(request: dict, db: Session = Depends(get_db)):
             data={"sub": str(user.id), "email": user.email}
         )
         
-        # Token'ı kullanılmış olarak işaretle
-        login_token.used_at = datetime.utcnow()
-        db.commit()
+        # Token'ı kullanılmış olarak işaretleme - 5 saat boyunca geçerli kalacak
+        # login_token.used_at = datetime.utcnow()  # Bu satırı kaldırdık
+        # db.commit()  # Bu satırı da kaldırdık
         
         return {
             "success": True,
@@ -695,7 +694,7 @@ async def verify_magic_link(
     db: Session = Depends(get_db)
 ):
     """
-    Magic link token'ını doğrula (1 kere kullanılır, 5 saat geçerli)
+    Magic link token'ını doğrula ve session bilgilerini döndür
     """
     try:
         # Token hash'ini oluştur

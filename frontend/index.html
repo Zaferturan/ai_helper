@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>AI Yardımcı - Nilüfer Belediyesi</title>
-    <link rel="stylesheet" href="style.css?v=20250912-79">
+    <link rel="stylesheet" href="style.css?v=20250912-78">
 </head>
 <body>
     <!-- Loading Screen -->
@@ -185,45 +185,24 @@
                             </div>
                             <div class="accordion-content">
                                 <div class="settings-grid">
-                                    <!-- Model Seçimi -->
                                     <div class="setting-item">
-                                        <label for="model-select">🤖 Model Seçimi:</label>
+                                        <label for="model-select">Model</label>
                                         <select id="model-select">
                                             <option value="gemini-2.5-flash">gemini-2.5-flash</option>
                                             <option value="gemini-1.5-flash-002">gemini-1.5-flash-002</option>
                                             <option value="gemini-2.0-flash-001">gemini-2.0-flash-001</option>
                                             <option value="gpt-oss:latest">gpt-oss:latest</option>
                                         </select>
-                                        <small class="help-text">Kullanmak istediğiniz AI modelini seçin</small>
                                     </div>
-                                    
-                                    <!-- LLM Parametreleri (3 sütunlu) -->
-                                    <div class="llm-params-grid">
-                                        <div class="setting-item">
-                                            <label for="temperature">🌡️ Temperature</label>
-                                            <input type="range" id="temperature" min="0.0" max="2.0" step="0.1" value="0.5">
-                                            <span id="temperature-value">0.5</span>
-                                            <small class="help-text">Düşük değerler daha tutarlı, yüksek değerler daha yaratıcı yanıtlar üretir</small>
-                                        </div>
-                                        
-                                        <div class="setting-item">
-                                            <label for="top-p">🎯 Top-p</label>
-                                            <input type="range" id="top-p" min="0.0" max="1.0" step="0.1" value="0.4">
-                                            <span id="top-p-value">0.4</span>
-                                            <small class="help-text">Kelime seçiminde çeşitliliği kontrol eder. Düşük değerler daha odaklı yanıtlar üretir</small>
-                                        </div>
-                                        
-                                        <div class="setting-item">
-                                            <label for="repetition-penalty">🔄 Repetition Penalty</label>
-                                            <input type="range" id="repetition-penalty" min="0.0" max="3.0" step="0.1" value="2.0">
-                                            <span id="repetition-penalty-value">2.0</span>
-                                            <small class="help-text">Tekrarlanan kelimeleri azaltır. Yüksek değerler daha çeşitli kelime kullanımını sağlar</small>
-                                        </div>
+                                    <div class="setting-item">
+                                        <label for="temperature">Yaratıcılık (Temperature)</label>
+                                        <input type="range" id="temperature" min="0.1" max="2.0" step="0.1" value="0.7">
+                                        <span id="temperature-value">0.7</span>
                                     </div>
-                                    
-                                    <!-- Parametre Kaydetme Durumu -->
-                                    <div id="param-save-status" class="save-status hidden">
-                                        <span id="save-message"></span>
+                                    <div class="setting-item">
+                                        <label for="max-tokens">Maksimum Token Sayısı</label>
+                                        <input type="range" id="max-tokens" min="100" max="4000" step="100" value="4000">
+                                        <span id="max-tokens-value">4000</span>
                                     </div>
                                 </div>
                             </div>
@@ -307,6 +286,6 @@
     </div>
 
     <!-- Scripts -->
-    <script src="app.js?v=20250913-01"></script>
+    <script src="app.js?v=20250912-85"></script>
 </body>
 </html>
