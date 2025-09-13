@@ -17,6 +17,9 @@ RUN pip install --no-cache-dir -r requirements.txt
 # Uygulama dosyalarını kopyala
 COPY . .
 
+# Frontend dosyalarını Nginx'e kopyala
+COPY frontend/ /usr/share/nginx/html/
+
 # Nginx konfigürasyonu
 COPY nginx.conf /etc/nginx/sites-available/default
 
