@@ -1,25 +1,34 @@
-# Use Python 3.11 slim image
 FROM python:3.11-slim
 
-# Set working directory
+# Sistem paketlerini güncelle ve gerekli paketleri yükle
+RUN apt-get update && apt-get install -y \
+    gcc \
+    g++ \
+    nginx \
+    && rm -rf /var/lib/apt/lists/*
+
+# Çalışma dizinini ayarla
 WORKDIR /app
 
-# Sistem bağımlılıkları
-RUN apt-get update && apt-get install -y --no-install-recommends \
-    curl ca-certificates && rm -rf /var/lib/apt/lists/*
+# Python bağımlılıklarını kopyala ve yükle
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
 
-# Uygulama kodu ve venv'i kopyala
-COPY . /app
+# Uygulama dosyalarını kopyala
+COPY . .
 
-# Venv'i aktifleştir ve bağımlılıkları yükle
-RUN python -m venv /app/venv
-RUN /app/venv/bin/pip install --no-cache-dir -r requirements.txt
+# Nginx konfigürasyonu
+COPY nginx.conf /etc/nginx/sites-available/default
 
-# Start script'i çalıştırılabilir yap
-RUN chmod +x /app/docker/start.sh
+# Port'ları aç
+EXPOSE 8000 80
 
-# Expose both ports
-EXPOSE 8000 8500
+# Volume'ları mount et
+VOLUME ["/app/data", "/app/logs"]
 
-# Set the startup script as entrypoint
-ENTRYPOINT ["bash", "/app/docker/start.sh"] 
+# Başlatma scripti
+COPY start.sh .
+RUN chmod +x start.sh
+
+# Uygulama başlatma komutu
+CMD ["./start.sh"]
