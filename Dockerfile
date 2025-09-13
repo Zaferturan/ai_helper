@@ -20,6 +20,10 @@ COPY . .
 # Frontend dosyalarını Nginx'e kopyala
 COPY frontend/ /usr/share/nginx/html/
 
+# Frontend URL'lerini localhost'a çevir
+RUN sed -i 's|https://yardimci.niluferyapayzeka.tr/api/v1|http://localhost:8000/api/v1|g' /usr/share/nginx/html/app.js && \
+    sed -i 's|https://yardimci.niluferyapayzeka.tr|http://localhost:8500|g' /usr/share/nginx/html/app.js
+
 # Nginx konfigürasyonu
 COPY nginx.conf /etc/nginx/sites-available/default
 
