@@ -289,6 +289,12 @@ class AuthManager {
     async sendCode(email) {
         try {
             const response = await this.api.sendLoginCode(email);
+            
+            // Başarılı olursa kod girişi ekranını göster
+            if (response) {
+                ui.showCodeInput(email);
+            }
+            
             return response;
         } catch (error) {
             console.error('Send code error:', error);
@@ -473,6 +479,39 @@ class UIManager {
     showProfileCompletion() {
         this.hideAllScreens();
         this.elements.profileScreen.classList.remove('hidden');
+    }
+
+    showCodeInput(email) {
+        // E-posta input'unu gizle
+        const emailInput = document.getElementById('email-input');
+        const sendBtn = document.getElementById('send-btn');
+        const emailInstruction = document.querySelector('.email-instruction');
+        
+        if (emailInput) emailInput.style.display = 'none';
+        if (sendBtn) sendBtn.style.display = 'none';
+        if (emailInstruction) emailInstruction.style.display = 'none';
+        
+        // Kod girişi ekranını göster
+        const codeScreen = document.getElementById('code-screen');
+        const codeInput = document.getElementById('code-input');
+        const verifyBtn = document.getElementById('verify-btn');
+        
+        if (codeScreen) {
+            codeScreen.classList.remove('hidden');
+        }
+        if (codeInput) {
+            codeInput.focus();
+        }
+        if (verifyBtn) {
+            verifyBtn.style.display = 'block';
+        }
+        
+        // E-posta bilgisini göster
+        const emailInfo = document.querySelector('.email-info');
+        if (emailInfo) {
+            emailInfo.textContent = `E-posta gönderildi: ${email}`;
+            emailInfo.style.display = 'block';
+        }
     }
 
     showMainApp() {
