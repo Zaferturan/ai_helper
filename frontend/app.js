@@ -288,6 +288,9 @@ class AuthManager {
 
     async sendCode(email) {
         try {
+            // Spinner'ı göster
+            this.showSpinner('send');
+            
             const response = await this.api.sendLoginCode(email);
             
             // Başarılı olursa kod girişi ekranını göster
@@ -299,11 +302,17 @@ class AuthManager {
         } catch (error) {
             console.error('Send code error:', error);
             throw error;
+        } finally {
+            // Spinner'ı gizle
+            this.hideSpinner('send');
         }
     }
 
     async verifyCode(email, code) {
         try {
+            // Spinner'ı göster
+            this.showSpinner('verify');
+            
             const response = await this.api.verifyCode(email, code);
             
             if (response.access_token) {
@@ -342,7 +351,26 @@ class AuthManager {
         } catch (error) {
             console.error('Verify code error:', error);
             throw error;
+        } finally {
+            // Spinner'ı gizle
+            this.hideSpinner('verify');
         }
+    }
+
+    hideSpinner(type) {
+        const textElement = document.getElementById(`${type}-text`);
+        const spinnerElement = document.getElementById(`${type}-spinner`);
+        
+        if (textElement) textElement.classList.remove('hidden');
+        if (spinnerElement) spinnerElement.classList.add('hidden');
+    }
+
+    showSpinner(type) {
+        const textElement = document.getElementById(`${type}-text`);
+        const spinnerElement = document.getElementById(`${type}-spinner`);
+        
+        if (textElement) textElement.classList.add('hidden');
+        if (spinnerElement) spinnerElement.classList.remove('hidden');
     }
 
     async copyPreviousResponse(responseId) {
