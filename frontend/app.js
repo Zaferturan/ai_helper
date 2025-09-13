@@ -482,6 +482,8 @@ class UIManager {
     }
 
     showCodeInput(email) {
+        this.hideAllScreens();
+        
         // E-posta input'unu gizle
         const emailInput = document.getElementById('email-input');
         const sendBtn = document.getElementById('send-btn');
