@@ -882,6 +882,9 @@ div[id*="prev-text-"]::after {
 /* Spinner Animation */
 .spinner {
     display: inline-block;
+}
+
+.spinner:not(.hidden) {
     animation: spin 1s linear infinite;
 }
 
