@@ -725,7 +725,7 @@ async def verify_magic_link(
         login_token.used_at = datetime.utcnow()
         
         # JWT token oluştur
-        jwt_token = auth_service.create_access_token({"sub": user.email})
+        jwt_token = auth_service.create_access_token({"sub": str(user.id)})
         
         # Session bilgilerini döndür
         return {
