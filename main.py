@@ -158,7 +158,7 @@ async def auth_redirect(token: str = Query(None)):
             if user and user.is_active:
                 # JWT token oluştur
                 jwt_token = jwt.encode({
-                    "sub": user.email,  # Email kullan (yeni sistem uyumlu)
+                    "sub": str(user.id),  # User ID kullan (auth_system.py uyumlu)
                     "email": user.email,
                     "exp": datetime.utcnow().timestamp() + 18000  # 5 saat
                 }, JWT_SECRET_KEY, algorithm="HS256")
