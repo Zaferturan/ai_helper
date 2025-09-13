@@ -88,6 +88,16 @@ class APIClient {
         return this.request(`/session/${sessionId}`);
     }
 
+    async logout() {
+        const token = localStorage.getItem(CONFIG.STORAGE_KEYS.AUTH_TOKEN);
+        return this.request('/logout', {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${token}`
+            }
+        });
+    }
+
     async getUsers() {
         const token = localStorage.getItem(CONFIG.STORAGE_KEYS.AUTH_TOKEN);
         return this.request('/admin/users', {
@@ -167,12 +177,44 @@ class AuthManager {
 
     async checkBackendSession() {
         try {
-            console.log('Checking backend session...');
+            console.log('=== checkBackendSession START ===');
+            
+            // Magic link ile geliyorsa (auto_login=true varsa) çıkış flag'ini kontrol etme
+            const urlParams = new URLSearchParams(window.location.search);
+            const isMagicLink = urlParams.get('auto_login') === 'true';
+            console.log('URL params:', window.location.search);
+            console.log('isMagicLink:', isMagicLink);
+            
+            // Magic link ile geldiyse çıkış flag'ini temizle ve doğrudan giriş yap
+            if (isMagicLink) {
+                console.log('Magic link detected, clearing logout flag and forcing login');
+                localStorage.removeItem('user_logged_out');
+                
+                // URL'den auto_login parametresini temizle
+                const url = new URL(window.location);
+                url.searchParams.delete('auto_login');
+                window.history.replaceState({}, document.title, url.pathname + url.search);
+            }
+            
+            // Önce session'ı kontrol et
+            console.log('Checking session status...');
             const sessionStatus = await this.api.getSessionStatus();
+            console.log('Session status:', sessionStatus);
+            const hasActiveSession = sessionStatus.sessions && sessionStatus.sessions.length > 0;
+            console.log('hasActiveSession:', hasActiveSession);
+            
+            // Çıkış yapıldıysa ve magic link değilse auto login'i engelle
+            if (!isMagicLink && localStorage.getItem('user_logged_out') === 'true') {
+                console.log('User logged out, auto login disabled');
+                await this.init();
+                return;
+            }
             
             if (sessionStatus.sessions && sessionStatus.sessions.length > 0) {
                 const latestSession = sessionStatus.sessions[0];
+                console.log('Latest session:', latestSession);
                 const sessionDetails = await this.api.getSessionDetails(latestSession.session_id);
+                console.log('Session details:', sessionDetails);
                 
                 if (sessionDetails.user_email) {
                     console.log('Backend session found:', sessionDetails.user_email);
@@ -186,23 +228,61 @@ class AuthManager {
                     // Save to localStorage
                     this.saveToStorage();
                     
+                    // Çıkış flag'ini temizle (başarılı giriş)
+                    localStorage.removeItem('user_logged_out');
+                    
+                    // Kullanıcı profil bilgilerini güncelle
+                    await this.updateUserProfile();
+                    
                     // Show main app
+                    console.log('About to show main app. AppState:', this.appState);
                     ui.showMainApp();
+                    console.log('Main app shown successfully');
                     
                     // Load admin stats if admin
                     if (this.appState.isAdmin) {
-                        await this.loadAdminStats();
+                        await responseManager.loadAdminStats();
                     }
                     
+                    console.log('=== checkBackendSession SUCCESS ===');
                     return true;
                 }
             }
             
             console.log('No backend session found');
+            console.log('=== checkBackendSession FAILED ===');
             return false;
         } catch (error) {
             console.error('Backend session check failed:', error);
+            console.log('=== checkBackendSession ERROR ===');
             return false;
+        }
+    }
+    
+    async updateUserProfile() {
+        try {
+            console.log('Kullanıcı profil bilgileri güncelleniyor...');
+            
+            const response = await this.api.getProfile();
+            if (response) {
+                const fullName = response.full_name || 'İsimsiz';
+                const department = response.department || 'Departman Belirtilmemiş';
+                
+                // Kullanıcı profil elementini güncelle
+                const userProfileElement = document.getElementById('user-profile');
+                if (userProfileElement) {
+                    userProfileElement.textContent = `👤 ${fullName} - ${department}`;
+                }
+                
+                console.log(`Kullanıcı profil güncellendi: ${fullName} - ${department}`);
+            }
+        } catch (error) {
+            console.error('Kullanıcı profil güncelleme hatası:', error);
+            // Hata durumunda varsayılan değer göster
+            const userProfileElement = document.getElementById('user-profile');
+            if (userProfileElement) {
+                userProfileElement.textContent = '👤 Kullanıcı';
+            }
         }
     }
 
@@ -228,11 +308,17 @@ class AuthManager {
                 
                 this.saveToStorage();
                 
+                // Çıkış flag'ini temizle (başarılı giriş)
+                localStorage.removeItem('user_logged_out');
+                
+                // Kullanıcı profil bilgilerini güncelle
+                await this.updateUserProfile();
+                
                 // Check if profile is completed
                 if (response.profile_completed) {
                     ui.showMainApp();
                     if (this.appState.isAdmin) {
-                        await this.loadAdminStats();
+                        await responseManager.loadAdminStats();
                     }
                 } else {
                     ui.showProfileCompletion();
@@ -247,7 +333,7 @@ class AuthManager {
         }
     }
 
-    copyPreviousResponse(responseId) {
+    async copyPreviousResponse(responseId) {
         // Gradio app.py mantığı: önceki yanıtı kopyala ve seç
         const response = this.previousResponses.find(r => r.id === responseId);
         if (!response) {
@@ -255,87 +341,57 @@ class AuthManager {
             return;
         }
 
+        // Durum makinesi kontrolü - eğer zaten kopyalanmışsa hiçbir şey yapma
+        if (this.state === 'finalized') {
+            console.log('Already copied, ignoring');
+            return;
+        }
+
+        // Durum makinesini güncelle (Gradio app.py mantığı)
+        this.state = 'finalized';
+        this.yanitSayisi += 1; // Yanıt sayısını artır
+
+        // Response'u kopyalandı olarak işaretle
+        const result = await this.markResponseAsCopied(responseId);
+        if (result) {
+            // Feedback'i güncelle
+            await this.updateResponseFeedback(responseId, true, true);
+            console.log('✅ Response kopyalandı olarak işaretlendi');
+        } else {
+            console.log('⚠️ Response işaretlenemedi, sadece panoya kopyalandı');
+        }
+
+        // Gradio app.py mantığı: Seçilen yanıtı ana yanıt yap
+        // Seçilen yanıtı history'den çıkar (Gradio app.py satır 1290)
+        this.previousResponses = this.previousResponses.filter(resp => resp.id !== responseId);
+        
+        // Seçilen yanıtı history'nin başına ekle (ana yanıt olarak) - Gradio app.py mantığı
+        this.previousResponses.unshift(response);
+        
+        // Current response ID'yi güncelle (artık seçilen yanıt ana yanıt)
+        this.currentResponseId = response.id;
+
         // Panoya kopyala
         navigator.clipboard.writeText(response.response_text).then(() => {
-            console.log('Önceki yanıt kopyalandı:', responseId);
-            // Başarı mesajı göster
-            ui.showSuccess('Önceki yanıt kopyalandı!');
-        }).catch(err => {
-            console.error('Kopyalama hatası:', err);
-            ui.showError('response-error', 'Kopyalama başarısız.');
-        });
-    }
-
-    async loadAdminStats() {
-        try {
-            const usersResponse = await this.api.getUsers();
+            console.log('✅ Önceki yanıt panoya kopyalandı!');
             
-            if (usersResponse.users) {
-                const statsHTML = this.generateAdminStatsHTML(usersResponse.users, []);
-                document.getElementById('admin-stats-content').innerHTML = statsHTML;
-            }
-        } catch (error) {
-            console.error('Admin stats load error:', error);
-        }
-    }
-
-    generateAdminStatsHTML(users, requests) {
-        const totalUsers = users.length;
-        const activeUsers = users.filter(u => u.is_active).length;
-        
-        // Toplam üretilen yanıt sayısı
-        const totalResponses = users.reduce((sum, user) => sum + (user.total_responses || 0), 0);
-        
-        // Toplam cevaplanan istek sayısı
-        const totalAnsweredRequests = users.reduce((sum, user) => sum + (user.answered_requests || 0), 0);
-        
-        return `
-            <div style="font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;">
-                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; margin-bottom: 1.5rem;">
-                    <div style="background: #f3f4f6; padding: 1rem; border-radius: 8px; text-align: center;">
-                        <div style="font-size: 1.5rem; font-weight: bold; color: #3b82f6;">${totalUsers}</div>
-                        <div style="font-size: 0.9rem; color: #6b7280;">Toplam Kullanıcı</div>
-                    </div>
-                    <div style="background: #f3f4f6; padding: 1rem; border-radius: 8px; text-align: center;">
-                        <div style="font-size: 1.5rem; font-weight: bold; color: #10b981;">${activeUsers}</div>
-                        <div style="font-size: 0.9rem; color: #6b7280;">Aktif Kullanıcı</div>
-                    </div>
-                    <div style="background: #f3f4f6; padding: 1rem; border-radius: 8px; text-align: center;">
-                        <div style="font-size: 1.5rem; font-weight: bold; color: #8b5cf6;">${totalResponses}</div>
-                        <div style="font-size: 0.9rem; color: #6b7280;">Toplam Üretilen Yanıt</div>
-                    </div>
-                    <div style="background: #f3f4f6; padding: 1rem; border-radius: 8px; text-align: center;">
-                        <div style="font-size: 1.5rem; font-weight: bold; color: #f59e0b;">${totalAnsweredRequests}</div>
-                        <div style="font-size: 0.9rem; color: #6b7280;">Cevaplanan İstek Sayısı</div>
-                    </div>
-                </div>
-                
-                <h4 style="color: #1f2937; margin-bottom: 0.5rem; font-size: 1rem;">👥 Kullanıcı Detayları</h4>
-                <div style="background: #f8f9fa; border-radius: 8px; overflow: hidden; border: 1px solid #dee2e6;">
-                    <div style="background: #e9ecef; padding: 12px; font-weight: 600; color: #495057; border-bottom: 1px solid #dee2e6;">
-                        <div style="display: grid; grid-template-columns: 2fr 2fr 2fr 1fr 1fr; gap: 10px; align-items: center;">
-                            <div>Ad Soyad</div>
-                            <div>Müdürlük</div>
-                            <div>E-posta</div>
-                            <div style="text-align: center;">Toplam Ürettiği Yanıt</div>
-                            <div style="text-align: center;">Cevapladığı İstek Sayısı</div>
-                        </div>
-                    </div>
-                    
-                    <div style="max-height: 400px; overflow-y: auto;">
-                        ${users.map(user => `
-                            <div style="padding: 12px; border-bottom: 1px solid #dee2e6; display: grid; grid-template-columns: 2fr 2fr 2fr 1fr 1fr; gap: 10px; align-items: center;">
-                                <div style="font-weight: 600; color: #333;">${user.full_name || 'Bilinmiyor'}</div>
-                                <div style="color: #666; font-size: 0.9rem;">${user.department || 'Bilinmiyor'}</div>
-                                <div style="color: #666; font-size: 0.9rem;">${user.email}</div>
-                                <div style="text-align: center; font-weight: 600; color: #1976d2;">${user.total_responses || 0}</div>
-                                <div style="text-align: center; font-weight: 600; color: #388e3c;">${user.answered_requests || 0}</div>
-                            </div>
-                        `).join('')}
-                    </div>
-                </div>
-            </div>
-        `;
+            // Ana yanıtı göster (seçilen yanıt)
+            this.displayResponse(response.response_text);
+            
+            // Tüm akordiyonları gizle (seçilen yanıt ana alana gittiği için) - Gradio app.py satır 1313
+            this.hideAllAccordions();
+            this.updatePreviousResponses();
+            
+            // Gradio app.py mantığı: Yeni istek öneri cevapla butonunu göster
+            ui.showNewRequestButton();
+            
+            // Buton görünürlüğünü güncelle
+            this.updateButtonVisibility();
+            
+            console.log('✅ Önceki yanıt response kopyalandı! Sayı arttı.');
+        }).catch(err => {
+            console.error('❌ Kopyalama hatası:', err);
+        });
     }
 
     saveToStorage() {
@@ -345,7 +401,14 @@ class AuthManager {
         localStorage.setItem(CONFIG.STORAGE_KEYS.USER_PROFILE, JSON.stringify(this.appState.userProfile));
     }
 
-    logout() {
+    async logout() {
+        try {
+            // Backend'e logout isteği gönder
+            await this.api.logout();
+        } catch (error) {
+            console.error('Backend logout failed:', error);
+        }
+        
         this.appState.authenticated = false;
         this.appState.userEmail = null;
         this.appState.isAdmin = false;
@@ -356,6 +419,9 @@ class AuthManager {
         Object.values(CONFIG.STORAGE_KEYS).forEach(key => {
             localStorage.removeItem(key);
         });
+        
+        // Çıkış yapıldığını işaretle
+        localStorage.setItem('user_logged_out', 'true');
         
         ui.showLogin();
     }
@@ -410,9 +476,18 @@ class UIManager {
     }
 
     showMainApp() {
+        console.log('=== showMainApp START ===');
+        console.log('Elements:', this.elements);
+        console.log('mainScreen element:', this.elements.mainScreen);
+        
         this.hideAllScreens();
+        console.log('After hideAllScreens - mainScreen classes:', this.elements.mainScreen.classList.toString());
+        
         this.hideLoadingScreen();
+        console.log('After hideLoadingScreen');
+        
         this.elements.mainScreen.classList.remove('hidden');
+        console.log('After removing hidden - mainScreen classes:', this.elements.mainScreen.classList.toString());
         
         // Update user info
         const userEmail = localStorage.getItem(CONFIG.STORAGE_KEYS.USER_EMAIL);
@@ -426,19 +501,9 @@ class UIManager {
         const isAdmin = localStorage.getItem(CONFIG.STORAGE_KEYS.IS_ADMIN) === 'true';
         if (isAdmin) {
             this.elements.adminPanel.classList.remove('hidden');
-        } else {
-            this.elements.adminPanel.classList.add('hidden');
         }
         
-        // Show/hide response settings based on admin status
-        const responseSettings = document.getElementById('response-settings');
-        if (responseSettings) {
-            if (isAdmin) {
-                responseSettings.classList.remove('hidden');
-            } else {
-                responseSettings.classList.add('hidden');
-            }
-        }
+        console.log('=== showMainApp END ===');
     }
 
     hideAllScreens() {
@@ -454,15 +519,33 @@ class UIManager {
         }
     }
 
+    showNewRequestButton() {
+        // Gradio app.py mantığı: Yeni istek öneri cevapla butonunu göster
+        const newRequestBtn = document.getElementById('new-request-btn');
+        if (newRequestBtn) {
+            newRequestBtn.style.display = 'block';
+            console.log('✅ Yeni istek öneri cevapla butonu gösterildi');
+        }
+    }
+
     showLoading() {
-        const loadingScreen = document.getElementById('loading-screen');
-        if (loadingScreen) {
-            loadingScreen.style.display = 'flex';
+        const responseArea = document.getElementById('main-response');
+        if (responseArea) {
+            responseArea.innerHTML = `
+                <div class="response-loading">
+                    <div class="loading-spinner"></div>
+                    <div class="loading-text">İşlem yapılıyor...</div>
+                </div>
+            `;
         }
     }
 
     hideLoading() {
-        this.hideLoadingScreen();
+        // Loading'i gizlemek için response alanını temizle
+        const responseArea = document.getElementById('main-response');
+        if (responseArea && responseArea.querySelector('.response-loading')) {
+            responseArea.innerHTML = 'Henüz yanıt üretilmedi...';
+        }
     }
 
     showError(elementId, message) {
@@ -539,6 +622,9 @@ class AIResponseManager {
     constructor() {
         this.previousResponses = [];
         this.currentRequestId = null;
+        this.currentResponseId = null; // Ana yanıt için response ID
+        this.state = 'draft'; // 'draft' or 'finalized'
+        this.yanitSayisi = 0; // Yanıt sayısı (maksimum 5)
         this.loadPreviousResponses();
     }
 
@@ -558,7 +644,7 @@ class AIResponseManager {
             }
 
             // Maksimum 5 yanıt kontrolü (Gradio app.py'den)
-            if (this.previousResponses.length >= 5) {
+            if (this.yanitSayisi >= 5) {
                 ui.showError('response-error', '⚠️ Maksimum 5 yanıt üretildi! Yeni istek öneri için "Yeni İstek" butonuna basın.');
                 return;
             }
@@ -602,14 +688,23 @@ class AIResponseManager {
                     model_name: model
                 };
 
+                // Ana yanıt için response ID'yi set et
+                this.currentResponseId = response.id;
+
                 // Gradio app.py mantığı: history'ye başa ekle
                 this.previousResponses.unshift(newResponse);
+                
+                // Yanıt sayısını artır (Gradio app.py'den)
+                this.yanitSayisi += 1;
                 
                 // Ana yanıtı göster (en son üretilen)
                 this.displayResponse(response.response_text);
                 
                 // Önceki yanıtları güncelle (history[1:] - ilk yanıt hariç)
                 this.updatePreviousResponses();
+                
+                // Buton görünürlüğünü güncelle (Gradio app.py mantığı)
+                this.updateButtonVisibility();
                 
                 // Local storage'a kaydet
                 this.savePreviousResponses();
@@ -634,10 +729,89 @@ class AIResponseManager {
         }
     }
 
-    copyResponse() {
+    async markResponseAsCopied(responseId) {
+        // Gradio app.py mantığı: Response'u kopyalandı olarak işaretle
+        try {
+            const response = await fetch(`${CONFIG.BACKEND_URL}/responses/${responseId}/mark-copied`, {
+                method: 'PUT',
+                headers: {
+                    'Authorization': `Bearer ${localStorage.getItem(CONFIG.STORAGE_KEYS.AUTH_TOKEN)}`,
+                    'Content-Type': 'application/json'
+                }
+            });
+            return response.ok;
+        } catch (error) {
+            console.error('Response kopyalandı olarak işaretlenemedi:', error);
+            return false;
+        }
+    }
+
+    async updateResponseFeedback(responseId, isSelected = false, copied = false) {
+        // Gradio app.py mantığı: Response feedback'i güncelle
+        try {
+            const data = {
+                response_id: responseId,
+                is_selected: isSelected,
+                copied: copied
+            };
+            const response = await fetch(`${CONFIG.BACKEND_URL}/responses/feedback`, {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${localStorage.getItem(CONFIG.STORAGE_KEYS.AUTH_TOKEN)}`,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(data)
+            });
+            return response.ok;
+        } catch (error) {
+            console.error('Geri bildirim güncellenemedi:', error);
+            return false;
+        }
+    }
+
+    async copyResponse() {
+        // Gradio app.py mantığı: Ana yanıtı kopyala
         if (ui.elements.mainResponse) {
             const text = ui.elements.mainResponse.textContent;
+            
+            // Durum makinesi kontrolü - eğer zaten kopyalanmışsa hiçbir şey yapma
+            if (this.state === 'finalized') {
+                console.log('Already copied, ignoring');
+                return;
+            }
+            
+            // Durum makinesini güncelle (Gradio app.py mantığı)
+            this.state = 'finalized';
+            this.yanitSayisi += 1; // Yanıt sayısını artır
+            
+            // Veritabanında response'u kopyalandı olarak işaretle
+            if (this.currentResponseId) {
+                // Response'u kopyalandı olarak işaretle
+                const result = await this.markResponseAsCopied(this.currentResponseId);
+                if (result) {
+                    // Feedback'i güncelle
+                    await this.updateResponseFeedback(this.currentResponseId, true, true);
+                    console.log('✅ Response kopyalandı olarak işaretlendi');
+                } else {
+                    console.log('⚠️ Response işaretlenemedi, sadece panoya kopyalandı');
+                }
+            }
+            
             navigator.clipboard.writeText(text).then(() => {
+                console.log('✅ Ana yanıt panoya kopyalandı!');
+                
+                // Kullanıcı isteği: Ana seç ve kopyala ya basınca önceki yanıtların hepsi gizlenir
+                this.hideAllAccordions();
+                this.updatePreviousResponses();
+                
+                // Ana "Seç ve Kopyala" düğmesini de gizle
+                if (ui.elements.mainCopyBtn) {
+                    ui.elements.mainCopyBtn.style.display = 'none';
+                }
+                
+                // Buton görünürlüğünü güncelle
+                this.updateButtonVisibility();
+                
                 // Show success feedback
                 const btn = ui.elements.mainCopyBtn;
                 const originalText = btn.textContent;
@@ -645,43 +819,131 @@ class AIResponseManager {
                 setTimeout(() => {
                     btn.textContent = originalText;
                 }, 2000);
+                
+                console.log('✅ Ana yanıt response kopyalandı! Sayı arttı.');
             }).catch(err => {
-                console.error('Copy failed:', err);
+                console.error('❌ Kopyalama hatası:', err);
+                ui.showError('response-error', 'Kopyalama başarısız.');
+            });
+        }
+    }
+
+    async copyPreviousResponse(responseId) {
+        // Gradio app.py mantığı: önceki yanıtı kopyala ve seç
+        const response = this.previousResponses.find(r => r.id === responseId);
+        if (!response) {
+            console.error('Yanıt bulunamadı:', responseId);
+            return;
+        }
+
+        // Durum makinesi kontrolü - eğer zaten kopyalanmışsa hiçbir şey yapma
+        if (this.state === 'finalized') {
+            console.log('Already copied, ignoring');
+            return;
+        }
+
+        // Durum makinesini güncelle (Gradio app.py mantığı)
+        this.state = 'finalized';
+        this.yanitSayisi += 1; // Yanıt sayısını artır
+
+        // Response'u kopyalandı olarak işaretle
+        const result = await this.markResponseAsCopied(responseId);
+        if (result) {
+            // Feedback'i güncelle
+            await this.updateResponseFeedback(responseId, true, true);
+            console.log('✅ Önceki yanıt kopyalandı olarak işaretlendi');
+        } else {
+            console.log('⚠️ Önceki yanıt işaretlenemedi, sadece panoya kopyalandı');
+        }
+
+        // Gradio app.py mantığı: Seçilen yanıtı ana yanıt alanına taşı
+        // 1. Seçilen yanıtı history'den çıkar
+        const selectedIndex = this.previousResponses.findIndex(r => r.id === responseId);
+        if (selectedIndex !== -1) {
+            const selectedResponse = this.previousResponses.splice(selectedIndex, 1)[0];
+            
+            // 2. Seçilen yanıtı history'nin başına ekle (ana yanıt olarak)
+            this.previousResponses.unshift(selectedResponse);
+            
+            // 3. Ana yanıt alanını güncelle
+            this.displayResponse(selectedResponse.response_text);
+            
+            // 4. Current response ID'yi güncelle
+            this.currentResponseId = selectedResponse.id;
+            
+            // 5. Panoya kopyala
+            navigator.clipboard.writeText(selectedResponse.response_text).then(() => {
+                console.log('✅ Önceki yanıt panoya kopyalandı!');
+                
+                // 6. Önceki yanıtları güncelle (akordiyonları gizlemeden önce)
+                this.updatePreviousResponses();
+                
+                // 7. Tüm akordiyonları gizle (Gradio app.py satır 1313 mantığı)
+                this.hideAllAccordions();
+                
+                // 8. Ana "Seç ve Kopyala" düğmesini de gizle
+                if (ui.elements.mainCopyBtn) {
+                    ui.elements.mainCopyBtn.style.display = 'none';
+                }
+                
+                // 9. "Yeni İstek Öneri Cevapla" butonunu göster
+                ui.showNewRequestButton();
+                
+                // 10. Buton görünürlüğünü güncelle
+                this.updateButtonVisibility();
+                
+                console.log('✅ Önceki yanıt ana alana taşındı ve kopyalandı!');
+            }).catch(err => {
+                console.error('❌ Kopyalama hatası:', err);
                 ui.showError('response-error', 'Kopyalama başarısız.');
             });
         }
     }
 
     newRequest() {
-        // Gradio app.py mantığı: state'i temizle
+        console.log('New request handler called - clearing state');
+        
+        // State'i temizle (Gradio app.py'den)
         this.previousResponses = [];
         this.currentRequestId = null;
+        this.currentResponseId = null;
+        this.state = 'draft';
+        this.yanitSayisi = 0;
         
-        // Input'ları temizle
-        ui.elements.requestInput.value = '';
-        ui.elements.responseInput.value = '';
-        ui.elements.mainResponse.textContent = '';
+        // UI'yi temizle
+        this.hideAllAccordions();
+        this.updatePreviousResponses();
+        this.updateButtonVisibility();
         
-        // Önceki yanıtları temizle
-        const container = document.getElementById('previous-responses');
-        if (container) {
-            container.innerHTML = '<div class="no-responses">Henüz önceki yanıt yok</div>';
+        // Ana "Seç ve Kopyala" düğmesini tekrar göster
+        if (ui.elements.mainCopyBtn) {
+            ui.elements.mainCopyBtn.style.display = 'block';
         }
         
-        // Tüm accordion'ları gizle
-        this.hideAllAccordions();
+        // Input alanlarını varsayılan değerlerle doldur
+        this.setDefaultTextboxValues();
+        
+        // Ana yanıt alanını temizle
+        const mainResponse = document.getElementById('main-response');
+        if (mainResponse) {
+            mainResponse.innerHTML = 'Henüz yanıt üretilmedi...';
+        }
         
         // Local storage'ı temizle
         localStorage.removeItem('previousResponses');
         
-        console.log('Yeni istek başlatıldı - tüm state temizlendi');
+        console.log('New request - state cleared');
     }
 
     updatePreviousResponses() {
         const container = document.getElementById('previous-responses');
         if (!container) return;
 
+        // "Önceki Yanıtlar" bölümünü tekrar göster (hideAllAccordions'dan sonra)
+        container.style.display = 'block';
+
         // Gradio app.py mantığı: history[1:] - ilk yanıt hariç diğerleri önceki yanıtlar
+        // Ana yanıt kopyalandığında da önceki yanıtları göster
         if (this.previousResponses.length <= 1) {
             container.innerHTML = '<div class="no-responses">Henüz önceki yanıt yok</div>';
             // Tüm accordion'ları gizle
@@ -714,24 +976,22 @@ class AIResponseManager {
                     title.textContent = `📄 Yanıt #${responseNumber} - ${createdAt}`;
                 }
                 
-                // İçeriği güncelle
-                const textarea = document.getElementById(`prev-text-${responseNumber}`);
-                if (textarea) {
-                    textarea.textContent = response.response_text;
-                    textarea.onclick = () => {
-                        textarea.style.border = '2px solid #3B82F6';
-                        textarea.style.background = '#f0f9ff';
-                        setTimeout(() => {
-                            textarea.style.border = '';
-                            textarea.style.background = '';
-                        }, 2000);
-                    };
-                }
-                
-                // Copy butonunu güncelle
-                const copyBtn = document.getElementById(`prev-copy-btn-${responseNumber}`);
-                if (copyBtn) {
-                    copyBtn.onclick = () => this.copyPreviousResponse(response.id);
+                // İçeriği güncelle (Ana textbox gibi - kopyalanabilir değil)
+                // div#prev-text-${responseNumber} div'ini kaldır, textarea'yı doğrudan accordion içeriğine yerleştir
+                const accordionContent = accordion.querySelector('.accordion-content');
+                if (accordionContent) {
+                    accordionContent.innerHTML = `
+                        <textarea class="response-textarea" readonly style="width: 100%; height: 300px; padding: 12px; border: 2px solid #e5e7eb; border-radius: 8px; background: #ffffff; font-size: 14px; line-height: 1.5; white-space: pre-wrap; word-wrap: break-word; overflow-y: auto; resize: vertical; margin: 0; display: block;">${response.response_text}</textarea>
+                        <button id="prev-copy-btn-${responseNumber}" class="prev-copy-btn" style="margin-top: 10px; padding: 8px 16px; background: #6c757d; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 14px;">📋 Seç ve Kopyala #${responseNumber}</button>
+                    `;
+                    
+                    // Copy butonunu güncelle
+                    const copyBtn = document.getElementById(`prev-copy-btn-${responseNumber}`);
+                    if (copyBtn) {
+                        copyBtn.onclick = async () => {
+                            await responseManager.copyPreviousResponse(response.id);
+                        };
+                    }
                 }
             }
         }
@@ -746,11 +1006,18 @@ class AIResponseManager {
     }
 
     hideAllAccordions() {
+        // Tüm akordiyonları gizle
         for (let i = 1; i <= 4; i++) {
             const accordion = document.getElementById(`prev-accordion-${i}`);
             if (accordion) {
                 accordion.classList.add('hidden');
             }
+        }
+        
+        // "Önceki Yanıtlar" bölümünün kendisini de gizle
+        const previousResponsesContainer = document.getElementById('previous-responses');
+        if (previousResponsesContainer) {
+            previousResponsesContainer.style.display = 'none';
         }
     }
 
@@ -769,6 +1036,136 @@ class AIResponseManager {
     savePreviousResponses() {
         localStorage.setItem('previousResponses', JSON.stringify(this.previousResponses));
     }
+
+    // Gradio app.py mantığı: Buton görünürlüğünü güncelle
+    updateButtonVisibility() {
+        const generateBtn = document.getElementById('generate-btn');
+        const newRequestBtn = document.getElementById('new-request-btn');
+        const mainCopyBtn = document.getElementById('main-copy-btn');
+        
+        if (generateBtn && newRequestBtn) {
+            // Gradio app.py mantığı:
+            // generate_visible = user_state['state'] == 'draft' and user_state['yanit_sayisi'] < 5
+            // new_request_visible = user_state['state'] == 'finalized' or user_state['yanit_sayisi'] >= 5
+            
+            const generateVisible = this.state === 'draft' && this.yanitSayisi < 5;
+            const newRequestVisible = this.state === 'finalized' || this.yanitSayisi >= 5;
+            
+            generateBtn.style.display = generateVisible ? 'block' : 'none';
+            newRequestBtn.style.display = newRequestVisible ? 'block' : 'none';
+            
+            // Her zaman textbox'lara varsayılan değerleri doldur
+            this.setDefaultTextboxValues();
+            
+            console.log(`Button visibility updated: generate=${generateVisible}, newRequest=${newRequestVisible}, state=${this.state}, yanitSayisi=${this.yanitSayisi}`);
+        }
+        
+        // Ana "Seç ve Kopyala" düğmesini kontrol et
+        if (mainCopyBtn) {
+            // Yanıt üretilmeden önce düğmeyi gizle
+            // Ama state 'finalized' ise düğmeyi gizle (kopyalandığında)
+            const hasResponse = this.previousResponses.length > 0;
+            const shouldHide = this.state === 'finalized';
+            
+            if (shouldHide) {
+                mainCopyBtn.style.display = 'none';
+            } else {
+                mainCopyBtn.style.display = hasResponse ? 'block' : 'none';
+            }
+            
+            console.log(`Main copy button visibility: ${shouldHide ? 'hidden (finalized)' : (hasResponse ? 'visible' : 'hidden')}, state=${this.state}, responses=${this.previousResponses.length}`);
+        }
+    }
+    
+    // Textbox'lara varsayılan değerleri doldur
+    setDefaultTextboxValues() {
+        const requestInput = document.getElementById('original-text');
+        const responseInput = document.getElementById('custom-input');
+        
+        if (requestInput) {
+            requestInput.value = 'Bursa Nilüfer\'de bir dükkanım var ve yönetim planından tahsisli otoparkımda bulunan dubaları, belediye ekipleri mafyavari şekilde tahsisli alanımdan alıp götürebiliyor. Geri aradığımda ise belediye zabıtası, görevliyi mahkemeye vermemi söylüyor. Bu nasıl bir hizmet anlayışı? Benim tahsisli alanımdan eşyamı alıyorsunuz, buna ne denir? Herkes biliyordur. Bir yeri koruduğunu zannedip başka bir yeri mağdur etmek mi belediyecilik?';
+        }
+        
+        if (responseInput) {
+            responseInput.value = 'Orası size tahsis edilmiş bir yer değil. Nilüfer halkının ortak kullanım alanı. Kaldırımlar da öyle.';
+        }
+        
+        console.log('✅ Textbox\'lara varsayılan değerler dolduruldu');
+    }
+    
+    async loadAdminStats() {
+        try {
+            console.log('Loading admin stats...');
+            
+            // Admin istatistiklerini yükle
+            const usersResponse = await api.getUsers();
+            const users = usersResponse.users;
+            
+            // İstatistikleri hesapla - Gradio app formatına göre
+            let totalGeneratedResponses = 0;
+            let totalAnsweredRequests = 0;
+            
+            for (const user of users) {
+                totalGeneratedResponses += user.total_requests || 0;
+                totalAnsweredRequests += user.answered_requests || 0;
+            }
+            
+            // HTML'i oluştur - Gradio app formatına göre
+            const statsHtml = `
+                <div style="background: white; border: 1px solid #e0e0e0; border-radius: 12px; padding: 1.5rem; margin: 1rem 0; box-shadow: 0 2px 4px rgba(0,0,0,0.05), 0 4px 8px rgba(0,0,0,0.1);">
+                    <div style="display: flex; gap: 2rem; margin-bottom: 2rem;">
+                        <div style="background: #e3f2fd; padding: 1rem; border-radius: 8px; text-align: center; flex: 1;">
+                            <h4 style="font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; font-weight: 600;">Toplam Üretilen Yanıt</h4>
+                            <div style="font-size: 2rem; font-weight: bold; color: #1976d2; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;">${totalGeneratedResponses}</div>
+                        </div>
+                        <div style="background: #e8f5e8; padding: 1rem; border-radius: 8px; text-align: center; flex: 1;">
+                            <h4 style="font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; font-weight: 600;">Toplam Cevaplanan İstek Öneri</h4>
+                            <div style="font-size: 2rem; font-weight: bold; color: #2e7d32; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;">${totalAnsweredRequests}</div>
+                        </div>
+                    </div>
+                    
+                    <h3 style="font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; font-weight: 600;">👥 Kullanıcı Detayları</h3>
+                    <table style="width: 100%; border-collapse: collapse; margin-top: 1rem;">
+                        <thead>
+                            <tr style="background: #f5f5f5;">
+                                <th style="padding: 12px; border: 1px solid #ddd; text-align: left; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; font-weight: 600;">Ad Soyad</th>
+                                <th style="padding: 12px; border: 1px solid #ddd; text-align: left; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; font-weight: 600;">Müdürlük</th>
+                                <th style="padding: 12px; border: 1px solid #ddd; text-align: left; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; font-weight: 600;">E-posta</th>
+                                <th style="padding: 12px; border: 1px solid #ddd; text-align: center; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; font-weight: 600;">Toplam Ürettiği Yanıt</th>
+                                <th style="padding: 12px; border: 1px solid #ddd; text-align: center; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; font-weight: 600;">Cevapladığı İstek Sayısı</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${users.map(user => `
+                                <tr>
+                                    <td style="padding: 12px; border: 1px solid #ddd; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;">${user.full_name || 'N/A'}</td>
+                                    <td style="padding: 12px; border: 1px solid #ddd; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;">${user.department || 'N/A'}</td>
+                                    <td style="padding: 12px; border: 1px solid #ddd; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;">${user.email || 'N/A'}</td>
+                                    <td style="padding: 12px; border: 1px solid #ddd; text-align: center; font-weight: bold; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;">${user.total_requests || 0}</td>
+                                    <td style="padding: 12px; border: 1px solid #ddd; text-align: center; font-weight: bold; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;">${user.answered_requests || 0}</td>
+                                </tr>
+                            `).join('')}
+                        </tbody>
+                    </table>
+                    
+                </div>
+            `;
+            
+            // İstatistikleri göster
+            const content = document.getElementById('admin-stats-content');
+            if (content) {
+                content.innerHTML = statsHtml;
+            }
+            
+            console.log('Admin stats loaded successfully');
+        } catch (error) {
+            console.error('Admin stats loading error:', error);
+            const content = document.getElementById('admin-stats-content');
+            if (content) {
+                content.innerHTML = '<div class="error">İstatistikler yüklenirken hata oluştu.</div>';
+            }
+        }
+    }
 }
 
 // Event Manager
@@ -780,7 +1177,10 @@ class EventManager {
     setupEventListeners() {
         // Login events
         if (ui.elements.sendBtn) {
-            ui.elements.sendBtn.addEventListener('click', () => authManager.sendCode());
+            ui.elements.sendBtn.addEventListener('click', () => {
+                const email = ui.elements.emailInput.value;
+                authManager.sendCode(email);
+            });
         }
         
         if (ui.elements.verifyBtn) {
@@ -790,7 +1190,8 @@ class EventManager {
         if (ui.elements.emailInput) {
             ui.elements.emailInput.addEventListener('keypress', (e) => {
                 if (e.key === 'Enter') {
-                    authManager.sendCode();
+                    const email = ui.elements.emailInput.value;
+                    authManager.sendCode(email);
                 }
             });
         }
@@ -810,7 +1211,7 @@ class EventManager {
         
         // Logout event
         if (ui.elements.logoutBtn) {
-            ui.elements.logoutBtn.addEventListener('click', () => authManager.logout());
+            ui.elements.logoutBtn.addEventListener('click', async () => await authManager.logout());
         }
         
         // AI Response events
@@ -819,11 +1220,37 @@ class EventManager {
         }
         
         if (ui.elements.mainCopyBtn) {
-            ui.elements.mainCopyBtn.addEventListener('click', () => responseManager.copyResponse());
+            ui.elements.mainCopyBtn.addEventListener('click', async () => await responseManager.copyResponse());
         }
         
         if (ui.elements.newRequestBtn) {
             ui.elements.newRequestBtn.addEventListener('click', () => responseManager.newRequest());
+        }
+        
+        // Admin refresh event
+        const refreshAdminBtn = document.getElementById('refresh-admin-btn');
+        if (refreshAdminBtn) {
+            refreshAdminBtn.addEventListener('click', async () => {
+                console.log('Admin stats refresh requested');
+                try {
+                    // Loading göster
+                    const content = document.getElementById('admin-stats-content');
+                    if (content) {
+                        content.innerHTML = '<div class="loading">İstatistikler yenileniyor...</div>';
+                    }
+                    
+                    // İstatistikleri yeniden yükle
+                    await responseManager.loadAdminStats();
+                    
+                    console.log('Admin stats refreshed successfully');
+                } catch (error) {
+                    console.error('Admin stats refresh error:', error);
+                    const content = document.getElementById('admin-stats-content');
+                    if (content) {
+                        content.innerHTML = '<div class="error">İstatistikler yüklenirken hata oluştu.</div>';
+                    }
+                }
+            });
         }
         
         // Settings events
@@ -875,10 +1302,22 @@ function toggleAdminPanel() {
     }
 }
 
-function toggleAccordion(id) {
-    const element = document.getElementById(id);
-    if (element) {
-        element.classList.toggle('hidden');
+function toggleAccordion(contentId) {
+    const content = document.getElementById(contentId);
+    const accordion = content.closest('.previous-accordion');
+    const icon = accordion.querySelector('.accordion-icon');
+    
+    if (content) {
+        content.classList.toggle('hidden');
+        
+        // İkonu güncelle
+        if (icon) {
+            if (content.classList.contains('hidden')) {
+                icon.textContent = '▼';
+            } else {
+                icon.textContent = '▲';
+            }
+        }
     }
 }
 
@@ -903,16 +1342,54 @@ document.addEventListener('DOMContentLoaded', async () => {
     try {
         console.log('Application starting...');
         
-        // Check for auto_login parameter
+        // Sayfa yüklendiğinde state'i sıfırla (Gradio app.py mantığı)
+        responseManager.previousResponses = [];
+        responseManager.currentRequestId = null;
+        responseManager.currentResponseId = null;
+        responseManager.state = 'draft';
+        responseManager.yanitSayisi = 0;
+        
+        // UI'yi temizle
+        responseManager.hideAllAccordions();
+        responseManager.updatePreviousResponses();
+        responseManager.updateButtonVisibility();
+        
+        // Ana "Seç ve Kopyala" düğmesini göster
+        if (ui.elements.mainCopyBtn) {
+            ui.elements.mainCopyBtn.style.display = 'block';
+        }
+        
+        // Ana yanıt alanını temizle
+        const mainResponse = document.getElementById('main-response');
+        if (mainResponse) {
+            mainResponse.innerHTML = 'Henüz yanıt üretilmedi...';
+        }
+        
+        // Local storage'ı temizle
+        localStorage.removeItem('previousResponses');
+        
+        console.log('Page loaded - state reset to initial state');
+        
+        // Check for auto_login parameter veya magic link parametreleri
         const urlParams = new URLSearchParams(window.location.search);
         const autoLogin = urlParams.get('auto_login');
+        const sessionId = urlParams.get('session_id');
+        const userEmail = urlParams.get('user_email');
+        const isAdmin = urlParams.get('is_admin');
+        const accessToken = urlParams.get('access_token');
         
-        if (autoLogin === 'true') {
-            console.log('Auto login detected, checking backend session...');
+        // Magic link ile geliyorsa (auto_login=true varsa) çıkış flag'ini kontrol etme
+        const isMagicLink = autoLogin === 'true';
+        
+        if (autoLogin === 'true' || sessionId || userEmail || isAdmin || accessToken) {
+            console.log('Auto login or magic link detected, checking backend session...');
             await authManager.checkBackendSession();
         } else {
             await authManager.init();
         }
+        
+        // Buton görünürlüğünü başlangıçta güncelle
+        responseManager.updateButtonVisibility();
         
         console.log('Application started successfully');
     } catch (error) {
