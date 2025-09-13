@@ -214,5 +214,17 @@
     "full_name": "zafer turan",
     "department": "Bilgi \u0130\u015flem M\u00fcd\u00fcrl\u00fc\u011f\u00fc",
     "profile_completed": true
+  },
+  "52aaebae9148": {
+    "user_email": "zaferturan@nilufer.bel.tr",
+    "access_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxIiwiZW1haWwiOiJ6YWZlcnR1cmFuQG5pbHVmZXIuYmVsLnRyIiwiZXhwIjoxNzU3NzkwMDYyLjg4NzU5MX0.-xIRQBq03oNIhCDEeYLILbFk8oQU_UTDKI5oiLkjBgg",
+    "login_time": 1757782862.8877459,
+    "user_agent": "MagicLink",
+    "ip_address": "127.0.0.1",
+    "last_activity": 1757782863.5739691,
+    "is_admin": true,
+    "full_name": "zafer turan",
+    "department": "Bilgi \u0130\u015flem M\u00fcd\u00fcrl\u00fc\u011f\u00fc",
+    "profile_completed": true
   }
 }

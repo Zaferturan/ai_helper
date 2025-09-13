@@ -194,7 +194,7 @@ textarea {
 }
 
 .btn-primary:hover {
-    background: #3d7ba3;
+    background: #e25b6b;
     transform: translateY(-1px);
 }
 
@@ -204,7 +204,7 @@ textarea {
 }
 
 .btn-secondary:hover {
-    background: #3d7ba3;
+    background: #e25b6b;
 }
 
 .btn-success {
@@ -213,7 +213,7 @@ textarea {
 }
 
 .btn-success:hover {
-    background: #3d7ba3;
+    background: #e25b6b;
 }
 
 /* Error Messages */
@@ -400,7 +400,7 @@ textarea {
 }
 
 .prev-copy-btn:hover {
-    background: #3d7ba3;
+    background: #e25b6b;
 }
 
 .accordion-header {
@@ -415,7 +415,7 @@ textarea {
 }
 
 .accordion-header:hover {
-    background: #3d7ba3;
+    background: #e25b6b;
 }
 
 .accordion-header h3 {
@@ -571,9 +571,9 @@ textarea {
 }
 
 #generate-btn:hover {
-    background: #3d7ba3;
+    background: #e25b6b;
     transform: translateY(-2px);
-    box-shadow: 0 6px 12px rgba(75, 154, 199, 0.4);
+    box-shadow: 0 6px 12px rgba(226, 91, 107, 0.4);
 }
 
 #generate-btn:active {
@@ -791,7 +791,7 @@ textarea {
 }
 
 .previous-accordion .accordion-header:hover {
-    background: #3d7ba3;
+    background: #e25b6b;
 }
 
 .previous-accordion .accordion-title {
