@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>AI Yardımcı - Nilüfer Belediyesi</title>
-    <link rel="stylesheet" href="style.css?v=20250912-78">
+    <link rel="stylesheet" href="style.css?v=20250913-07">
 </head>
 <body>
     <!-- Loading Screen -->
@@ -34,7 +34,8 @@
                     </div>
                     
                     <button id="send-btn" class="btn btn-primary">
-                        📧 Bağlantı ve Kod Gönder
+                        <span id="send-text">📧 Bağlantı ve Kod Gönder</span>
+                        <span id="send-spinner" class="spinner hidden">⏳ Gönderiliyor...</span>
                     </button>
                     
                     <div id="login-error" class="error-message hidden"></div>
@@ -59,7 +60,8 @@
                     </div>
                     
                     <button id="verify-btn" class="btn btn-primary">
-                        ✅ Kodu Doğrula
+                        <span id="verify-text">✅ Kodu Doğrula</span>
+                        <span id="verify-spinner" class="spinner hidden">⏳ Doğrulanıyor...</span>
                     </button>
                     
                     <div id="code-error" class="error-message hidden"></div>
@@ -287,6 +289,6 @@
     </div>
 
     <!-- Scripts -->
-    <script src="app.js?v=20250913-06"></script>
+    <script src="app.js?v=20250913-07"></script>
 </body>
 </html>
