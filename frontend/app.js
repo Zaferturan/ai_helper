@@ -906,7 +906,7 @@ class AIResponseManager {
 
     hidePreviousResponsesSection() {
         // Önceki yanıtlar bölümünü gizle
-        const previousResponsesSection = document.querySelector('.previous-responses-section');
+        const previousResponsesSection = document.querySelector('.previous-responses');
         if (previousResponsesSection) {
             previousResponsesSection.style.display = 'none';
             console.log('✅ Önceki yanıtlar bölümü gizlendi');
