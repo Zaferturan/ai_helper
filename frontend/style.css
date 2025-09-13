@@ -520,11 +520,18 @@ textarea {
 }
 
 /* Settings Accordion */
+/* Settings Accordion - Admin olmayan kullanıcılar için gizli */
 .settings-accordion {
     background: #f8f9fa;
     border-radius: 8px;
     border: 1px solid #dee2e6;
     overflow: hidden;
+    display: none; /* Varsayılan olarak gizli */
+}
+
+/* Admin kullanıcılar için göster */
+body.admin-user .settings-accordion {
+    display: block;
 }
 
 .settings-grid {

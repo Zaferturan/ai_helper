@@ -613,6 +613,9 @@ class UIManager {
         const isAdmin = localStorage.getItem(CONFIG.STORAGE_KEYS.IS_ADMIN) === 'true';
         if (isAdmin) {
             this.elements.adminPanel.classList.remove('hidden');
+            document.body.classList.add('admin-user'); // Admin için body'ye class ekle
+        } else {
+            document.body.classList.remove('admin-user'); // Admin değilse class'ı kaldır
         }
         
         console.log('=== showMainApp END ===');
