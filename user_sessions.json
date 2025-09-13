@@ -250,5 +250,53 @@
     "full_name": "zafer turan",
     "department": "Bilgi \u0130\u015flem M\u00fcd\u00fcrl\u00fc\u011f\u00fc",
     "profile_completed": true
+  },
+  "444937335a95": {
+    "user_email": "zaferturan@nilufer.bel.tr",
+    "access_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxIiwiZW1haWwiOiJ6YWZlcnR1cmFuQG5pbHVmZXIuYmVsLnRyIiwiZXhwIjoxNzU3NzkxMTc5LjYyOTI2OX0.pRxODyNgYvchOn-lj4MRj6m4RB2XENrt_zG9ztaaopw",
+    "login_time": 1757783979.6295698,
+    "user_agent": "MagicLink",
+    "ip_address": "127.0.0.1",
+    "last_activity": 1757783980.3996031,
+    "is_admin": true,
+    "full_name": "zafer turan",
+    "department": "Bilgi \u0130\u015flem M\u00fcd\u00fcrl\u00fc\u011f\u00fc",
+    "profile_completed": true
+  },
+  "427c28f9963d": {
+    "user_email": "zaferturan@nilufer.bel.tr",
+    "access_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxIiwiZW1haWwiOiJ6YWZlcnR1cmFuQG5pbHVmZXIuYmVsLnRyIiwiZXhwIjoxNzU3NzkyMjU3Ljc1Njk2N30.n_OAFD3053IIZEeB8lkC98ifV242CC2N5Bi-j85hhLk",
+    "login_time": 1757785057.7571266,
+    "user_agent": "MagicLink",
+    "ip_address": "127.0.0.1",
+    "last_activity": 1757785058.2086773,
+    "is_admin": true,
+    "full_name": "zafer turan",
+    "department": "Bilgi \u0130\u015flem M\u00fcd\u00fcrl\u00fc\u011f\u00fc",
+    "profile_completed": true
+  },
+  "9819d41491e5": {
+    "user_email": "zaferturan@nilufer.bel.tr",
+    "access_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxIiwiZW1haWwiOiJ6YWZlcnR1cmFuQG5pbHVmZXIuYmVsLnRyIiwiZXhwIjoxNzU3NzkyNDMyLjA3MjQ0Mn0.mVfEYHONjAXpecjDhIuCVpKS6Sznouj33Yt96Ke3sQU",
+    "login_time": 1757785232.0726314,
+    "user_agent": "MagicLink",
+    "ip_address": "127.0.0.1",
+    "last_activity": 1757785232.6653326,
+    "is_admin": true,
+    "full_name": "zafer turan",
+    "department": "Bilgi \u0130\u015flem M\u00fcd\u00fcrl\u00fc\u011f\u00fc",
+    "profile_completed": true
+  },
+  "6265b9e484bb": {
+    "user_email": "zaferturan@nilufer.bel.tr",
+    "access_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxIiwiZW1haWwiOiJ6YWZlcnR1cmFuQG5pbHVmZXIuYmVsLnRyIiwiZXhwIjoxNzU3NzkyNDU4Ljc5MjE2OH0.hf1xlLkug6MPjhshBUhv0u-YwTCe5CUQ9g44nbezzHQ",
+    "login_time": 1757785258.79248,
+    "user_agent": "MagicLink",
+    "ip_address": "127.0.0.1",
+    "last_activity": 1757785259.7051735,
+    "is_admin": true,
+    "full_name": "zafer turan",
+    "department": "Bilgi \u0130\u015flem M\u00fcd\u00fcrl\u00fc\u011f\u00fc",
+    "profile_completed": true
   }
 }
