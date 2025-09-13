@@ -558,7 +558,7 @@ textarea {
 /* Generate Button */
 #generate-btn {
     width: 100%;
-    background: #3B82F6;
+    background: #4b9ac7;
     color: white;
     border: none;
     padding: 1rem 2rem;
@@ -567,13 +567,13 @@ textarea {
     font-weight: 600;
     cursor: pointer;
     transition: all 0.3s ease;
-    box-shadow: 0 4px 8px rgba(59, 130, 246, 0.3);
+    box-shadow: 0 4px 8px rgba(75, 154, 199, 0.3);
 }
 
 #generate-btn:hover {
-    background: #2563EB;
+    background: #3d7ba3;
     transform: translateY(-2px);
-    box-shadow: 0 6px 12px rgba(59, 130, 246, 0.4);
+    box-shadow: 0 6px 12px rgba(75, 154, 199, 0.4);
 }
 
 #generate-btn:active {
