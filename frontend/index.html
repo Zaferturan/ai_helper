@@ -4,53 +4,72 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>AI Yardımcı - Nilüfer Belediyesi</title>
-    <link rel="stylesheet" href="style.css">
-    <link rel="icon" href="../icon.ico" type="image/x-icon">
+    <link rel="stylesheet" href="style.css?v=20250912-79">
 </head>
 <body>
-    <!-- Login Ekranı -->
+    <!-- Loading Screen -->
+    <div id="loading-screen" class="loading-screen">
+        <div class="loading-content">
+            <div class="loading-spinner"></div>
+            <p>İşlem yapılıyor...</p>
+        </div>
+    </div>
+
+    <!-- Login Screen -->
     <div id="login-screen" class="screen">
-        <div class="container">
+        <div class="main-wrapper">
             <div class="login-card">
                 <div class="login-header">
-                    <img src="../logo.png" alt="Nilüfer Belediyesi" class="logo">
+                    <img src="logo.png" alt="Nilüfer Belediyesi" class="logo">
                     <h1>AI Yardımcı</h1>
-                    <p class="subtitle">Nilüfer Belediyesi Yapay Zeka Asistanı</p>
+                    <p>Nilüfer Belediyesi Yapay Zeka Asistanı</p>
                 </div>
                 
-                <div id="email-section">
-                    <h2>📧 E-posta ile Giriş</h2>
+                <div class="login-content">
+                    <h2>E-posta ile Giriş</h2>
                     <p class="instruction">E-posta adresinizi girin, size giriş kodu gönderelim.</p>
                     
                     <div class="form-group">
                         <input type="email" id="email-input" placeholder="ornek@nilufer.bel.tr" required>
-                        <button id="send-code-btn" class="btn btn-primary">📧 Bağlantı ve Kod Gönder</button>
-                    </div>
-                </div>
-                
-                <div id="code-section" class="hidden">
-                    <h2>🔐 Kod Doğrulama</h2>
-                    <p class="instruction">E-postanıza gelen 6 haneli kodu girin.</p>
-                    
-                    <div class="form-group">
-                        <input type="text" id="code-input" placeholder="123456" maxlength="6" required>
-                        <button id="verify-btn" class="btn btn-primary">✅ Doğrula</button>
                     </div>
                     
-                    <div class="code-actions">
-                        <button id="resend-btn" class="btn btn-secondary">🔄 Tekrar gönder</button>
-                        <button id="back-btn" class="btn btn-secondary">⬅️ Geri Dön</button>
-                    </div>
+                    <button id="send-btn" class="btn btn-primary">
+                        📧 Bağlantı ve Kod Gönder
+                    </button>
+                    
+                    <div id="login-error" class="error-message hidden"></div>
                 </div>
-                
-                <div id="login-error" class="error-message hidden"></div>
             </div>
         </div>
     </div>
 
-    <!-- Profil Tamamlama Ekranı -->
+    <!-- Code Verification Screen -->
+    <div id="code-screen" class="screen hidden">
+        <div class="main-wrapper">
+            <div class="login-card">
+                <div class="login-header">
+                    <h1>Kod Doğrulama</h1>
+                    <p>E-postanıza gönderilen kodu girin</p>
+                </div>
+                
+                <div class="login-content">
+                    <div class="form-group">
+                        <input type="text" id="code-input" placeholder="6 haneli kod" maxlength="6" required>
+                    </div>
+                    
+                    <button id="verify-btn" class="btn btn-primary">
+                        ✅ Kodu Doğrula
+                    </button>
+                    
+                    <div id="code-error" class="error-message hidden"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Profile Completion Screen -->
     <div id="profile-screen" class="screen hidden">
-        <div class="container">
+        <div class="main-wrapper">
             <div class="profile-card">
                 <h2>👤 Profil Bilgilerinizi Tamamlayın</h2>
                 <p class="instruction">Devam etmek için lütfen profil bilgilerinizi tamamlayın.</p>
@@ -100,21 +119,28 @@
         </div>
     </div>
 
-    <!-- Ana Uygulama Ekranı -->
-    <div id="main-screen" class="screen hidden">
-        <div class="container">
+    <!-- Main Application Screen -->
+    <div id="main-screen" class="screen main-screen hidden">
+        <div class="main-wrapper">
+            <!-- Ana Banner -->
+            <div class="main-banner">
+                <div class="banner-content">
+                    <div class="logo-container">
+                        <img src="logo.png" alt="Nilüfer Belediyesi" class="logo">
+                    </div>
+                    <div class="banner-text">
+                        <h1>AI Yardımcı</h1>
+                        <p>Nilüfer Belediyesi - Yapay Zeka Destekli Yanıt Üretim Sistemi</p>
+                    </div>
+                </div>
+            </div>
+
             <!-- Kullanıcı Bilgi Çubuğu -->
             <div class="user-info-bar">
                 <div class="user-info">
                     <span id="user-profile">👤 Kullanıcı</span>
                 </div>
                 <button id="logout-btn" class="btn btn-secondary">🚪 Çıkış Yap</button>
-            </div>
-
-            <!-- Ana Banner -->
-            <div class="main-banner">
-                <h2>🤖 AI Yardımcı</h2>
-                <p>Belediye işlerinizde size yardımcı olmak için buradayım. Sorularınızı sorun, önerilerinizi paylaşın!</p>
             </div>
 
             <!-- Admin İstatistikler Akordeonu -->
@@ -133,107 +159,145 @@
 
             <!-- Ana Uygulama Alanı -->
             <div class="main-app-area">
-                <!-- Örnek İstekler -->
-                <div class="request-section">
-                    <h3>📝 Örnek İstekler</h3>
-                    <textarea id="original-text" placeholder="Örnek: Belediye başkanına hitaben bir teşekkür mektubu yazabilir misiniz?"></textarea>
-                </div>
+                <!-- İki sütunlu layout -->
+                <div class="app-layout">
+                    <!-- Sol sütun - Giriş ve ayarlar -->
+                    <div class="left-column">
+                        <!-- Gelen İstek/Öneri -->
+                        <div class="request-section">
+                            <h3></h3>
+                            <label class="section-label">Gelen istek/öneri metnini buraya yapıştırın:</label>
+                            <textarea id="original-text" placeholder="İstek/öneri metnini buraya yapıştırın...">Bursa Nilüfer'de bir dükkanım var ve yönetim planından tahsisli otoparkımda bulunan dubaları, belediye ekipleri mafyavari şekilde tahsisli alanımdan alıp götürebiliyor. Geri aradığımda ise belediye zabıtası, görevliyi mahkemeye vermemi söylüyor. Bu nasıl bir hizmet anlayışı? Benim tahsisli alanımdan eşyamı alıyorsunuz, buna ne denir? Herkes biliyordur. Bir yeri koruduğunu zannedip başka bir yeri mağdur etmek mi belediyecilik?</textarea>
+                        </div>
 
-                <!-- Özel İstek -->
-                <div class="request-section">
-                    <h3>✏️ Özel İsteğiniz</h3>
-                    <textarea id="custom-input" placeholder="Kendi isteğinizi buraya yazın..."></textarea>
-                </div>
+                        <!-- Hazırladığınız Cevap -->
+                        <div class="request-section">
+                            <h3></h3>
+                            <label class="section-label">Hazırladığınız cevap taslağını buraya yazın:</label>
+                            <textarea id="custom-input" placeholder="Cevap taslağınızı buraya yazın...">Orası size tahsis edilmiş bir yer değil. Nilüfer halkının ortak kullanım alanı. Kaldırımlar da öyle.</textarea>
+                        </div>
 
-                <!-- Yanıt Ayarları -->
-                <div id="response-settings" class="response-settings hidden">
-                    <h3>⚙️ Yanıt Ayarları</h3>
-                    <div class="settings-grid">
-                        <div class="setting-item">
-                            <label for="temperature">Sıcaklık (0.0 - 1.0)</label>
-                            <input type="range" id="temperature" min="0" max="1" step="0.1" value="0.5">
-                            <span id="temperature-value">0.5</span>
+                        <!-- Yanıt Ayarları Akordeonu -->
+                        <div id="response-settings" class="settings-accordion">
+                            <div class="accordion-header" onclick="toggleSettings()">
+                                <h3>⚙️ Yanıt Ayarları</h3>
+                                <span class="accordion-icon">▼</span>
+                            </div>
+                            <div class="accordion-content">
+                                <div class="settings-grid">
+                                    <!-- Model Seçimi -->
+                                    <div class="setting-item">
+                                        <label for="model-select">🤖 Model Seçimi:</label>
+                                        <select id="model-select">
+                                            <option value="gemini-2.5-flash">gemini-2.5-flash</option>
+                                            <option value="gemini-1.5-flash-002">gemini-1.5-flash-002</option>
+                                            <option value="gemini-2.0-flash-001">gemini-2.0-flash-001</option>
+                                            <option value="gpt-oss:latest">gpt-oss:latest</option>
+                                        </select>
+                                        <small class="help-text">Kullanmak istediğiniz AI modelini seçin</small>
+                                    </div>
+                                    
+                                    <!-- LLM Parametreleri (3 sütunlu) -->
+                                    <div class="llm-params-grid">
+                                        <div class="setting-item">
+                                            <label for="temperature">🌡️ Temperature</label>
+                                            <input type="range" id="temperature" min="0.0" max="2.0" step="0.1" value="0.5">
+                                            <span id="temperature-value">0.5</span>
+                                            <small class="help-text">Düşük değerler daha tutarlı, yüksek değerler daha yaratıcı yanıtlar üretir</small>
+                                        </div>
+                                        
+                                        <div class="setting-item">
+                                            <label for="top-p">🎯 Top-p</label>
+                                            <input type="range" id="top-p" min="0.0" max="1.0" step="0.1" value="0.4">
+                                            <span id="top-p-value">0.4</span>
+                                            <small class="help-text">Kelime seçiminde çeşitliliği kontrol eder. Düşük değerler daha odaklı yanıtlar üretir</small>
+                                        </div>
+                                        
+                                        <div class="setting-item">
+                                            <label for="repetition-penalty">🔄 Repetition Penalty</label>
+                                            <input type="range" id="repetition-penalty" min="0.0" max="3.0" step="0.1" value="2.0">
+                                            <span id="repetition-penalty-value">2.0</span>
+                                            <small class="help-text">Tekrarlanan kelimeleri azaltır. Yüksek değerler daha çeşitli kelime kullanımını sağlar</small>
+                                        </div>
+                                    </div>
+                                    
+                                    <!-- Parametre Kaydetme Durumu -->
+                                    <div id="param-save-status" class="save-status hidden">
+                                        <span id="save-message"></span>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
-                        <div class="setting-item">
-                            <label for="top-p">Top-p (0.0 - 1.0)</label>
-                            <input type="range" id="top-p" min="0" max="1" step="0.1" value="0.4">
-                            <span id="top-p-value">0.4</span>
-                        </div>
-                        <div class="setting-item">
-                            <label for="repetition-penalty">Tekrar Cezası (1.0 - 2.0)</label>
-                            <input type="range" id="repetition-penalty" min="1" max="2" step="0.1" value="2.0">
-                            <span id="repetition-penalty-value">2.0</span>
-                        </div>
-                        <div class="setting-item">
-                            <label for="answer-type">Yanıt Türü</label>
-                            <select id="answer-type">
-                                <option value="informative">Bilgilendirici</option>
-                                <option value="creative">Yaratıcı</option>
-                                <option value="formal">Resmi</option>
-                                <option value="casual">Samimi</option>
-                            </select>
-                        </div>
+
+                        <!-- Yanıt Üret Butonu -->
+                        <button id="generate-btn" class="btn btn-primary">🚀 Yanıt Üret</button>
                     </div>
-                </div>
 
-                <!-- Yanıt Üretme -->
-                <div class="generate-section">
-                    <button id="generate-btn" class="btn btn-primary btn-large">🚀 Yanıt Üret</button>
-                </div>
-
-                <!-- Yanıt Gösterimi -->
-                <div id="response-area" class="response-area hidden">
-                    <div id="main-response" class="response-content"></div>
-                    <button id="main-copy-btn" class="btn btn-primary">📋 Seç ve Kopyala</button>
-                    <button id="new-request-btn" class="btn btn-secondary">🆕 Yeni İstek Öneri Cevapla</button>
-                </div>
-
-                <!-- Önceki Yanıtlar -->
-                <div id="previous-responses" class="previous-responses hidden">
-                    <h3>📚 Önceki Yanıtlar</h3>
-                    
-                    <div class="response-accordion">
-                        <div class="accordion-item">
-                            <div class="accordion-header" onclick="toggleAccordion('prev-1')">
-                                <h4>📄 Yanıt #1</h4>
-                                <span class="accordion-icon">▼</span>
+                    <!-- Sağ sütun - Sonuçlar -->
+                    <div class="right-column">
+                        <!-- Son Üretilen Yanıt -->
+                        <div class="response-section">
+                            <label>Son Üretilen Yanıt</label>
+                            <div id="response-area" class="response-area">
+                                <div id="main-response" class="response-content">Henüz yanıt üretilmedi...</div>
                             </div>
-                            <div class="accordion-content" id="prev-1-content">
-                                <div id="prev-text-1" class="response-content"></div>
-                                <button id="prev-copy-btn-1" class="btn btn-primary">📋 Seç ve Kopyala #1</button>
+                            <div class="response-actions">
+                                <button id="main-copy-btn" class="btn btn-success">📋 Seç ve Kopyala</button>
+                                <button id="new-request-btn" class="btn btn-secondary">🆕 Yeni İstek Öneri Cevapla</button>
                             </div>
                         </div>
-                        
-                        <div class="accordion-item">
-                            <div class="accordion-header" onclick="toggleAccordion('prev-2')">
-                                <h4>📄 Yanıt #2</h4>
-                                <span class="accordion-icon">▼</span>
+
+                        <!-- Önceki Yanıtlar -->
+                        <div class="previous-responses">
+                            <div id="previous-responses" class="previous-list">
+                                <div class="no-responses">Henüz önceki yanıt yok</div>
                             </div>
-                            <div class="accordion-content" id="prev-2-content">
-                                <div id="prev-text-2" class="response-content"></div>
-                                <button id="prev-copy-btn-2" class="btn btn-primary">📋 Seç ve Kopyala #2</button>
-                            </div>
-                        </div>
-                        
-                        <div class="accordion-item">
-                            <div class="accordion-header" onclick="toggleAccordion('prev-3')">
-                                <h4>📄 Yanıt #3</h4>
-                                <span class="accordion-icon">▼</span>
-                            </div>
-                            <div class="accordion-content" id="prev-3-content">
-                                <div id="prev-text-3" class="response-content"></div>
-                                <button id="prev-copy-btn-3" class="btn btn-primary">📋 Seç ve Kopyala #3</button>
-                            </div>
-                        </div>
-                        
-                        <div class="accordion-item">
-                            <div class="accordion-header" onclick="toggleAccordion('prev-4')">
-                                <h4>📄 Yanıt #4</h4>
-                                <span class="accordion-icon">▼</span>
-                            </div>
-                            <div class="accordion-content" id="prev-4-content">
-                                <div id="prev-text-4" class="response-content"></div>
-                                <button id="prev-copy-btn-4" class="btn btn-primary">📋 Seç ve Kopyala #4</button>
+                            
+                            <!-- Önceki yanıtlar için accordion'lar (Gradio app.py'den) -->
+                            <div class="previous-accordions">
+                                <div id="prev-accordion-1" class="previous-accordion hidden">
+                                    <div class="accordion-header" onclick="toggleAccordion('prev-content-1')">
+                                        <span class="accordion-title">📄 Yanıt #1</span>
+                                        <span class="accordion-icon">▼</span>
+                                    </div>
+                                    <div id="prev-content-1" class="accordion-content hidden">
+                                        <div id="prev-text-1" class="response-textarea"></div>
+                                        <button id="prev-copy-btn-1" class="btn btn-secondary btn-sm">📋 Seç ve Kopyala #1</button>
+                                    </div>
+                                </div>
+                                
+                                <div id="prev-accordion-2" class="previous-accordion hidden">
+                                    <div class="accordion-header" onclick="toggleAccordion('prev-content-2')">
+                                        <span class="accordion-title">📄 Yanıt #2</span>
+                                        <span class="accordion-icon">▼</span>
+                                    </div>
+                                    <div id="prev-content-2" class="accordion-content hidden">
+                                        <div id="prev-text-2" class="response-textarea"></div>
+                                        <button id="prev-copy-btn-2" class="btn btn-secondary btn-sm">📋 Seç ve Kopyala #2</button>
+                                    </div>
+                                </div>
+                                
+                                <div id="prev-accordion-3" class="previous-accordion hidden">
+                                    <div class="accordion-header" onclick="toggleAccordion('prev-content-3')">
+                                        <span class="accordion-title">📄 Yanıt #3</span>
+                                        <span class="accordion-icon">▼</span>
+                                    </div>
+                                    <div id="prev-content-3" class="accordion-content hidden">
+                                        <div id="prev-text-3" class="response-textarea"></div>
+                                        <button id="prev-copy-btn-3" class="btn btn-secondary btn-sm">📋 Seç ve Kopyala #3</button>
+                                    </div>
+                                </div>
+                                
+                                <div id="prev-accordion-4" class="previous-accordion hidden">
+                                    <div class="accordion-header" onclick="toggleAccordion('prev-content-4')">
+                                        <span class="accordion-title">📄 Yanıt #4</span>
+                                        <span class="accordion-icon">▼</span>
+                                    </div>
+                                    <div id="prev-content-4" class="accordion-content hidden">
+                                        <div id="prev-text-4" class="response-textarea"></div>
+                                        <button id="prev-copy-btn-4" class="btn btn-secondary btn-sm">📋 Seç ve Kopyala #4</button>
+                                    </div>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -242,15 +306,7 @@
         </div>
     </div>
 
-    <!-- Loading Overlay -->
-    <div id="loading-overlay" class="loading-overlay hidden">
-        <div class="loading-spinner">
-            <div class="spinner"></div>
-            <p>İşlem yapılıyor...</p>
-        </div>
-    </div>
-
     <!-- Scripts -->
-    <script src="app.js?v=20250912-4"></script>
+    <script src="app.js?v=20250912-88"></script>
 </body>
 </html>
