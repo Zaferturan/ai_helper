@@ -285,8 +285,9 @@ textarea {
     align-items: center;
     margin-bottom: 2rem;
     padding: 1rem;
-    background: #f8f9fa;
+    background: #4b9ac7;
     border-radius: 8px;
+    color: white;
 }
 
 .user-info h3 {
