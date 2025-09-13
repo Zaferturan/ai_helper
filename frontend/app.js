@@ -1104,7 +1104,7 @@ class AIResponseManager {
                 if (accordionContent) {
                     accordionContent.innerHTML = `
                         <textarea class="response-textarea" readonly style="width: 100%; height: 300px; padding: 12px; border: 2px solid #e5e7eb; border-radius: 8px; background: #ffffff; font-size: 14px; line-height: 1.5; white-space: pre-wrap; word-wrap: break-word; overflow-y: auto; resize: vertical; margin: 0; display: block;">${response.response_text}</textarea>
-                        <button id="prev-copy-btn-${responseNumber}" class="prev-copy-btn" style="margin-top: 10px; padding: 8px 16px; background: #6c757d; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 14px;">📋 Seç ve Kopyala #${responseNumber}</button>
+                        <button id="prev-copy-btn-${responseNumber}" class="prev-copy-btn" style="margin-top: 10px; padding: 8px 16px; background: #4b9ac7; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 14px; transition: background-color 0.3s ease;" onmouseover="this.style.background='#e25b6b'" onmouseout="this.style.background='#4b9ac7'">📋 Seç ve Kopyala #${responseNumber}</button>
                     `;
                     
                     // Copy butonunu güncelle
