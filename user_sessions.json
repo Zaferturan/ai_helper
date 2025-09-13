@@ -35,18 +35,6 @@
     "department": "Bilgi \u0130\u015flem M\u00fcd\u00fcrl\u00fc\u011f\u00fc",
     "profile_completed": true
   },
-  "13c2081aa4b5": {
-    "user_email": "mesutsolaklar@niluferbeltr",
-    "access_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIzIiwiZW1haWwiOiJtZXN1dHNvbGFrbGFyQG5pbHVmZXJiZWx0ciIsImV4cCI6MTc1Nzc4Nzk1Ny43MzU0Nzh9.8C9LOlwpfwVomwB7neg604VZCmLb85EEgy38UgcfMjg",
-    "login_time": 1757780757.735615,
-    "user_agent": "MagicLink",
-    "ip_address": "127.0.0.1",
-    "last_activity": 1757780758.166175,
-    "is_admin": false,
-    "full_name": "Mesut SOLAKLAR",
-    "department": "Bilgi \u0130\u015flem M\u00fcd\u00fcrl\u00fc\u011f\u00fc",
-    "profile_completed": null
-  },
   "ec812f93205f": {
     "user_email": "enginakyildiz@nilufer.bel.tr",
     "access_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiI4IiwiZW1haWwiOiJlbmdpbmFreWlsZGl6QG5pbHVmZXIuYmVsLnRyIiwiZXhwIjoxNzU3Nzg3OTg2LjM3MTIwN30.lRfRYypn0jTtgs2352-14CpvD22hXuxg7jFQIF0oWdk",
@@ -131,16 +119,64 @@
     "department": "Bilgi \u0130\u015flem M\u00fcd\u00fcrl\u00fc\u011f\u00fc",
     "profile_completed": null
   },
-  "ff4aa8371054": {
+  "bfc3b04da7d0": {
     "user_email": "mesutsolaklar@niluferbeltr",
-    "access_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIzIiwiZW1haWwiOiJtZXN1dHNvbGFrbGFyQG5pbHVmZXJiZWx0ciIsImV4cCI6MTc1Nzc4ODIwNi43Mjg3MzZ9.Z_AMTVaqj1SKgkFrsAZdg1pdyAPy_t30vEDKEy6kQXQ",
-    "login_time": 1757781006.7288837,
+    "access_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIzIiwiZW1haWwiOiJtZXN1dHNvbGFrbGFyQG5pbHVmZXJiZWx0ciIsImV4cCI6MTc1Nzc4ODYyNi4wODQ3MDJ9.G47PHnU6Y9LdFURokiaWkOWBAf6kH2NKLE9vKY0T4Lw",
+    "login_time": 1757781426.084896,
     "user_agent": "MagicLink",
     "ip_address": "127.0.0.1",
-    "last_activity": 1757781007.047673,
+    "last_activity": 1757781426.6153777,
     "is_admin": false,
     "full_name": "Mesut SOLAKLAR",
     "department": "Bilgi \u0130\u015flem M\u00fcd\u00fcrl\u00fc\u011f\u00fc",
-    "profile_completed": null
+    "profile_completed": true
+  },
+  "d0137f9fea08": {
+    "user_email": "hakanulucan@niluferbeltr",
+    "access_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiI1IiwiZW1haWwiOiJoYWthbnVsdWNhbkBuaWx1ZmVyYmVsdHIiLCJleHAiOjE3NTc3ODg2NDYuMzQzODkzfQ.unleHfo2CoCHCqGbH6PMd62KrUza7P3eKxkuIIVyKM8",
+    "login_time": 1757781446.3441138,
+    "user_agent": "MagicLink",
+    "ip_address": "127.0.0.1",
+    "last_activity": 1757781446.7217355,
+    "is_admin": false,
+    "full_name": "Hakan ULUCAN",
+    "department": "Bilgi \u0130\u015flem M\u00fcd\u00fcrl\u00fc\u011f\u00fc",
+    "profile_completed": true
+  },
+  "f6345eea931e": {
+    "user_email": "oznuravdal@niluferbeltr",
+    "access_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiI2IiwiZW1haWwiOiJvem51cmF2ZGFsQG5pbHVmZXJiZWx0ciIsImV4cCI6MTc1Nzc4ODY1OC42NzAyODh9.hqBnDvHqZ6hYo-8IDMIqiAv8nGIsfPlI0D74CvMTzb4",
+    "login_time": 1757781458.6705163,
+    "user_agent": "MagicLink",
+    "ip_address": "127.0.0.1",
+    "last_activity": 1757781459.0579903,
+    "is_admin": false,
+    "full_name": "\u00f6znur avdal",
+    "department": "Bilgi \u0130\u015flem M\u00fcd\u00fcrl\u00fc\u011f\u00fc",
+    "profile_completed": true
+  },
+  "12fd1aa07254": {
+    "user_email": "denizsanli@niluferbeltr",
+    "access_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiI3IiwiZW1haWwiOiJkZW5penNhbmxpQG5pbHVmZXJiZWx0ciIsImV4cCI6MTc1Nzc4ODY3MS43NDQ2ODF9.HkQMj-pw7nfXSeSqUDujEXO9ddjw5DHyg2Qz1lAR84s",
+    "login_time": 1757781471.7448983,
+    "user_agent": "MagicLink",
+    "ip_address": "127.0.0.1",
+    "last_activity": 1757781472.1409204,
+    "is_admin": false,
+    "full_name": "DEN\u0130Z \u015eANLI",
+    "department": "Bilgi \u0130\u015flem M\u00fcd\u00fcrl\u00fc\u011f\u00fc",
+    "profile_completed": true
+  },
+  "6cdbb56650c9": {
+    "user_email": "senceroncul@nilufer.bel.tr",
+    "access_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiI5IiwiZW1haWwiOiJzZW5jZXJvbmN1bEBuaWx1ZmVyLmJlbC50ciIsImV4cCI6MTc1Nzc4ODY4Ni44NDM0OTl9.zErlWLLbozEyNKzMGrMSClq-rK5l_mOimPvqT1qM8OM",
+    "login_time": 1757781486.8437874,
+    "user_agent": "MagicLink",
+    "ip_address": "127.0.0.1",
+    "last_activity": 1757781487.2402105,
+    "is_admin": false,
+    "full_name": "Sencer \u00d6NC\u00dcL",
+    "department": "Bilgi \u0130\u015flem M\u00fcd\u00fcrl\u00fc\u011f\u00fc",
+    "profile_completed": true
   }
 }

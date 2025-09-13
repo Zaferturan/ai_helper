@@ -301,6 +301,14 @@ class AuthManager {
             return response;
         } catch (error) {
             console.error('Send code error:', error);
+            
+            // E-posta domain hatası için özel mesaj
+            if (error.message.includes('400')) {
+                this.showErrorMessage('❌ Sadece @nilufer.bel.tr e-posta adresleri kullanılabilir!');
+            } else {
+                this.showErrorMessage('❌ E-posta gönderilirken hata oluştu. Lütfen tekrar deneyin.');
+            }
+            
             throw error;
         } finally {
             // Spinner'ı gizle
@@ -371,6 +379,35 @@ class AuthManager {
         
         if (textElement) textElement.classList.add('hidden');
         if (spinnerElement) spinnerElement.classList.remove('hidden');
+    }
+
+    showErrorMessage(message) {
+        // Mevcut hata mesajını temizle
+        this.hideErrorMessage();
+        
+        // Yeni hata mesajı oluştur
+        const errorDiv = document.createElement('div');
+        errorDiv.id = 'error-message';
+        errorDiv.className = 'error-message';
+        errorDiv.textContent = message;
+        
+        // E-posta input'unun altına ekle
+        const emailInput = document.getElementById('email-input');
+        if (emailInput && emailInput.parentNode) {
+            emailInput.parentNode.insertBefore(errorDiv, emailInput.nextSibling);
+        }
+        
+        // 5 saniye sonra otomatik gizle
+        setTimeout(() => {
+            this.hideErrorMessage();
+        }, 5000);
+    }
+
+    hideErrorMessage() {
+        const errorDiv = document.getElementById('error-message');
+        if (errorDiv) {
+            errorDiv.remove();
+        }
     }
 
     async copyPreviousResponse(responseId) {
