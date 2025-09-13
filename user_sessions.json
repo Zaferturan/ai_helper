@@ -11,18 +11,6 @@
     "department": "Bilgi \u0130\u015flem M\u00fcd\u00fcrl\u00fc\u011f\u00fc",
     "profile_completed": true
   },
-  "df1331ee16c6": {
-    "user_email": "zaferturan@nilufer.bel.tr",
-    "access_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxIiwiZW1haWwiOiJ6YWZlcnR1cmFuQG5pbHVmZXIuYmVsLnRyIiwiZXhwIjoxNzU3Nzg3NzE5LjM0NTY3NH0.sTDOXJd8dC1QIaJbIc8EPeyyCrvT1jSvWIcLzFydzdo",
-    "login_time": 1757780519.3458018,
-    "user_agent": "MagicLink",
-    "ip_address": "127.0.0.1",
-    "last_activity": 1757780520.0701635,
-    "is_admin": true,
-    "full_name": "zafer turan",
-    "department": "Bilgi \u0130\u015flem M\u00fcd\u00fcrl\u00fc\u011f\u00fc",
-    "profile_completed": true
-  },
   "9615a8b48274": {
     "user_email": "enginakyildiz@nilufer.bel.tr",
     "access_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiI4IiwiZW1haWwiOiJlbmdpbmFreWlsZGl6QG5pbHVmZXIuYmVsLnRyIiwiZXhwIjoxNzU3Nzg3NzUyLjM2MTYyNX0.KhPMThOINpEeIfkBU4ZnrkUU7L8kWohhuo9QcqcX-G8",
@@ -44,18 +32,6 @@
     "last_activity": 1757780786.6897955,
     "is_admin": false,
     "full_name": "Engin AKYILDIZ",
-    "department": "Bilgi \u0130\u015flem M\u00fcd\u00fcrl\u00fc\u011f\u00fc",
-    "profile_completed": true
-  },
-  "d537188e0877": {
-    "user_email": "senceroncul@nilufer.bel.tr",
-    "access_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiI5IiwiZW1haWwiOiJzZW5jZXJvbmN1bEBuaWx1ZmVyLmJlbC50ciIsImV4cCI6MTc1Nzc4ODAyNy41NjcyM30.Hl54oKCEf75M26LVUp5z9SgBBHVosvn6CMucKWX-twQ",
-    "login_time": 1757780827.567371,
-    "user_agent": "MagicLink",
-    "ip_address": "127.0.0.1",
-    "last_activity": 1757780827.8959334,
-    "is_admin": false,
-    "full_name": "Sencer \u00d6NC\u00dcL",
     "department": "Bilgi \u0130\u015flem M\u00fcd\u00fcrl\u00fc\u011f\u00fc",
     "profile_completed": true
   },
@@ -82,18 +58,6 @@
     "full_name": "DEN\u0130Z \u015eANLI",
     "department": "Bilgi \u0130\u015flem M\u00fcd\u00fcrl\u00fc\u011f\u00fc",
     "profile_completed": null
-  },
-  "6ba9fa29e8d6": {
-    "user_email": "senceroncul@nilufer.bel.tr",
-    "access_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiI5IiwiZW1haWwiOiJzZW5jZXJvbmN1bEBuaWx1ZmVyLmJlbC50ciIsImV4cCI6MTc1Nzc4ODA2OC45Mzk0ODJ9.UnWwIbczR8dvrVhnOT8ciCb1Y-t2Vs1mjujrjJlnz7Y",
-    "login_time": 1757780868.939694,
-    "user_agent": "MagicLink",
-    "ip_address": "127.0.0.1",
-    "last_activity": 1757780869.248953,
-    "is_admin": false,
-    "full_name": "Sencer \u00d6NC\u00dcL",
-    "department": "Bilgi \u0130\u015flem M\u00fcd\u00fcrl\u00fc\u011f\u00fc",
-    "profile_completed": true
   },
   "71f0161730ff": {
     "user_email": "denizsanli@niluferbeltr",
@@ -167,15 +131,15 @@
     "department": "Bilgi \u0130\u015flem M\u00fcd\u00fcrl\u00fc\u011f\u00fc",
     "profile_completed": true
   },
-  "6cdbb56650c9": {
-    "user_email": "senceroncul@nilufer.bel.tr",
-    "access_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiI5IiwiZW1haWwiOiJzZW5jZXJvbmN1bEBuaWx1ZmVyLmJlbC50ciIsImV4cCI6MTc1Nzc4ODY4Ni44NDM0OTl9.zErlWLLbozEyNKzMGrMSClq-rK5l_mOimPvqT1qM8OM",
-    "login_time": 1757781486.8437874,
+  "301c95ac2cf4": {
+    "user_email": "zaferturan@nilufer.bel.tr",
+    "access_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxIiwiZW1haWwiOiJ6YWZlcnR1cmFuQG5pbHVmZXIuYmVsLnRyIiwiZXhwIjoxNzU3Nzg4OTE5Ljc0MTg1fQ.tXxZwuRtWFrVb17ghwzU9Z8m-X-ATQPPlW0orZl4luE",
+    "login_time": 1757781719.7420087,
     "user_agent": "MagicLink",
     "ip_address": "127.0.0.1",
-    "last_activity": 1757781487.2402105,
-    "is_admin": false,
-    "full_name": "Sencer \u00d6NC\u00dcL",
+    "last_activity": 1757781720.1792972,
+    "is_admin": true,
+    "full_name": "zafer turan",
     "department": "Bilgi \u0130\u015flem M\u00fcd\u00fcrl\u00fc\u011f\u00fc",
     "profile_completed": true
   }
