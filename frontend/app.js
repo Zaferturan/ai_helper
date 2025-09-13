@@ -320,6 +320,12 @@ class AuthManager {
                 // Kullanıcı profil bilgilerini güncelle
                 await this.updateUserProfile();
                 
+                // Kod ekranını gizle
+                const codeScreen = document.getElementById('code-screen');
+                if (codeScreen) {
+                    codeScreen.classList.add('hidden');
+                }
+                
                 // Check if profile is completed
                 if (response.profile_completed) {
                     ui.showMainApp();

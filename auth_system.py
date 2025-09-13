@@ -483,9 +483,14 @@ def get_current_user(token = Depends(security), db: Session = Depends(get_db)):
         
         logger.debug(f"User ID from token: {user_id}")
         
-        # User email'e göre user bul
-        user = db.query(User).filter(User.email == user_id).first()
-        logger.debug(f"User found by email: {user.email if user else 'None'}")
+        # User ID'ye göre user bul
+        try:
+            user = db.query(User).filter(User.id == int(user_id)).first()
+        except ValueError:
+            logger.error(f"Invalid user ID format: {user_id}")
+            raise credentials_exception
+            
+        logger.debug(f"User found by ID: {user.email if user else 'None'}")
         
         if user is None:
             logger.error(f"User with ID {user_id} not found in database")
