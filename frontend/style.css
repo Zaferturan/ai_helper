@@ -894,3 +894,26 @@ div[id*="prev-text-"]::after {
     100% { transform: rotate(360deg); }
 }
 
+
+/* Error Message */
+.error-message {
+    background-color: #FEE2E2;
+    border: 1px solid #FECACA;
+    color: #DC2626;
+    padding: 8px 12px;
+    border-radius: 6px;
+    margin-top: 8px;
+    font-size: 14px;
+    animation: slideIn 0.3s ease-out;
+}
+
+@keyframes slideIn {
+    from {
+        opacity: 0;
+        transform: translateY(-10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
