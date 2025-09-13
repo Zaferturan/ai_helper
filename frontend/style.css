@@ -189,31 +189,31 @@ textarea {
 }
 
 .btn-primary {
-    background: #3B82F6;
+    background: #4e8bef;
     color: white;
 }
 
 .btn-primary:hover {
-    background: #2563EB;
+    background: #3d7bd6;
     transform: translateY(-1px);
 }
 
 .btn-secondary {
-    background: #6c757d;
+    background: #4e8bef;
     color: white;
 }
 
 .btn-secondary:hover {
-    background: #5a6268;
+    background: #3d7bd6;
 }
 
 .btn-success {
-    background: #28a745;
+    background: #4e8bef;
     color: white;
 }
 
 .btn-success:hover {
-    background: #218838;
+    background: #3d7bd6;
 }
 
 /* Error Messages */
