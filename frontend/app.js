@@ -1223,7 +1223,11 @@ class EventManager {
         }
         
         if (ui.elements.verifyBtn) {
-            ui.elements.verifyBtn.addEventListener('click', () => authManager.verifyCode());
+            ui.elements.verifyBtn.addEventListener('click', () => {
+                const email = ui.elements.emailInput.value;
+                const code = ui.elements.codeInput.value;
+                authManager.verifyCode(email, code);
+            });
         }
         
         if (ui.elements.emailInput) {
@@ -1238,7 +1242,9 @@ class EventManager {
         if (ui.elements.codeInput) {
             ui.elements.codeInput.addEventListener('keypress', (e) => {
                 if (e.key === 'Enter') {
-                    authManager.verifyCode();
+                    const email = ui.elements.emailInput.value;
+                    const code = ui.elements.codeInput.value;
+                    authManager.verifyCode(email, code);
                 }
             });
         }
