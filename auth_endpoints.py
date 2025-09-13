@@ -237,7 +237,7 @@ async def get_user_profile(current_user: User = Depends(get_current_user)):
         is_active=current_user.is_active,
         created_at=current_user.created_at,
         last_login=current_user.last_login,
-        profile_completed=current_user.profile_completed
+        profile_completed=current_user.profile_completed or False
     )
 
 @auth_router.post("/verify-code", response_model=CodeVerifyResponse)
