@@ -22,6 +22,453 @@ const CONFIG = {
     }
 };
 
+// API Client for backend communication
+class APIClient {
+    constructor() {
+        this.baseURL = CONFIG.BACKEND_URL;
+    }
+
+    async request(endpoint, options = {}) {
+        const url = `${this.baseURL}${endpoint}`;
+        const defaultOptions = {
+            headers: {
+                'Content-Type': 'application/json',
+                ...options.headers
+            }
+        };
+
+        const response = await fetch(url, { ...defaultOptions, ...options });
+        
+        if (!response.ok) {
+            throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+        }
+        
+        return response.json();
+    }
+
+    async sendLoginCode(email) {
+        return this.request('/send', {
+            method: 'POST',
+            body: JSON.stringify({ email })
+        });
+    }
+
+    async verifyCode(email, code) {
+        return this.request('/verify-code', {
+            method: 'POST',
+            body: JSON.stringify({ email, code })
+        });
+    }
+
+    async getProfile() {
+        const token = localStorage.getItem(CONFIG.STORAGE_KEYS.AUTH_TOKEN);
+        return this.request('/profile', {
+            headers: {
+                'Authorization': `Bearer ${token}`
+            }
+        });
+    }
+
+    async updateProfile(profileData) {
+        const token = localStorage.getItem(CONFIG.STORAGE_KEYS.AUTH_TOKEN);
+        return this.request('/profile', {
+            method: 'PUT',
+            headers: {
+                'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify(profileData)
+        });
+    }
+
+    async getSessionStatus() {
+        return this.request('/session-status');
+    }
+
+    async getSessionDetails(sessionId) {
+        return this.request(`/session/${sessionId}`);
+    }
+
+    async getUsers() {
+        const token = localStorage.getItem(CONFIG.STORAGE_KEYS.AUTH_TOKEN);
+        return this.request('/admin/users', {
+            headers: {
+                'Authorization': `Bearer ${token}`
+            }
+        });
+    }
+
+    async getRequests() {
+        const token = localStorage.getItem(CONFIG.STORAGE_KEYS.AUTH_TOKEN);
+        return this.request('/requests', {
+            method: 'GET',
+            headers: {
+                'Authorization': `Bearer ${token}`
+            }
+        });
+    }
+
+    async createRequest(requestData) {
+        const token = localStorage.getItem(CONFIG.STORAGE_KEYS.AUTH_TOKEN);
+        return this.request('/requests', {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(requestData)
+        });
+    }
+
+    async generateResponse(requestData) {
+        const token = localStorage.getItem(CONFIG.STORAGE_KEYS.AUTH_TOKEN);
+        return this.request('/generate', {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(requestData)
+        });
+    }
+}
+
+// Authentication Manager
+class AuthManager {
+    constructor() {
+        this.api = new APIClient();
+        this.appState = new AppState();
+    }
+
+    async init() {
+        console.log('AuthManager initializing...');
+        this.appState.loadFromStorage();
+        
+        if (this.appState.authenticated) {
+            await this.validateToken();
+        }
+    }
+
+    async validateToken() {
+        try {
+            const profile = await this.api.getProfile();
+            if (profile.email) {
+                this.appState.userEmail = profile.email;
+                this.appState.isAdmin = profile.is_admin || false;
+                this.appState.userProfile = profile;
+                this.saveToStorage();
+                return true;
+            }
+        } catch (error) {
+            console.error('Token validation failed:', error);
+            this.logout();
+        }
+        return false;
+    }
+
+    async checkBackendSession() {
+        try {
+            console.log('Checking backend session...');
+            const sessionStatus = await this.api.getSessionStatus();
+            
+            if (sessionStatus.sessions && sessionStatus.sessions.length > 0) {
+                const latestSession = sessionStatus.sessions[0];
+                const sessionDetails = await this.api.getSessionDetails(latestSession.session_id);
+                
+                if (sessionDetails.user_email) {
+                    console.log('Backend session found:', sessionDetails.user_email);
+                    
+                    // Update app state
+                    this.appState.authenticated = true;
+                    this.appState.userEmail = sessionDetails.user_email;
+                    this.appState.isAdmin = sessionDetails.is_admin || false;
+                    this.appState.authToken = sessionDetails.access_token;
+                    
+                    // Save to localStorage
+                    this.saveToStorage();
+                    
+                    // Show main app
+                    ui.showMainApp();
+                    
+                    // Load admin stats if admin
+                    if (this.appState.isAdmin) {
+                        await this.loadAdminStats();
+                    }
+                    
+                    return true;
+                }
+            }
+            
+            console.log('No backend session found');
+            return false;
+        } catch (error) {
+            console.error('Backend session check failed:', error);
+            return false;
+        }
+    }
+
+    async sendCode(email) {
+        try {
+            const response = await this.api.sendLoginCode(email);
+            return response;
+        } catch (error) {
+            console.error('Send code error:', error);
+            throw error;
+        }
+    }
+
+    async verifyCode(email, code) {
+        try {
+            const response = await this.api.verifyCode(email, code);
+            
+            if (response.access_token) {
+                this.appState.authenticated = true;
+                this.appState.userEmail = email;
+                this.appState.isAdmin = response.is_admin || false;
+                this.appState.authToken = response.access_token;
+                
+                this.saveToStorage();
+                
+                // Check if profile is completed
+                if (response.profile_completed) {
+                    ui.showMainApp();
+                    if (this.appState.isAdmin) {
+                        await this.loadAdminStats();
+                    }
+                } else {
+                    ui.showProfileCompletion();
+                }
+                
+                return true;
+            }
+            return false;
+        } catch (error) {
+            console.error('Verify code error:', error);
+            throw error;
+        }
+    }
+
+    copyPreviousResponse(responseId) {
+        // Gradio app.py mantığı: önceki yanıtı kopyala ve seç
+        const response = this.previousResponses.find(r => r.id === responseId);
+        if (!response) {
+            console.error('Yanıt bulunamadı:', responseId);
+            return;
+        }
+
+        // Panoya kopyala
+        navigator.clipboard.writeText(response.response_text).then(() => {
+            console.log('Önceki yanıt kopyalandı:', responseId);
+            // Başarı mesajı göster
+            ui.showSuccess('Önceki yanıt kopyalandı!');
+        }).catch(err => {
+            console.error('Kopyalama hatası:', err);
+            ui.showError('response-error', 'Kopyalama başarısız.');
+        });
+    }
+
+    async loadAdminStats() {
+        try {
+            const usersResponse = await this.api.getUsers();
+            
+            if (usersResponse.users) {
+                const statsHTML = this.generateAdminStatsHTML(usersResponse.users, []);
+                document.getElementById('admin-stats-content').innerHTML = statsHTML;
+            }
+        } catch (error) {
+            console.error('Admin stats load error:', error);
+        }
+    }
+
+    generateAdminStatsHTML(users, requests) {
+        const totalUsers = users.length;
+        const activeUsers = users.filter(u => u.is_active).length;
+        
+        // Toplam üretilen yanıt sayısı
+        const totalResponses = users.reduce((sum, user) => sum + (user.total_responses || 0), 0);
+        
+        // Toplam cevaplanan istek sayısı
+        const totalAnsweredRequests = users.reduce((sum, user) => sum + (user.answered_requests || 0), 0);
+        
+        return `
+            <div style="font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;">
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; margin-bottom: 1.5rem;">
+                    <div style="background: #f3f4f6; padding: 1rem; border-radius: 8px; text-align: center;">
+                        <div style="font-size: 1.5rem; font-weight: bold; color: #3b82f6;">${totalUsers}</div>
+                        <div style="font-size: 0.9rem; color: #6b7280;">Toplam Kullanıcı</div>
+                    </div>
+                    <div style="background: #f3f4f6; padding: 1rem; border-radius: 8px; text-align: center;">
+                        <div style="font-size: 1.5rem; font-weight: bold; color: #10b981;">${activeUsers}</div>
+                        <div style="font-size: 0.9rem; color: #6b7280;">Aktif Kullanıcı</div>
+                    </div>
+                    <div style="background: #f3f4f6; padding: 1rem; border-radius: 8px; text-align: center;">
+                        <div style="font-size: 1.5rem; font-weight: bold; color: #8b5cf6;">${totalResponses}</div>
+                        <div style="font-size: 0.9rem; color: #6b7280;">Toplam Üretilen Yanıt</div>
+                    </div>
+                    <div style="background: #f3f4f6; padding: 1rem; border-radius: 8px; text-align: center;">
+                        <div style="font-size: 1.5rem; font-weight: bold; color: #f59e0b;">${totalAnsweredRequests}</div>
+                        <div style="font-size: 0.9rem; color: #6b7280;">Cevaplanan İstek Sayısı</div>
+                    </div>
+                </div>
+                
+                <h4 style="color: #1f2937; margin-bottom: 0.5rem; font-size: 1rem;">👥 Kullanıcı Detayları</h4>
+                <div style="background: #f8f9fa; border-radius: 8px; overflow: hidden; border: 1px solid #dee2e6;">
+                    <div style="background: #e9ecef; padding: 12px; font-weight: 600; color: #495057; border-bottom: 1px solid #dee2e6;">
+                        <div style="display: grid; grid-template-columns: 2fr 2fr 2fr 1fr 1fr; gap: 10px; align-items: center;">
+                            <div>Ad Soyad</div>
+                            <div>Müdürlük</div>
+                            <div>E-posta</div>
+                            <div style="text-align: center;">Toplam Ürettiği Yanıt</div>
+                            <div style="text-align: center;">Cevapladığı İstek Sayısı</div>
+                        </div>
+                    </div>
+                    
+                    <div style="max-height: 400px; overflow-y: auto;">
+                        ${users.map(user => `
+                            <div style="padding: 12px; border-bottom: 1px solid #dee2e6; display: grid; grid-template-columns: 2fr 2fr 2fr 1fr 1fr; gap: 10px; align-items: center;">
+                                <div style="font-weight: 600; color: #333;">${user.full_name || 'Bilinmiyor'}</div>
+                                <div style="color: #666; font-size: 0.9rem;">${user.department || 'Bilinmiyor'}</div>
+                                <div style="color: #666; font-size: 0.9rem;">${user.email}</div>
+                                <div style="text-align: center; font-weight: 600; color: #1976d2;">${user.total_responses || 0}</div>
+                                <div style="text-align: center; font-weight: 600; color: #388e3c;">${user.answered_requests || 0}</div>
+                            </div>
+                        `).join('')}
+                    </div>
+                </div>
+            </div>
+        `;
+    }
+
+    saveToStorage() {
+        localStorage.setItem(CONFIG.STORAGE_KEYS.AUTH_TOKEN, this.appState.authToken);
+        localStorage.setItem(CONFIG.STORAGE_KEYS.USER_EMAIL, this.appState.userEmail);
+        localStorage.setItem(CONFIG.STORAGE_KEYS.IS_ADMIN, this.appState.isAdmin.toString());
+        localStorage.setItem(CONFIG.STORAGE_KEYS.USER_PROFILE, JSON.stringify(this.appState.userProfile));
+    }
+
+    logout() {
+        this.appState.authenticated = false;
+        this.appState.userEmail = null;
+        this.appState.isAdmin = false;
+        this.appState.userProfile = null;
+        this.appState.authToken = null;
+        
+        // Clear localStorage
+        Object.values(CONFIG.STORAGE_KEYS).forEach(key => {
+            localStorage.removeItem(key);
+        });
+        
+        ui.showLogin();
+    }
+}
+
+// UI Manager
+class UIManager {
+    constructor() {
+        this.elements = {};
+        this.initializeElements();
+    }
+
+    initializeElements() {
+        this.elements = {
+            loginScreen: document.getElementById('login-screen'),
+            profileScreen: document.getElementById('profile-screen'),
+            mainScreen: document.getElementById('main-screen'),
+            emailInput: document.getElementById('email-input'),
+            sendBtn: document.getElementById('send-btn'),
+            codeInput: document.getElementById('code-input'),
+            verifyBtn: document.getElementById('verify-btn'),
+            fullNameInput: document.getElementById('profile-name'),
+            departmentInput: document.getElementById('profile-department'),
+            saveProfileBtn: document.getElementById('complete-profile-btn'),
+            logoutBtn: document.getElementById('logout-btn'),
+            adminPanel: document.getElementById('admin-panel'),
+            temperature: document.getElementById('temperature'),
+            topP: document.getElementById('top-p'),
+            repetitionPenalty: document.getElementById('repetition-penalty'),
+            // Main app elements
+            requestInput: document.getElementById('original-text'),
+            responseInput: document.getElementById('custom-input'),
+            generateBtn: document.getElementById('generate-btn'),
+            mainResponse: document.getElementById('main-response'),
+            mainCopyBtn: document.getElementById('main-copy-btn'),
+            newRequestBtn: document.getElementById('new-request-btn'),
+            previousList: document.getElementById('previous-list'),
+            modelSelect: document.getElementById('model-select'),
+            maxTokens: document.getElementById('max-tokens'),
+            userProfile: document.getElementById('user-profile')
+        };
+    }
+
+    showLogin() {
+        this.hideAllScreens();
+        this.elements.loginScreen.classList.remove('hidden');
+    }
+
+    showProfileCompletion() {
+        this.hideAllScreens();
+        this.elements.profileScreen.classList.remove('hidden');
+    }
+
+    showMainApp() {
+        this.hideAllScreens();
+        this.hideLoadingScreen();
+        this.elements.mainScreen.classList.remove('hidden');
+        
+        // Update user info
+        const userEmail = localStorage.getItem(CONFIG.STORAGE_KEYS.USER_EMAIL);
+        const userProfile = JSON.parse(localStorage.getItem(CONFIG.STORAGE_KEYS.USER_PROFILE) || 'null');
+        
+        if (userProfile && this.elements.userProfile) {
+            this.elements.userProfile.textContent = `👤 ${userProfile.full_name || 'Kullanıcı'} - ${userProfile.department || 'Departman'}`;
+        }
+        
+        // Show admin panel if admin
+        const isAdmin = localStorage.getItem(CONFIG.STORAGE_KEYS.IS_ADMIN) === 'true';
+        if (isAdmin) {
+            this.elements.adminPanel.classList.remove('hidden');
+        }
+    }
+
+    hideAllScreens() {
+        this.elements.loginScreen.classList.add('hidden');
+        this.elements.profileScreen.classList.add('hidden');
+        this.elements.mainScreen.classList.add('hidden');
+    }
+
+    hideLoadingScreen() {
+        const loadingScreen = document.getElementById('loading-screen');
+        if (loadingScreen) {
+            loadingScreen.style.display = 'none';
+        }
+    }
+
+    showLoading() {
+        const loadingScreen = document.getElementById('loading-screen');
+        if (loadingScreen) {
+            loadingScreen.style.display = 'flex';
+        }
+    }
+
+    hideLoading() {
+        this.hideLoadingScreen();
+    }
+
+    showError(elementId, message) {
+        const element = document.getElementById(elementId);
+        if (element) {
+            element.textContent = message;
+            element.style.color = '#dc2626';
+        }
+    }
+
+    clearError(elementId) {
+        const element = document.getElementById(elementId);
+        if (element) {
+            element.textContent = '';
+        }
+    }
+}
+
 // Global state management
 class AppState {
     constructor() {
@@ -75,828 +522,244 @@ class AppState {
     }
 }
 
-// Initialize global state
-const appState = new AppState();
-
-// UI Management
-class UIManager {
-    constructor() {
-        this.screens = {
-            login: document.getElementById('login-screen'),
-            profile: document.getElementById('profile-screen'),
-            main: document.getElementById('main-screen')
-        };
-        
-        this.elements = {
-            // Login elements
-            emailInput: document.getElementById('email-input'),
-            sendCodeBtn: document.getElementById('send-code-btn'),
-            codeInput: document.getElementById('code-input'),
-            verifyBtn: document.getElementById('verify-btn'),
-            resendBtn: document.getElementById('resend-btn'),
-            backBtn: document.getElementById('back-btn'),
-            loginError: document.getElementById('login-error'),
-            
-            // Profile elements
-            profileName: document.getElementById('profile-name'),
-            profileDepartment: document.getElementById('profile-department'),
-            completeProfileBtn: document.getElementById('complete-profile-btn'),
-            profileError: document.getElementById('profile-error'),
-            
-            // Main app elements
-            userProfile: document.getElementById('user-profile'),
-            logoutBtn: document.getElementById('logout-btn'),
-            adminPanel: document.getElementById('admin-panel'),
-            adminStatsContent: document.getElementById('admin-stats-content'),
-            refreshAdminBtn: document.getElementById('refresh-admin-btn'),
-            
-            // Request elements
-            originalText: document.getElementById('original-text'),
-            customInput: document.getElementById('custom-input'),
-            generateBtn: document.getElementById('generate-btn'),
-            
-            // Response elements
-            responseArea: document.getElementById('response-area'),
-            mainResponse: document.getElementById('main-response'),
-            mainCopyBtn: document.getElementById('main-copy-btn'),
-            newRequestBtn: document.getElementById('new-request-btn'),
-            previousResponses: document.getElementById('previous-responses'),
-            
-            // Settings elements
-            responseSettings: document.getElementById('response-settings'),
-            temperature: document.getElementById('temperature'),
-            topP: document.getElementById('top-p'),
-            repetitionPenalty: document.getElementById('repetition-penalty'),
-            answerType: document.getElementById('answer-type'),
-            
-            // Loading
-            loadingOverlay: document.getElementById('loading-overlay')
-        };
-    }
-
-    // Show specific screen
-    showScreen(screenName) {
-        Object.values(this.screens).forEach(screen => {
-            screen.classList.add('hidden');
-        });
-        this.screens[screenName].classList.remove('hidden');
-    }
-
-    // Show/hide elements
-    show(element) {
-        if (typeof element === 'string') {
-            element = document.getElementById(element);
-        }
-        if (element) element.classList.remove('hidden');
-    }
-
-    hide(element) {
-        if (typeof element === 'string') {
-            element = document.getElementById(element);
-        }
-        if (element) element.classList.add('hidden');
-    }
-
-    // Show error message
-    showError(element, message) {
-        if (typeof element === 'string') {
-            element = document.getElementById(element);
-        }
-        if (element) {
-            element.textContent = message;
-            element.classList.remove('hidden');
-        }
-    }
-
-    // Hide error message
-    hideError(element) {
-        if (typeof element === 'string') {
-            element = document.getElementById(element);
-        }
-        if (element) {
-            element.classList.add('hidden');
-        }
-    }
-
-    // Show loading overlay
-    showLoading() {
-        this.elements.loadingOverlay.classList.remove('hidden');
-    }
-
-    // Hide loading overlay
-    hideLoading() {
-        this.elements.loadingOverlay.classList.add('hidden');
-    }
-
-    // Update user profile display
-    updateUserProfile(profile) {
-        if (profile) {
-            this.elements.userProfile.textContent = `👤 ${profile.full_name} - ${profile.department}`;
-        } else {
-            this.elements.userProfile.textContent = '👤 Kullanıcı';
-        }
-    }
-
-    // Show admin panel if user is admin
-    updateAdminPanel() {
-        if (appState.isAdmin) {
-            this.elements.adminPanel.classList.remove('hidden');
-        } else {
-            this.elements.adminPanel.classList.add('hidden');
-        }
-    }
-}
-
-// Initialize UI manager
-const ui = new UIManager();
-
-// API Client
-class APIClient {
-    constructor() {
-        this.baseURL = CONFIG.BACKEND_URL;
-    }
-
-    // Generic request method
-    async request(endpoint, options = {}) {
-        const url = `${this.baseURL}${endpoint}`;
-        const defaultOptions = {
-            headers: {
-                'Content-Type': 'application/json',
-            },
-        };
-
-        // Add auth header if token exists
-        if (appState.authToken) {
-            defaultOptions.headers['Authorization'] = `Bearer ${appState.authToken}`;
-        }
-
-        const finalOptions = { ...defaultOptions, ...options };
-        
-        try {
-            console.log(`API Request: ${options.method || 'GET'} ${url}`);
-            const response = await fetch(url, finalOptions);
-            
-            if (!response.ok) {
-                throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-            }
-            
-            const data = await response.json();
-            console.log(`API Response:`, data);
-            return data;
-        } catch (error) {
-            console.error(`API Error:`, error);
-            throw error;
-        }
-    }
-
-    // Authentication methods
-    async sendLoginCode(email) {
-        return this.request('/send', {
-            method: 'POST',
-            body: JSON.stringify({ email })
-        });
-    }
-
-    async verifyCode(email, code) {
-        return this.request('/verify-code', {
-            method: 'POST',
-            body: JSON.stringify({ email, code })
-        });
-    }
-
-    async getProfile() {
-        return this.request('/profile');
-    }
-
-    async completeProfile(fullName, department) {
-        return this.request('/complete-profile', {
-            method: 'POST',
-            body: JSON.stringify({ full_name: fullName, department })
-        });
-    }
-
-    async logout() {
-        return this.request('/logout', {
-            method: 'POST'
-        });
-    }
-
-    // Session methods
-    async getSessionStatus() {
-        return this.request('/session-status');
-    }
-
-    async getSessionDetails(sessionId) {
-        return this.request(`/session/${sessionId}`);
-    }
-
-    // Admin methods
-    async getAdminStats() {
-        return this.request('/admin/stats');
-    }
-
-    async getAdminUsers() {
-        return this.request('/admin/users');
-    }
-
-}
-
-// Initialize API client
-const api = new APIClient();
-
-// Authentication Manager
-class AuthManager {
-    constructor() {
-        this.currentStep = 'email'; // 'email', 'code', 'profile', 'main'
-    }
-
-    // Initialize authentication check
-    async init() {
-        console.log('AuthManager: Initializing...');
-        
-        // Load state from storage
-        appState.loadFromStorage();
-        
-        // Check for magic link parameters
-        const urlParams = new URLSearchParams(window.location.search);
-        const token = urlParams.get('token');
-        const sessionId = urlParams.get('session_id');
-        const userEmail = urlParams.get('user_email');
-        const isAdmin = urlParams.get('is_admin') === 'true';
-        const autoLogin = urlParams.get('auto_login');
-        
-        if (token) {
-            console.log('Magic link detected, verifying token...');
-            await this.handleMagicLink(token);
-        } else if (sessionId && userEmail) {
-            console.log('Session parameters detected, loading session...');
-            await this.handleSessionParams(sessionId, userEmail, isAdmin);
-        } else if (autoLogin === 'true') {
-            console.log('Auto login detected, checking backend session...');
-            await this.checkBackendSession();
-        } else if (appState.authenticated) {
-            console.log('Existing session found, verifying...');
-            await this.verifyExistingSession();
-        } else {
-            console.log('No session found, showing login screen');
-            this.showLoginScreen();
-        }
-    }
-
-    // Handle magic link authentication
-    async handleMagicLink(token) {
-        try {
-            ui.showLoading();
-            
-            // Magic link'i backend'e gönder ve redirect'i takip et
-            const response = await fetch(`${CONFIG.BACKEND_URL.replace('/api/v1', '')}/api/v1/auth?token=${token}`, {
-                method: 'GET',
-                redirect: 'manual' // Redirect'i manuel olarak takip et
-            });
-            
-            if (response.type === 'opaqueredirect' || response.status === 302) {
-                console.log('Magic link redirect received, checking session...');
-                
-                // Session kontrolü yap
-                const sessionResponse = await api.getSessionStatus();
-                
-                if (sessionResponse.sessions && sessionResponse.sessions.length > 0) {
-                    const latestSession = sessionResponse.sessions[0];
-                    const sessionDetails = await api.getSessionDetails(latestSession.session_id);
-                    
-                    if (sessionDetails.user_email) {
-                        console.log('Magic link session found:', sessionDetails.user_email);
-                        
-                        appState.authToken = sessionDetails.access_token;
-                        appState.userEmail = sessionDetails.user_email;
-                        appState.isAdmin = sessionDetails.is_admin || false;
-                        appState.userProfile = {
-                            full_name: sessionDetails.full_name,
-                            department: sessionDetails.department
-                        };
-                        appState.saveToStorage();
-                        
-                        if (sessionDetails.profile_completed) {
-                            this.showMainScreen();
-                        } else {
-                            this.showProfileScreen();
-                        }
-                        
-                        ui.hideLoading();
-                        return;
-                    }
-                }
-            }
-            
-            throw new Error('Magic link verification failed');
-            
-        } catch (error) {
-            console.error('Magic link error:', error);
-            ui.showError('login-error', 'Magic link doğrulaması başarısız. Lütfen tekrar deneyin.');
-            this.showLoginScreen();
-        } finally {
-            ui.hideLoading();
-        }
-    }
-
-    // Check backend session for auto login
-    async checkBackendSession() {
-        try {
-            console.log('Checking backend session...');
-            
-            // Backend'den aktif session'ları kontrol et
-            const sessionResponse = await api.getSessionStatus();
-            
-            if (sessionResponse.sessions && sessionResponse.sessions.length > 0) {
-                console.log('Found active session on backend');
-                const latestSession = sessionResponse.sessions[0];
-                
-                // Session detaylarını al
-                const sessionDetails = await api.getSessionDetails(latestSession.session_id);
-                
-                if (sessionDetails.user_email) {
-                    console.log('Backend session found:', sessionDetails.user_email);
-                    
-                    // Session bilgilerini kaydet
-                    appState.authToken = sessionDetails.access_token;
-                    appState.userEmail = sessionDetails.user_email;
-                    appState.isAdmin = sessionDetails.is_admin || false;
-                    appState.userProfile = {
-                        full_name: sessionDetails.full_name,
-                        department: sessionDetails.department
-                    };
-                    appState.saveToStorage();
-                    
-                    // Profil tamamlanmış mı kontrol et
-                    if (sessionDetails.profile_completed) {
-                        this.showMainScreen();
-                    } else {
-                        this.showProfileScreen();
-                    }
-                    
-                    return true;
-                }
-            }
-            
-            console.log('No active session found on backend');
-            this.showLoginScreen();
-            return false;
-            
-        } catch (error) {
-            console.error('Backend session check error:', error);
-            this.showLoginScreen();
-            return false;
-        }
-    }
-
-    // Handle session parameters
-    async handleSessionParams(sessionId, userEmail, isAdmin) {
-        try {
-            ui.showLoading();
-            
-            // Get session details from backend
-            const sessionResponse = await api.request(`/auth/session/${sessionId}`);
-            
-            if (sessionResponse.user_email === userEmail) {
-                appState.authToken = sessionResponse.access_token;
-                appState.userEmail = userEmail;
-                appState.isAdmin = isAdmin;
-                appState.userProfile = {
-                    full_name: sessionResponse.full_name,
-                    department: sessionResponse.department
-                };
-                
-                appState.saveToStorage();
-                
-                if (sessionResponse.profile_completed) {
-                    this.showMainScreen();
-                } else {
-                    this.showProfileScreen();
-                }
-            } else {
-                throw new Error('Session verification failed');
-            }
-        } catch (error) {
-            console.error('Session params error:', error);
-            ui.showError('login-error', 'Session doğrulaması başarısız oldu.');
-            this.showLoginScreen();
-        } finally {
-            ui.hideLoading();
-        }
-    }
-
-    // Verify existing session
-    async verifyExistingSession() {
-        try {
-            ui.showLoading();
-            
-            const profile = await api.getProfile();
-            
-            if (profile.success) {
-                appState.userProfile = profile;
-                appState.isAdmin = profile.is_admin;
-                appState.saveToStorage();
-                
-                if (profile.profile_completed) {
-                    this.showMainScreen();
-                } else {
-                    this.showProfileScreen();
-                }
-            } else {
-                throw new Error('Session verification failed');
-            }
-        } catch (error) {
-            console.error('Session verification error:', error);
-            appState.clear();
-            this.showLoginScreen();
-        } finally {
-            ui.hideLoading();
-        }
-    }
-
-    // Show login screen
-    showLoginScreen() {
-        this.currentStep = 'email';
-        ui.showScreen('login');
-        ui.hide('code-section');
-        ui.show('email-section');
-        ui.hideError('login-error');
-        
-        // Clear form
-        ui.elements.emailInput.value = '';
-        ui.elements.codeInput.value = '';
-    }
-
-    // Show profile completion screen
-    showProfileScreen() {
-        this.currentStep = 'profile';
-        ui.showScreen('profile');
-        ui.hideError('profile-error');
-        
-        // Pre-fill if available
-        if (appState.userProfile) {
-            ui.elements.profileName.value = appState.userProfile.full_name || '';
-            ui.elements.profileDepartment.value = appState.userProfile.department || '';
-        }
-    }
-
-    // Show main application screen
-    showMainScreen() {
-        this.currentStep = 'main';
-        ui.showScreen('main');
-        
-        // Update UI with user info
-        ui.updateUserProfile(appState.userProfile);
-        ui.updateAdminPanel();
-        
-        // Load admin stats if admin
-        if (appState.isAdmin) {
-            this.loadAdminStats();
-        }
-    }
-
-    // Send login code
-    async sendLoginCode() {
-        console.log('sendLoginCode called');
-        console.log('ui.elements.emailInput:', ui.elements.emailInput);
-        
-        const email = ui.elements.emailInput.value.trim();
-        console.log('email value:', email);
-        
-        if (!email) {
-            ui.showError('login-error', 'Lütfen e-posta adresinizi girin.');
-            return;
-        }
-        
-        if (!email.includes('@nilufer.bel.tr')) {
-            ui.showError('login-error', 'Lütfen geçerli bir Nilüfer Belediyesi e-posta adresi girin.');
-            return;
-        }
-        
-        try {
-            ui.showLoading();
-            ui.hideError('login-error');
-            
-            await api.sendLoginCode(email);
-            
-            this.currentStep = 'code';
-            ui.hide('email-section');
-            ui.show('code-section');
-            
-        } catch (error) {
-            console.error('Send code error:', error);
-            ui.showError('login-error', 'Kod gönderilirken hata oluştu. Lütfen tekrar deneyin.');
-        } finally {
-            ui.hideLoading();
-        }
-    }
-
-    // Verify code
-    async verifyCode() {
-        const email = ui.elements.emailInput.value.trim();
-        const code = ui.elements.codeInput.value.trim();
-        
-        if (!code) {
-            ui.showError('login-error', 'Lütfen doğrulama kodunu girin.');
-            return;
-        }
-        
-        try {
-            ui.showLoading();
-            ui.hideError('login-error');
-            
-            const response = await api.verifyCode(email, code);
-            
-            if (response.access_token) {
-                appState.authToken = response.access_token;
-                appState.userEmail = email;
-                appState.isAdmin = response.is_admin;
-                appState.userProfile = {
-                    full_name: response.full_name,
-                    department: response.department
-                };
-                
-                appState.saveToStorage();
-                
-                if (response.profile_completed) {
-                    this.showMainScreen();
-                } else {
-                    this.showProfileScreen();
-                }
-            } else {
-                throw new Error(response.message || 'Kod doğrulaması başarısız');
-            }
-        } catch (error) {
-            console.error('Verify code error:', error);
-            ui.showError('login-error', 'Kod doğrulaması başarısız. Lütfen tekrar deneyin.');
-        } finally {
-            ui.hideLoading();
-        }
-    }
-
-    // Complete profile
-    async completeProfile() {
-        const fullName = ui.elements.profileName.value.trim();
-        const department = ui.elements.profileDepartment.value.trim();
-        
-        if (!fullName) {
-            ui.showError('profile-error', 'Lütfen ad soyadınızı girin.');
-            return;
-        }
-        
-        if (!department) {
-            ui.showError('profile-error', 'Lütfen birim/müdürlüğünüzü seçin.');
-            return;
-        }
-        
-        try {
-            ui.showLoading();
-            ui.hideError('profile-error');
-            
-            const response = await api.completeProfile(fullName, department);
-            
-            if (response.success) {
-                appState.userProfile.full_name = fullName;
-                appState.userProfile.department = department;
-                appState.saveToStorage();
-                
-                this.showMainScreen();
-            } else {
-                throw new Error(response.message || 'Profil tamamlama başarısız');
-            }
-        } catch (error) {
-            console.error('Complete profile error:', error);
-            ui.showError('profile-error', 'Profil tamamlama başarısız. Lütfen tekrar deneyin.');
-        } finally {
-            ui.hideLoading();
-        }
-    }
-
-    // Logout
-    async logout() {
-        try {
-            ui.showLoading();
-            
-            // Call backend logout
-            await api.logout();
-            
-        } catch (error) {
-            console.error('Logout error:', error);
-        } finally {
-            // Clear local state regardless of backend response
-            appState.clear();
-            this.showLoginScreen();
-            ui.hideLoading();
-        }
-    }
-
-    // Load admin statistics
-    async loadAdminStats() {
-        if (!appState.isAdmin) return;
-        
-        try {
-            const usersResponse = await api.getAdminUsers();
-            
-            if (usersResponse.success) {
-                const users = usersResponse.users;
-                const totalGenerated = users.reduce((sum, user) => sum + (user.total_requests || 0), 0);
-                const totalAnswered = users.reduce((sum, user) => sum + (user.answered_requests || 0), 0);
-                
-                const statsHTML = `
-                    <div class="admin-stats">
-                        <h3>📈 Genel İstatistikler</h3>
-                        <div class="stats-grid">
-                            <div class="stat-card">
-                                <div class="stat-number">${totalGenerated}</div>
-                                <div class="stat-label">Toplam Üretilen Yanıt</div>
-                            </div>
-                            <div class="stat-card">
-                                <div class="stat-number">${totalAnswered}</div>
-                                <div class="stat-label">Cevaplanan İstek</div>
-                            </div>
-                            <div class="stat-card">
-                                <div class="stat-number">${users.length}</div>
-                                <div class="stat-label">Aktif Kullanıcı</div>
-                            </div>
-                        </div>
-                        
-                        <h3>👥 Kullanıcı Detayları</h3>
-                        <div class="users-table">
-                            <table>
-                                <thead>
-                                    <tr>
-                                        <th>Kullanıcı</th>
-                                        <th>Birim</th>
-                                        <th>Üretilen Yanıt</th>
-                                        <th>Cevaplanan İstek</th>
-                                        <th>Son Giriş</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    ${users.map(user => `
-                                        <tr>
-                                            <td>${user.full_name || 'N/A'}</td>
-                                            <td>${user.department || 'N/A'}</td>
-                                            <td>${user.total_requests || 0}</td>
-                                            <td>${user.answered_requests || 0}</td>
-                                            <td>${user.last_login ? new Date(user.last_login).toLocaleDateString('tr-TR') : 'N/A'}</td>
-                                        </tr>
-                                    `).join('')}
-                                </tbody>
-                            </table>
-                        </div>
-                    </div>
-                `;
-                
-                ui.elements.adminStatsContent.innerHTML = statsHTML;
-            }
-        } catch (error) {
-            console.error('Load admin stats error:', error);
-            ui.elements.adminStatsContent.innerHTML = '<div class="error">İstatistikler yüklenirken hata oluştu.</div>';
-        }
-    }
-}
-
-// Initialize auth manager
-const authManager = new AuthManager();
-
 // AI Response Manager
-class ResponseManager {
+class AIResponseManager {
     constructor() {
-        this.currentResponse = null;
-        this.responseHistory = [];
+        this.previousResponses = [];
+        this.currentRequestId = null;
+        this.loadPreviousResponses();
     }
 
-    // Generate AI response
     async generateResponse() {
-        const originalText = ui.elements.originalText.value.trim();
-        const customInput = ui.elements.customInput.value.trim();
-        
-        if (!originalText && !customInput) {
-            alert('Lütfen en az bir istek metni girin.');
-            return;
-        }
-        
-        const requestText = customInput || originalText;
-        
         try {
             ui.showLoading();
             
-            // Step 1: Create request
-            const requestResponse = await api.request('/requests', {
-                method: 'POST',
-                body: JSON.stringify({
-                    original_text: requestText,
-                    response_type: ui.elements.answerType.value,
+            const originalText = ui.elements.requestInput.value.trim();
+            const customInput = ui.elements.responseInput.value.trim();
+            const model = ui.elements.modelSelect.value;
+            const temperature = parseFloat(ui.elements.temperature.value);
+            const maxTokens = parseInt(ui.elements.maxTokens.value);
+            
+            if (!originalText) {
+                ui.showError('response-error', 'Lütfen gelen istek/öneri metnini girin.');
+                return;
+            }
+
+            // Maksimum 5 yanıt kontrolü (Gradio app.py'den)
+            if (this.previousResponses.length >= 5) {
+                ui.showError('response-error', '⚠️ Maksimum 5 yanıt üretildi! Yeni istek öneri için "Yeni İstek" butonuna basın.');
+                return;
+            }
+
+            // Eğer yeni istekse request oluştur
+            if (!this.currentRequestId) {
+                const requestData = {
+                    original_text: originalText,
+                    response_type: "informative",
                     is_new_request: true
-                })
-            });
-            
-            if (!requestResponse.id) {
-                throw new Error('Request oluşturulamadı');
+                };
+                
+                const requestResponse = await api.createRequest(requestData);
+                if (requestResponse.id) {
+                    this.currentRequestId = requestResponse.id;
+                } else {
+                    throw new Error(requestResponse.detail || 'İstek oluşturulamadı');
+                }
             }
+
+            // Yanıt üret
+            const generateData = {
+                request_id: this.currentRequestId,
+                model_name: model,
+                custom_input: customInput,
+                temperature: temperature,
+                top_p: 0.9,
+                repetition_penalty: 1.2,
+                system_prompt: ""
+            };
+
+            const response = await api.generateResponse(generateData);
             
-            // Step 2: Generate response
-            const generateResponse = await api.request('/generate', {
-                method: 'POST',
-                body: JSON.stringify({
-                    request_id: requestResponse.id,
-                    model_name: 'gpt-4o-mini', // Default model
-                    custom_input: customInput,
-                    temperature: parseFloat(ui.elements.temperature.value),
-                    top_p: parseFloat(ui.elements.topP.value),
-                    repetition_penalty: parseFloat(ui.elements.repetitionPenalty.value),
-                    system_prompt: ""
-                })
-            });
-            
-            if (generateResponse.response_text) {
-                this.currentResponse = generateResponse.response_text;
-                this.displayResponse(generateResponse.response_text);
-                this.addToHistory(generateResponse.response_text);
+            if (response.response_text) {
+                // Yeni yanıtı oluştur (Gradio app.py formatında)
+                const newResponse = {
+                    id: response.id,
+                    response_text: response.response_text,
+                    created_at: new Date().toISOString(),
+                    latency_ms: response.latency_ms || 0,
+                    model_name: model
+                };
+
+                // Gradio app.py mantığı: history'ye başa ekle
+                this.previousResponses.unshift(newResponse);
+                
+                // Ana yanıtı göster (en son üretilen)
+                this.displayResponse(response.response_text);
+                
+                // Önceki yanıtları güncelle (history[1:] - ilk yanıt hariç)
+                this.updatePreviousResponses();
+                
+                // Local storage'a kaydet
+                this.savePreviousResponses();
+                
+                console.log('Yanıt başarıyla üretildi:', response.response_text.substring(0, 100) + '...');
+                console.log('Toplam yanıt sayısı:', this.previousResponses.length);
             } else {
-                throw new Error('Yanıt üretimi başarısız');
+                throw new Error('Yanıt üretilemedi');
             }
+
         } catch (error) {
-            console.error('Generate response error:', error);
-            alert('Yanıt üretilirken hata oluştu. Lütfen tekrar deneyin.');
+            console.error('Yanıt üretme hatası:', error);
+            ui.showError('response-error', 'Yanıt üretilirken hata oluştu: ' + error.message);
         } finally {
             ui.hideLoading();
         }
     }
 
-    // Display response
-    displayResponse(response) {
-        ui.elements.mainResponse.innerHTML = `<div class="response-text">${response}</div>`;
-        ui.show('response-area');
-        ui.show('previous-responses');
+    displayResponse(text) {
+        if (ui.elements.mainResponse) {
+            ui.elements.mainResponse.textContent = text;
+        }
     }
 
-    // Add response to history
-    addToHistory(response) {
-        this.responseHistory.unshift(response);
+    copyResponse() {
+        if (ui.elements.mainResponse) {
+            const text = ui.elements.mainResponse.textContent;
+            navigator.clipboard.writeText(text).then(() => {
+                // Show success feedback
+                const btn = ui.elements.mainCopyBtn;
+                const originalText = btn.textContent;
+                btn.textContent = '✅ Kopyalandı!';
+                setTimeout(() => {
+                    btn.textContent = originalText;
+                }, 2000);
+            }).catch(err => {
+                console.error('Copy failed:', err);
+                ui.showError('response-error', 'Kopyalama başarısız.');
+            });
+        }
+    }
+
+    newRequest() {
+        // Gradio app.py mantığı: state'i temizle
+        this.previousResponses = [];
+        this.currentRequestId = null;
         
-        // Keep only last 4 responses
-        if (this.responseHistory.length > 4) {
-            this.responseHistory = this.responseHistory.slice(0, 4);
+        // Input'ları temizle
+        ui.elements.requestInput.value = '';
+        ui.elements.responseInput.value = '';
+        ui.elements.mainResponse.textContent = '';
+        
+        // Önceki yanıtları temizle
+        const container = document.getElementById('previous-responses');
+        if (container) {
+            container.innerHTML = '<div class="no-responses">Henüz önceki yanıt yok</div>';
         }
         
-        this.updatePreviousResponses();
+        // Tüm accordion'ları gizle
+        this.hideAllAccordions();
+        
+        // Local storage'ı temizle
+        localStorage.removeItem('previousResponses');
+        
+        console.log('Yeni istek başlatıldı - tüm state temizlendi');
     }
 
-    // Update previous responses display
     updatePreviousResponses() {
-        for (let i = 0; i < 4; i++) {
-            const responseText = this.responseHistory[i];
-            const textElement = document.getElementById(`prev-text-${i + 1}`);
-            const contentElement = document.getElementById(`prev-${i + 1}-content`);
+        const container = document.getElementById('previous-responses');
+        if (!container) return;
+
+        // Gradio app.py mantığı: history[1:] - ilk yanıt hariç diğerleri önceki yanıtlar
+        if (this.previousResponses.length <= 1) {
+            container.innerHTML = '<div class="no-responses">Henüz önceki yanıt yok</div>';
+            // Tüm accordion'ları gizle
+            this.hideAllAccordions();
+            return;
+        }
+
+        // İlk yanıt hariç diğerlerini göster (Gradio app.py mantığı)
+        const previousResponses = this.previousResponses.slice(1);
+        
+        // Başlık ekle (Gradio app.py'den)
+        container.innerHTML = '<h3 style="font-family: \'Segoe UI\', Tahoma, Geneva, Verdana, sans-serif; font-weight: 600; margin-bottom: 1rem;">📚 Önceki Yanıtlar</h3>';
+        
+        // Maksimum 4 önceki yanıt göster (Gradio app.py'den)
+        const maxPrevious = Math.min(previousResponses.length, 4);
+        
+        for (let i = 0; i < maxPrevious; i++) {
+            const response = previousResponses[i];
+            const responseNumber = i + 1;
+            const createdAt = new Date(response.created_at).toLocaleString('tr-TR');
             
-            if (responseText) {
-                textElement.innerHTML = `<div class="response-text">${responseText}</div>`;
-                contentElement.parentElement.classList.remove('hidden');
-            } else {
-                contentElement.parentElement.classList.add('hidden');
+            // Accordion'ı göster
+            const accordion = document.getElementById(`prev-accordion-${responseNumber}`);
+            if (accordion) {
+                accordion.classList.remove('hidden');
+                
+                // Başlığı güncelle
+                const title = accordion.querySelector('.accordion-title');
+                if (title) {
+                    title.textContent = `📄 Yanıt #${responseNumber} - ${createdAt}`;
+                }
+                
+                // İçeriği güncelle
+                const textarea = document.getElementById(`prev-text-${responseNumber}`);
+                if (textarea) {
+                    textarea.textContent = response.response_text;
+                    textarea.onclick = () => {
+                        textarea.style.border = '2px solid #3B82F6';
+                        textarea.style.background = '#f0f9ff';
+                        setTimeout(() => {
+                            textarea.style.border = '';
+                            textarea.style.background = '';
+                        }, 2000);
+                    };
+                }
+                
+                // Copy butonunu güncelle
+                const copyBtn = document.getElementById(`prev-copy-btn-${responseNumber}`);
+                if (copyBtn) {
+                    copyBtn.onclick = () => this.copyPreviousResponse(response.id);
+                }
+            }
+        }
+        
+        // Kullanılmayan accordion'ları gizle
+        for (let i = maxPrevious + 1; i <= 4; i++) {
+            const accordion = document.getElementById(`prev-accordion-${i}`);
+            if (accordion) {
+                accordion.classList.add('hidden');
             }
         }
     }
 
-    // Copy response to clipboard
-    async copyResponse(responseElement) {
-        try {
-            const text = responseElement.textContent || responseElement.innerText;
-            await navigator.clipboard.writeText(text);
-            
-            // Show success feedback
-            const button = event.target;
-            const originalText = button.textContent;
-            button.textContent = '✅ Kopyalandı!';
-            button.classList.add('success');
-            
-            setTimeout(() => {
-                button.textContent = originalText;
-                button.classList.remove('success');
-            }, 2000);
-            
-        } catch (error) {
-            console.error('Copy error:', error);
-            alert('Kopyalama başarısız. Lütfen metni manuel olarak seçin.');
+    hideAllAccordions() {
+        for (let i = 1; i <= 4; i++) {
+            const accordion = document.getElementById(`prev-accordion-${i}`);
+            if (accordion) {
+                accordion.classList.add('hidden');
+            }
         }
     }
 
-    // Start new request
-    newRequest() {
-        ui.elements.originalText.value = '';
-        ui.elements.customInput.value = '';
-        ui.hide('response-area');
-        ui.hide('previous-responses');
-        this.currentResponse = null;
+    loadPreviousResponses() {
+        const saved = localStorage.getItem('previousResponses');
+        if (saved) {
+            try {
+                this.previousResponses = JSON.parse(saved);
+                this.updatePreviousResponses();
+            } catch (error) {
+                console.error('Error loading previous responses:', error);
+            }
+        }
+    }
+
+    savePreviousResponses() {
+        localStorage.setItem('previousResponses', JSON.stringify(this.previousResponses));
     }
 }
 
-// Initialize response manager
-const responseManager = new ResponseManager();
-
-// Event Listeners
+// Event Manager
 class EventManager {
     constructor() {
         this.setupEventListeners();
@@ -904,113 +767,144 @@ class EventManager {
 
     setupEventListeners() {
         // Login events
-        ui.elements.sendCodeBtn.addEventListener('click', () => authManager.sendLoginCode());
-        ui.elements.verifyBtn.addEventListener('click', () => authManager.verifyCode());
-        ui.elements.resendBtn.addEventListener('click', () => authManager.sendLoginCode());
-        ui.elements.backBtn.addEventListener('click', () => authManager.showLoginScreen());
+        if (ui.elements.sendBtn) {
+            ui.elements.sendBtn.addEventListener('click', () => authManager.sendCode());
+        }
+        
+        if (ui.elements.verifyBtn) {
+            ui.elements.verifyBtn.addEventListener('click', () => authManager.verifyCode());
+        }
+        
+        if (ui.elements.emailInput) {
+            ui.elements.emailInput.addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') {
+                    authManager.sendCode();
+                }
+            });
+        }
+        
+        if (ui.elements.codeInput) {
+            ui.elements.codeInput.addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') {
+                    authManager.verifyCode();
+                }
+            });
+        }
         
         // Profile events
-        ui.elements.completeProfileBtn.addEventListener('click', () => authManager.completeProfile());
+        if (ui.elements.profileBtn) {
+            ui.elements.profileBtn.addEventListener('click', () => authManager.completeProfile());
+        }
         
-        // Main app events
-        ui.elements.logoutBtn.addEventListener('click', () => authManager.logout());
-        ui.elements.refreshAdminBtn.addEventListener('click', () => authManager.loadAdminStats());
+        // Logout event
+        if (ui.elements.logoutBtn) {
+            ui.elements.logoutBtn.addEventListener('click', () => authManager.logout());
+        }
         
-        // Response events
-        ui.elements.generateBtn.addEventListener('click', () => responseManager.generateResponse());
-        ui.elements.mainCopyBtn.addEventListener('click', () => responseManager.copyResponse(ui.elements.mainResponse));
-        ui.elements.newRequestBtn.addEventListener('click', () => responseManager.newRequest());
+        // AI Response events
+        if (ui.elements.generateBtn) {
+            ui.elements.generateBtn.addEventListener('click', () => responseManager.generateResponse());
+        }
         
-        // Previous response copy events
-        for (let i = 1; i <= 4; i++) {
-            const copyBtn = document.getElementById(`prev-copy-btn-${i}`);
-            const textElement = document.getElementById(`prev-text-${i}`);
-            if (copyBtn && textElement) {
-                copyBtn.addEventListener('click', () => responseManager.copyResponse(textElement));
-            }
+        if (ui.elements.mainCopyBtn) {
+            ui.elements.mainCopyBtn.addEventListener('click', () => responseManager.copyResponse());
+        }
+        
+        if (ui.elements.newRequestBtn) {
+            ui.elements.newRequestBtn.addEventListener('click', () => responseManager.newRequest());
         }
         
         // Settings events
-        ui.elements.temperature.addEventListener('input', (e) => {
-            document.getElementById('temperature-value').textContent = e.target.value;
-        });
+        if (ui.elements.temperature) {
+            ui.elements.temperature.addEventListener('input', (e) => {
+                if (ui.elements.temperatureValue) {
+                    ui.elements.temperatureValue.textContent = e.target.value;
+                }
+            });
+        }
         
-        ui.elements.topP.addEventListener('input', (e) => {
-            document.getElementById('top-p-value').textContent = e.target.value;
-        });
-        
-        ui.elements.repetitionPenalty.addEventListener('input', (e) => {
-            document.getElementById('repetition-penalty-value').textContent = e.target.value;
-        });
-        
-        // Enter key events
-        ui.elements.emailInput.addEventListener('keypress', (e) => {
-            if (e.key === 'Enter') authManager.sendLoginCode();
-        });
-        
-        ui.elements.codeInput.addEventListener('keypress', (e) => {
-            if (e.key === 'Enter') authManager.verifyCode();
-        });
-        
-        ui.elements.profileName.addEventListener('keypress', (e) => {
-            if (e.key === 'Enter') authManager.completeProfile();
-        });
-        
-        ui.elements.profileDepartment.addEventListener('keypress', (e) => {
-            if (e.key === 'Enter') authManager.completeProfile();
-        });
+        if (ui.elements.maxTokens) {
+            ui.elements.maxTokens.addEventListener('input', (e) => {
+                if (ui.elements.maxTokensValue) {
+                    ui.elements.maxTokensValue.textContent = e.target.value;
+                }
+            });
+        }
     }
 }
 
-// Initialize event manager
-const eventManager = new EventManager();
+// Global functions
 
-// Utility functions for accordion
-function toggleAdminPanel() {
-    const panel = document.getElementById('admin-panel');
-    const content = panel.querySelector('.accordion-content');
-    const icon = panel.querySelector('.accordion-icon');
+function showCopySuccess(textarea) {
+    const originalBorder = textarea.style.border;
+    const originalBackground = textarea.style.background;
+    textarea.style.border = '2px solid #3B82F6';
+    textarea.style.background = '#f0f9ff';
     
-    if (content.classList.contains('hidden')) {
-        content.classList.remove('hidden');
-        icon.textContent = '▲';
-    } else {
-        content.classList.add('hidden');
-        icon.textContent = '▼';
+    // Geçici mesaj göster
+    const parent = textarea.parentElement;
+    const successMsg = document.createElement('div');
+    successMsg.innerHTML = '<p style="color: #3B82F6; font-weight: bold; margin: 5px 0;">✅ Kopyalandı!</p>';
+    parent.appendChild(successMsg);
+    
+    setTimeout(() => {
+        textarea.style.border = originalBorder;
+        textarea.style.background = originalBackground;
+        if (parent.contains(successMsg)) {
+            parent.removeChild(successMsg);
+        }
+    }, 2000);
+}
+
+function toggleAdminPanel() {
+    const content = document.querySelector('#admin-panel .accordion-content');
+    if (content) {
+        content.classList.toggle('open');
     }
 }
 
 function toggleAccordion(id) {
-    const content = document.getElementById(`${id}-content`);
-    const icon = content.parentElement.querySelector('.accordion-icon');
-    
-    if (content.classList.contains('hidden')) {
-        content.classList.remove('hidden');
-        icon.textContent = '▲';
-    } else {
-        content.classList.add('hidden');
-        icon.textContent = '▼';
+    const element = document.getElementById(id);
+    if (element) {
+        element.classList.toggle('hidden');
     }
 }
 
-// Initialize application
+function toggleSettings() {
+    const content = document.querySelector('#response-settings .accordion-content');
+    if (content) {
+        content.classList.toggle('open');
+    }
+}
+
+// Initialize global state
+const appState = new AppState();
+const api = new APIClient();
+const authManager = new AuthManager();
+const responseManager = new AIResponseManager();
+const ui = new UIManager();
+const eventManager = new EventManager();
+
+
+// Start application when DOM is loaded
 document.addEventListener('DOMContentLoaded', async () => {
-    console.log('AI Yardımcı Frontend initialized');
-    
     try {
-        // Check for magic link parameters
+        console.log('Application starting...');
+        
+        // Check for auto_login parameter
         const urlParams = new URLSearchParams(window.location.search);
         const autoLogin = urlParams.get('auto_login');
         
         if (autoLogin === 'true') {
-            console.log('Magic link detected, attempting auto-login...');
-            // Magic link ile giriş yapıldı, session kontrolü yap
+            console.log('Auto login detected, checking backend session...');
             await authManager.checkBackendSession();
         } else {
             await authManager.init();
         }
+        
+        console.log('Application started successfully');
     } catch (error) {
-        console.error('App initialization error:', error);
+        console.error('Application startup error:', error);
         ui.showError('login-error', 'Uygulama başlatılırken hata oluştu.');
     }
 });

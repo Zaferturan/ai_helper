@@ -373,7 +373,7 @@ async def logout(
     current_user: User = Depends(get_current_user)
 ):
     """
-    Logout user (clear cookie)
+    Logout user (clear cookie and session)
     """
     # Clear the cookie
     response.delete_cookie(
@@ -382,6 +382,34 @@ async def logout(
         secure=True,
         samesite="lax"
     )
+    
+    # Clear session from user_sessions.json
+    try:
+        import json
+        import os
+        
+        sessions_file = "user_sessions.json"
+        
+        if os.path.exists(sessions_file):
+            with open(sessions_file, "r") as f:
+                sessions = json.load(f)
+            
+            # Remove sessions for this user
+            sessions_to_remove = []
+            for session_id, session_data in sessions.items():
+                if session_data.get("user_email") == current_user.email:
+                    sessions_to_remove.append(session_id)
+            
+            for session_id in sessions_to_remove:
+                del sessions[session_id]
+            
+            with open(sessions_file, "w") as f:
+                json.dump(sessions, f, indent=2, ensure_ascii=False)
+                
+            logger.info(f"Cleared {len(sessions_to_remove)} sessions for user {current_user.email}")
+    
+    except Exception as e:
+        logger.error(f"Error clearing sessions: {str(e)}")
     
     return {"message": "Başarıyla çıkış yapıldı"}
 
