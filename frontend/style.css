@@ -212,7 +212,14 @@ textarea {
     color: white;
 }
 
-.btn-success:hover {
+.btn-sm {
+    padding: 0.5rem 1rem;
+    font-size: 0.9rem;
+    background: #4b9ac7;
+    color: white;
+}
+
+.btn-sm:hover {
     background: #e25b6b;
 }
 
