@@ -189,31 +189,31 @@ textarea {
 }
 
 .btn-primary {
-    background: #4e8bef;
+    background: #4b9ac7;
     color: white;
 }
 
 .btn-primary:hover {
-    background: #3d7bd6;
+    background: #3d7ba3;
     transform: translateY(-1px);
 }
 
 .btn-secondary {
-    background: #4e8bef;
+    background: #4b9ac7;
     color: white;
 }
 
 .btn-secondary:hover {
-    background: #3d7bd6;
+    background: #3d7ba3;
 }
 
 .btn-success {
-    background: #4e8bef;
+    background: #4b9ac7;
     color: white;
 }
 
 .btn-success:hover {
-    background: #3d7bd6;
+    background: #3d7ba3;
 }
 
 /* Error Messages */
@@ -388,7 +388,7 @@ textarea {
 }
 
 .prev-copy-btn {
-    background: #4e8bef;
+    background: #4b9ac7;
     color: white;
     border: none;
     padding: 0.5rem 1rem;
@@ -399,7 +399,7 @@ textarea {
 }
 
 .prev-copy-btn:hover {
-    background: #3d7bd6;
+    background: #3d7ba3;
 }
 
 .accordion-header {
