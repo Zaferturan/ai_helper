@@ -426,6 +426,18 @@ class UIManager {
         const isAdmin = localStorage.getItem(CONFIG.STORAGE_KEYS.IS_ADMIN) === 'true';
         if (isAdmin) {
             this.elements.adminPanel.classList.remove('hidden');
+        } else {
+            this.elements.adminPanel.classList.add('hidden');
+        }
+        
+        // Show/hide response settings based on admin status
+        const responseSettings = document.getElementById('response-settings');
+        if (responseSettings) {
+            if (isAdmin) {
+                responseSettings.classList.remove('hidden');
+            } else {
+                responseSettings.classList.add('hidden');
+            }
         }
     }
 
