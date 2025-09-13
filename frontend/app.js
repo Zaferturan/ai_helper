@@ -877,6 +877,7 @@ class AIResponseManager {
                 
                 // Kullanıcı isteği: Ana seç ve kopyala ya basınca önceki yanıtların hepsi gizlenir
                 this.hideAllAccordions();
+                this.hidePreviousResponsesSection();
                 this.updatePreviousResponses();
                 
                 // Ana "Seç ve Kopyala" düğmesini de gizle
@@ -900,6 +901,15 @@ class AIResponseManager {
                 console.error('❌ Kopyalama hatası:', err);
                 ui.showError('response-error', 'Kopyalama başarısız.');
             });
+        }
+    }
+
+    hidePreviousResponsesSection() {
+        // Önceki yanıtlar bölümünü gizle
+        const previousResponsesSection = document.querySelector('.previous-responses-section');
+        if (previousResponsesSection) {
+            previousResponsesSection.style.display = 'none';
+            console.log('✅ Önceki yanıtlar bölümü gizlendi');
         }
     }
 
