@@ -128,7 +128,7 @@ async def auth_redirect(token: str = Query(None)):
         from sqlalchemy.orm import sessionmaker
         from models import LoginToken, User
         from datetime import datetime, timedelta
-        import jwt
+        from jose import jwt
         from config import JWT_SECRET_KEY
         
         SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
@@ -232,7 +232,7 @@ async def verify_token_endpoint(request: dict):
             return {"success": False, "message": "Token bulunamadı"}
         
         # JWT token'ı doğrula
-        import jwt
+        from jose import jwt
         from config import JWT_SECRET_KEY
         
         try:
