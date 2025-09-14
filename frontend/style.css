@@ -63,7 +63,7 @@ body {
     display: flex;
     align-items: center;
     justify-content: center;
-    padding: 1rem;
+    padding: 2rem;
     background: #f8f9fa;
     border-radius: 8px;
     margin: 1rem 0;
@@ -95,7 +95,7 @@ body {
     background: white;
     border-radius: 12px;
     box-shadow: 0 4px 8px rgba(0,0,0,0.1);
-    padding: 1rem;
+    padding: 2rem;
     max-width: 600px;
     margin: 0 auto;
     width: 100%;
@@ -107,7 +107,7 @@ body {
 }
 
 .login-header .logo {
-    height: 50px;
+    height: 100px;
     margin-bottom: 1rem;
 }
 
@@ -171,7 +171,7 @@ textarea:focus {
 
 textarea {
     resize: vertical;
-    min-height: 50px;
+    min-height: 100px;
 }
 
 /* Buttons */
@@ -250,19 +250,19 @@ textarea {
 .banner-content {
     display: flex;
     align-items: center;
-    padding: 1rem;
+    padding: 2rem;
 }
 
 .logo-container {
     background: white;
     border-radius: 12px;
-    padding: 7px;
+    padding: 15px;
     margin-right: 20px;
     box-shadow: 0 2px 4px rgba(0,0,0,0.1);
 }
 
 .logo {
-    height: 75px;
+    height: 150px;
     filter: brightness(1.1);
 }
 
@@ -451,7 +451,7 @@ textarea {
 .main-app-area {
     background: white;
     border-radius: 12px;
-    padding: 1rem;
+    padding: 2rem;
     box-shadow: 0 4px 8px rgba(0,0,0,0.1);
     width: 100%;
     max-width: none;
@@ -520,18 +520,11 @@ textarea {
 }
 
 /* Settings Accordion */
-/* Settings Accordion - Admin olmayan kullanıcılar için gizli */
 .settings-accordion {
     background: #f8f9fa;
     border-radius: 8px;
     border: 1px solid #dee2e6;
     overflow: hidden;
-    display: none; /* Varsayılan olarak gizli */
-}
-
-/* Admin kullanıcılar için göster */
-body.admin-user .settings-accordion {
-    display: block;
 }
 
 .settings-grid {
@@ -733,7 +726,7 @@ body.admin-user .settings-accordion {
     }
     
     .logo {
-        height: 50px;
+        height: 100px;
     }
     
     .banner-text h1 {
@@ -761,7 +754,7 @@ body.admin-user .settings-accordion {
 }
 
 .previous-list {
-    background: #4b9ac7;
+    background: white;
     border-radius: 8px;
     padding: 1rem;
     box-shadow: 0 2px 4px rgba(0,0,0,0.1);
