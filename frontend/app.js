@@ -155,6 +155,10 @@ class AuthManager {
         
         if (this.appState.authenticated) {
             await this.validateToken();
+        } else {
+            // Authentication yoksa loading screen'i gizle ve login göster
+            ui.hideLoadingScreen();
+            ui.showLogin();
         }
     }
 
@@ -251,10 +255,16 @@ class AuthManager {
             
             console.log('No backend session found');
             console.log('=== checkBackendSession FAILED ===');
+            // Backend session yoksa loading screen'i gizle ve login göster
+            ui.hideLoadingScreen();
+            ui.showLogin();
             return false;
         } catch (error) {
             console.error('Backend session check failed:', error);
             console.log('=== checkBackendSession ERROR ===');
+            // Hata durumunda loading screen'i gizle ve login göster
+            ui.hideLoadingScreen();
+            ui.showLogin();
             return false;
         }
     }
@@ -309,10 +319,10 @@ class AuthManager {
                 this.showErrorMessage('❌ E-posta gönderilirken hata oluştu. Lütfen tekrar deneyin.');
             }
             
-            throw error;
-        } finally {
             // Spinner'ı gizle
             this.hideSpinner('send');
+            
+            throw error;
         }
     }
 
@@ -648,7 +658,6 @@ class UIManager {
         if (responseArea) {
             responseArea.innerHTML = `
                 <div class="response-loading">
-                    <div class="loading-spinner"></div>
                     <div class="loading-text">İşlem yapılıyor...</div>
                 </div>
             `;
