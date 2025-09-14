@@ -1040,9 +1040,9 @@ class AIResponseManager {
         this.updatePreviousResponses();
         this.updateButtonVisibility();
         
-        // Ana "Seç ve Kopyala" düğmesini tekrar göster
+        // Ana "Seç ve Kopyala" düğmesini gizli tut
         if (ui.elements.mainCopyBtn) {
-            ui.elements.mainCopyBtn.style.display = 'block';
+            ui.elements.mainCopyBtn.style.display = 'none';
         }
         
         // Input alanlarını varsayılan değerlerle doldur
