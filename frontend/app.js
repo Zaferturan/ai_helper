@@ -1040,7 +1040,7 @@ class AIResponseManager {
         this.updatePreviousResponses();
         this.updateButtonVisibility();
         
-        // Tüm "Seç ve Kopyala" butonlarını gizle
+        // updateButtonVisibility() çağrısından sonra ana butonu tekrar gizle
         if (ui.elements.mainCopyBtn) {
             ui.elements.mainCopyBtn.style.display = 'none';
         }
