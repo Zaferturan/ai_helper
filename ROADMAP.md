@@ -1,12 +1,13 @@
-# 🗺️ AI Helper - Geliştirme Yol Haritası
+# 🗺️ AI Yardımcı - Geliştirme Yol Haritası
 
 ## 📋 Giriş ve Amaç
 
-Bu yol haritası, AI Helper projesinin geliştirme sürecini takip etmek ve gelecek özellikleri planlamak için oluşturulmuştur. Proje, metin düzenleme ve iyileştirme için Ollama tabanlı bir FastAPI uygulamasıdır.
+Bu yol haritası, AI Yardımcı projesinin geliştirme sürecini takip etmek ve gelecek özellikleri planlamak için oluşturulmuştur. Proje, Nilüfer Belediyesi için vatandaş taleplerine profesyonel cevaplar hazırlayan modern bir web uygulamasıdır.
 
 ### 🎯 Ana Hedefler
-- Kullanıcı dostu metin düzenleme API'si
-- Çoklu LLM modeli desteği (Ollama + Gemini)
+- Kullanıcı dostu web arayüzü
+- Çoklu LLM modeli desteği (Gemini + Ollama)
+- Güvenli authentication sistemi
 - Gerçek zamanlı performans takibi
 - Ölçeklenebilir mimari
 - Production-ready Docker deployment
@@ -19,6 +20,7 @@ Bu yol haritası, AI Helper projesinin geliştirme sürecini takip etmek ve gele
 - [x] API endpoint'leri
 - [x] Authentication ve authorization
 - [x] Rate limiting ve güvenlik
+- [x] Admin paneli ve istatistikler
 - [ ] API dokümantasyonu geliştirme
 
 ### LLM Entegrasyonu
@@ -31,27 +33,31 @@ Bu yol haritası, AI Helper projesinin geliştirme sürecini takip etmek ve gele
 - [ ] Prompt engineering geliştirme
 
 ### Frontend Arayüzü
-- [x] Streamlit tabanlı web arayüzü
-- [x] Metin editörü ve önizleme
+- [x] HTML5 + CSS3 + JavaScript ile modern web arayüzü
+- [x] Responsive tasarım (mobil ve masaüstü uyumlu)
 - [x] Model seçimi ve ayarları
 - [x] Gerçek zamanlı düzenleme
-- [x] Responsive tasarım
 - [x] LLM parametre ayarları
-- [x] Sistem prompt düzenleme
 - [x] İki sütunlu modern layout
 - [x] Yanıt geçmişi ve expander'lar
 - [x] JavaScript ile panoya kopyalama
 - [x] Yanıt seçimi veritabanı takibi
 - [x] Tooltip desteği
 - [x] Modern CSS tasarım ve gölge efektleri
+- [x] Authentication sistemi entegrasyonu
+- [x] Profil tamamlama sayfası
+- [x] Admin paneli (admin kullanıcılar için)
+- [x] Loading states ve error handling
+- [x] Cache-busting ile güncel dosya yükleme
 
 ### Deployment ve DevOps
 - [x] Docker containerization
-- [x] Docker Compose multi-service orchestration
-- [x] Database persistence
+- [x] Nginx web server ve reverse proxy
+- [x] Database persistence with volumes
 - [x] Health checks ve monitoring
 - [x] Production-ready configuration
-- [x] Cloudflare Tunnel integration
+- [x] Cloudflare CDN ve SSL sertifikası
+- [x] Automatic restart policy
 - [ ] CI/CD pipeline kurulumu
 - [ ] Advanced monitoring ve logging
 - [ ] Backup ve recovery
@@ -59,6 +65,7 @@ Bu yol haritası, AI Helper projesinin geliştirme sürecini takip etmek ve gele
 ### Kullanım Kılavuzu ve Dokümantasyon
 - [x] README.md oluşturma
 - [x] API endpoint dokümantasyonu
+- [x] Ekran görüntüleri ve kullanım rehberi
 - [ ] Kullanıcı kılavuzu
 - [ ] YouTube rehber videoları
 - [ ] Geliştirici dokümantasyonu
@@ -66,15 +73,19 @@ Bu yol haritası, AI Helper projesinin geliştirme sürecini takip etmek ve gele
 ### Authentication ve Telemetry
 - [x] Kullanıcı kayıt/giriş sistemi
 - [x] JWT token yönetimi
+- [x] Magic Link + OTP giriş yöntemi
+- [x] Domain kısıtlaması (@nilufer.bel.tr)
 - [x] Kullanım istatistikleri
 - [x] Hata takibi ve loglama
 - [x] Performans metrikleri
+- [x] Rate limiting ve brute force koruması
+- [x] SMTP entegrasyonu (Google Workspace)
 
 ## ✅ Tamamlananlar
 
 ### 🚀 Başlangıç Ortamı
-- [x] Python 3.10 virtual environment kurulumu
-- [x] Gerekli paketlerin kurulumu (fastapi, sqlalchemy, pymysql, python-dotenv, httpx, cryptography)
+- [x] Python 3.11 virtual environment kurulumu
+- [x] Gerekli paketlerin kurulumu (fastapi, sqlalchemy, pymysql, python-dotenv, httpx, cryptography, python-jose)
 - [x] Proje dizin yapısının oluşturulması
 - [x] .env dosyası konfigürasyonu
 
@@ -83,7 +94,7 @@ Bu yol haritası, AI Helper projesinin geliştirme sürecini takip etmek ve gele
 - [x] SQLAlchemy ORM kurulumu
 - [x] Veritabanı modellerinin oluşturulması:
   - [x] Users tablosu (id, email, full_name, department, is_active, created_at, last_login, profile_completed, is_admin)
-  - [x] LoginTokens tablosu (id, user_id, token, otp_code, is_used, expires_at, created_at)
+  - [x] LoginTokens tablosu (id, user_id, email, token_hash, code_hash, expires_at, used_at, ip_created, user_agent_created, attempt_count, last_attempt_at)
   - [x] LoginAttempts tablosu (id, user_id, email, ip_address, success, method, timestamp)
   - [x] Request tablosu (id, user_id, original_text, response_type, created_at, is_active, remaining_responses, is_new_request)
   - [x] Response tablosu (id, request_id, model_name, response_text, temperature, top_p, repetition_penalty, latency_ms, is_selected, copied, created_at, tokens_used)
@@ -94,21 +105,24 @@ Bu yol haritası, AI Helper projesinin geliştirme sürecini takip etmek ve gele
 ### 🔧 Konfigürasyon Yönetimi
 - [x] config.py dosyası oluşturma
 - [x] Environment değişkenlerinin yüklenmesi
-- [x] SQLite, Ollama konfigürasyonları
+- [x] SQLite, Ollama, Gemini konfigürasyonları
 - [x] DATABASE_URL oluşturma
+- [x] SMTP konfigürasyonu
 
 ### 🔌 API Endpoint'leri
-- [x] **GET /api/v1/models**: Ollama modellerini listeleme ve veritabanı senkronizasyonu
+- [x] **GET /api/v1/models**: Mevcut modelleri listeleme ve veritabanı senkronizasyonu
 - [x] **POST /api/v1/requests**: Yeni request oluşturma
 - [x] **POST /api/v1/generate**: LLM ile metin düzenleme
 - [x] **POST /api/v1/responses/feedback**: Response feedback güncelleme
-- [x] **POST /api/v1/auth/request-magic-link**: Magic link ve OTP isteği
-- [x] **POST /api/v1/auth/verify-otp**: OTP doğrulama
-- [x] **GET /api/v1/auth/verify-magic-link**: Magic link doğrulama
-- [x] **GET /api/v1/auth/profile**: Kullanıcı profili
-- [x] **POST /api/v1/auth/complete-profile**: Profil tamamlama
-- [x] **POST /api/v1/auth/logout**: Çıkış yapma
+- [x] **POST /api/v1/send**: Magic link ve OTP gönderimi
+- [x] **POST /api/v1/verify-code**: OTP doğrulama
+- [x] **GET /api/v1/auth**: Magic link doğrulama
+- [x] **GET /api/v1/profile**: Kullanıcı profili
+- [x] **POST /api/v1/complete-profile**: Profil tamamlama
+- [x] **POST /api/v1/logout**: Çıkış yapma
 - [x] **GET /api/v1/auth/health**: Health check
+- [x] **GET /api/v1/admin/users**: Admin kullanıcı listesi
+- [x] **GET /api/v1/admin/stats**: Admin istatistikleri
 
 ### 🤖 LLM Entegrasyonu
 - [x] OllamaClient sınıfı oluşturma
@@ -118,12 +132,14 @@ Bu yol haritası, AI Helper projesinin geliştirme sürecini takip etmek ve gele
 - [x] Hata yönetimi ve timeout ayarları
 - [x] Latency hesaplama
 - [x] Çoklu model desteği
+- [x] Token kullanım takibi
 
 ### 📝 Veri Modelleri
 - [x] Pydantic modelleri oluşturma (api_models.py)
 - [x] Request/Response validasyonu
 - [x] JSON serialization/deserialization
 - [x] Authentication modelleri
+- [x] Admin modelleri
 
 ### 🔐 Authentication Sistemi
 - [x] JWT tabanlı authentication
@@ -132,29 +148,46 @@ Bu yol haritası, AI Helper projesinin geliştirme sürecini takip etmek ve gele
 - [x] Rate limiting ve brute force koruması
 - [x] SMTP entegrasyonu (Google Workspace)
 - [x] Login attempt logging
-- [x] Session yönetimi (19:00'a kadar geçerli)
+- [x] Session yönetimi
 - [x] Profil yönetimi (ad soyad, müdürlük)
 - [x] Admin yetki sistemi
+- [x] App Password desteği
+
+### 🌐 Modern Web Arayüzü
+- [x] HTML5 + CSS3 + JavaScript ile modern web arayüzü
+- [x] Responsive tasarım (mobil ve masaüstü uyumlu)
+- [x] Nginx web server ve reverse proxy
+- [x] Authentication sistemi entegrasyonu
+- [x] Profil tamamlama sayfası
+- [x] Magic link doğrulama sayfası
+- [x] Admin paneli (admin kullanıcılar için)
+- [x] Loading states ve error handling
+- [x] Cache-busting ile güncel dosya yükleme
+- [x] Modern CSS tasarım ve gölge efektleri
+- [x] Hover animasyonları ve geçiş efektleri
 
 ### 🐳 Docker ve Deployment
 - [x] Dockerfile oluşturma
-- [x] Docker Compose multi-service orchestration
-- [x] Database persistence
+- [x] Nginx web server konfigürasyonu
+- [x] Database persistence with volumes
 - [x] Health checks
 - [x] Production-ready configuration
-- [x] Cloudflare Tunnel integration
-- [x] Multi-service startup script
+- [x] Cloudflare CDN ve SSL sertifikası
+- [x] Automatic restart policy
 - [x] Environment variable management
+- [x] Multi-service startup script
 
 ### 📚 Dokümantasyon
 - [x] Kapsamlı README.md oluşturma
 - [x] Kurulum adımları (Docker + Local)
 - [x] API kullanım örnekleri
 - [x] Geliştirici bilgileri
+- [x] Ekran görüntüleri ve kullanım rehberi
 - [x] Swagger UI entegrasyonu
 - [x] Gemini API entegrasyonu dokümantasyonu
 - [x] Çoklu model desteği açıklaması
 - [x] Docker deployment rehberi
+- [x] Modern web arayüzü dokümantasyonu
 
 ## 🔄 Devam Edenler
 
@@ -163,12 +196,14 @@ Bu yol haritası, AI Helper projesinin geliştirme sürecini takip etmek ve gele
 - [ ] Integration testlerin oluşturulması
 - [ ] API endpoint testlerinin tamamlanması
 - [ ] Ollama bağlantı testlerinin iyileştirilmesi
+- [ ] Frontend JavaScript testleri
 
 ### 🔍 Hata Ayıklama ve Optimizasyon
 - [ ] Ollama generate endpoint'inde timeout sorunlarının çözülmesi
 - [ ] Veritabanı bağlantı havuzu optimizasyonu
 - [ ] API response sürelerinin iyileştirilmesi
 - [ ] Memory kullanımının optimize edilmesi
+- [ ] Frontend performans optimizasyonu
 
 ## 📅 Planlananlar
 
@@ -177,33 +212,16 @@ Bu yol haritası, AI Helper projesinin geliştirme sürecini takip etmek ve gele
 - [ ] Model performans karşılaştırması
 - [ ] Response kalitesi değerlendirmesi
 - [ ] Kullanıcı davranış analizi
-- [ ] Dashboard oluşturma
+- [ ] Gelişmiş dashboard oluşturma
+- [ ] Real-time monitoring
 
-### 🎨 Frontend Arayüzü
-- [x] Streamlit tabanlı web arayüzü
-- [x] Metin editörü komponenti
-- [x] Model seçimi arayüzü (Ollama + Gemini)
-- [x] Gerçek zamanlı düzenleme
-- [x] Response karşılaştırma görünümü
-- [x] Responsive tasarım
-- [x] Kopyalama ve seçim butonları
-- [x] İstatistik gösterimi
-- [x] LLM parametre ayarları
-- [x] Sistem prompt düzenleme
-- [x] Vatandaş adı desteği
-- [x] İki sütunlu modern layout tasarımı
-- [x] Yanıt geçmişi ve expander sistemi
-- [x] JavaScript ile panoya kopyalama
-- [x] Yanıt seçimi veritabanı entegrasyonu
-- [x] Tooltip desteği ve parametre açıklamaları
-- [x] Modern CSS tasarım ve gölge efektleri
-- [x] Sticky panel kaldırma ve temiz arayüz
-- [x] Authentication sistemi entegrasyonu
-- [x] Profil tamamlama sayfası
-- [x] Magic link doğrulama sayfası
-- [x] Gelişmiş gölge efektleri (çoklu gölge sistemi)
-- [x] Hover animasyonları ve geçiş efektleri
-- [x] Production URL desteği
+### 🎨 Frontend Arayüzü Geliştirmeleri
+- [ ] Dark mode desteği
+- [ ] Gelişmiş arama ve filtreleme
+- [ ] Drag & drop dosya yükleme
+- [ ] Gelişmiş text editor
+- [ ] Keyboard shortcuts
+- [ ] Accessibility improvements
 
 ### 📹 YouTube Rehber Serisi
 - [ ] Proje tanıtım videosu
@@ -211,24 +229,30 @@ Bu yol haritası, AI Helper projesinin geliştirme sürecini takip etmek ve gele
 - [ ] API kullanım örnekleri
 - [ ] Frontend geliştirme süreci
 - [ ] Deployment rehberi
+- [ ] Kullanıcı eğitim videoları
 
 ### 🚀 Deployment ve DevOps
 - [x] Docker containerization
-- [x] Docker Compose multi-service orchestration
-- [x] Database persistence
+- [x] Nginx web server ve reverse proxy
+- [x] Database persistence with volumes
 - [x] Health checks ve monitoring
 - [x] Production-ready configuration
-- [x] Cloudflare Tunnel integration
+- [x] Cloudflare CDN ve SSL sertifikası
+- [x] Automatic restart policy
 - [ ] CI/CD pipeline kurulumu
 - [ ] Advanced monitoring ve logging
 - [ ] Backup ve recovery
+- [ ] Multi-environment deployment
 
 ### 🔧 Gelişmiş Özellikler
 - [ ] Batch processing
 - [ ] WebSocket desteği
 - [ ] Redis cache entegrasyonu
-- [ ] Rate limiting
+- [ ] Advanced rate limiting
 - [ ] API versioning
+- [ ] Multi-language support
+- [ ] Mobile app
+- [ ] Advanced analytics
 
 ## 🎯 Sonraki Adım: Aktif Geliştirme
 
@@ -236,6 +260,7 @@ Bu yol haritası, AI Helper projesinin geliştirme sürecini takip etmek ve gele
 - [ ] pytest framework kurulumu
 - [ ] Unit testlerin yazılması
 - [ ] Integration testlerin oluşturulması
+- [ ] Frontend testleri
 - [ ] CI/CD pipeline entegrasyonu
 
 ### Öncelik 2: Performance Optimization
@@ -243,12 +268,14 @@ Bu yol haritası, AI Helper projesinin geliştirme sürecini takip etmek ve gele
 - [ ] Database query optimizasyonu
 - [ ] Memory usage optimizasyonu
 - [ ] Caching implementation
+- [ ] Frontend performance optimization
 
 ### Öncelik 3: Advanced Features
 - [ ] Multi-language support
 - [ ] Advanced analytics dashboard
 - [ ] User management interface
 - [ ] System monitoring
+- [ ] Mobile app development
 
 ## 📈 Başarı Metrikleri
 
@@ -258,19 +285,23 @@ Bu yol haritası, AI Helper projesinin geliştirme sürecini takip etmek ve gele
 - [x] < 100ms database query time
 - [x] Memory usage < 512MB
 - [x] Docker container size < 500MB
+- [x] Modern web arayüzü yükleme süresi < 3 saniye
 
 ### Kullanıcı Metrikleri
 - [ ] 100+ aktif kullanıcı
 - [ ] 1000+ başarılı request
 - [ ] 4.5+ kullanıcı memnuniyeti
 - [x] 10+ farklı model desteği (13 model)
+- [x] Responsive tasarım (mobil ve masaüstü)
 
 ### Deployment Metrikleri
-- [x] Docker Compose deployment
-- [x] Database persistence
+- [x] Docker deployment
+- [x] Database persistence with volumes
 - [x] Health checks
 - [x] Production URL routing
 - [x] Automatic restart policy
+- [x] Cloudflare CDN ve SSL sertifikası
+- [x] Nginx web server
 
 ## 🔄 Güncelleme Takvimi
 
@@ -283,6 +314,7 @@ Bu yol haritası her sprint sonunda güncellenir:
 - **Sprint 6**: Authentication ve güvenlik ✅
 - **Sprint 7**: Docker deployment ve monitoring ✅
 - **Sprint 8**: Production deployment ve Cloudflare Tunnel ✅
+- **Sprint 9**: Modern web arayüzü ve Nginx ✅
 
 ## 🏆 Başarılar
 
@@ -295,20 +327,25 @@ Bu yol haritası her sprint sonunda güncellenir:
 - [x] **v1.5.0**: Authentication sistemi
 - [x] **v1.6.0**: Production authentication ve güvenlik
 - [x] **v1.7.0**: Docker Compose deployment ve persistence
+- [x] **v2.0.0**: Modern web arayüzü ve Nginx
 
 ### 🎯 Production Ready Features
 - [x] Multi-service Docker deployment
-- [x] Database persistence
+- [x] Database persistence with volumes
 - [x] Health monitoring
 - [x] Authentication system
 - [x] Rate limiting
 - [x] Production URL routing
 - [x] Automatic restart policy
 - [x] Environment management
+- [x] Modern web arayüzü
+- [x] Nginx web server
+- [x] Cloudflare CDN ve SSL sertifikası
+- [x] Admin paneli ve istatistikler
 
 ---
 
-**Son Güncelleme**: 2 Eylül 2025  
+**Son Güncelleme**: 14 Eylül 2025  
 **Geliştirici**: [Zafer Turan](https://github.com/Zaferturan)  
 **Proje Durumu**: Production Ready 🚀  
-**Deployment**: Docker Compose ✅ 
+**Deployment**: Docker + Nginx ✅
