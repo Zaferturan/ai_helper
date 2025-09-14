@@ -1,81 +1,85 @@
 # 🤖 AI Yardımcı - Nilüfer Belediyesi
 
-Vatandaş taleplerine cevaplarınızı hazırlayın. İstek ve önerilere uygun, resmi ve anlaşılır cevaplar oluşturun.
+<div align="center">
+
+🎉 **Vatandaş taleplerine profesyonel cevaplar hazırlayın!** 🎉
+
+</div>
 
 ## 📸 Ekran Görüntüleri
 
-### Ana Uygulama
+### 🖥️ Ana Uygulama
 ![Ana Uygulama](./ekran%201.png)
 
-### İstatistikler Paneli
+### 📊 İstatistikler Paneli
 ![İstatistikler](./istatistikler.png)
 
 ## ✨ Özellikler
 
-- **AI Destekli Metin Düzenleme**: Gemini ve Ollama LLM modelleri ile metinleri daha kibar ve anlaşılır hale getirin
-- **Dinamik Model Seçimi**: Mevcut modelleri otomatik olarak alır
-- **İki Farklı Mod**: 
-  - İstek/öneri metninden cevap üretme
-  - Kendi yazdığınız cevabı iyileştirme
-- **Gerçek Zamanlı İstatistikler**: Üretim süresi, model adı, karakter sayısı
-- **Veritabanı Entegrasyonu**: Tüm istekler ve yanıtlar SQLite'da saklanır
-- **Modern Web Arayüzü**: HTML+CSS+JavaScript ile responsive tasarım
-- **Yanıt Geçmişi**: Önceki yanıtları görüntüleme ve seçme
-- **Panoya Kopyalama**: JavaScript ile tek tıkla yanıt kopyalama
-- **Yanıt Seçimi Takibi**: Hangi yanıtların seçildiğini veritabanında saklama
-- **LLM Parametre Kontrolü**: Temperature, Top-p, Repetition Penalty ayarları
-- **Tooltip Desteği**: Parametreler hakkında açıklayıcı bilgiler
-- **Güvenli Authentication**: Magic Link + OTP ile giriş sistemi
-- **Domain Kısıtlaması**: Sadece @nilufer.bel.tr e-posta adresleri
-- **Profil Yönetimi**: Ad soyad ve müdürlük bilgileri
-- **Rate Limiting**: Brute force koruması ve günlük limitler
-- **Modern UI/UX**: Gelişmiş gölge efektleri ve responsive tasarım
-- **Docker Deployment**: Kolay kurulum ve deployment
-- **Admin Paneli**: Kullanıcı istatistikleri ve yönetim
+- 🤖 **AI Destekli Metin Düzenleme**: Gemini ve Ollama LLM modelleri ile metinleri daha kibar ve anlaşılır hale getirin
+- ⚡ **Dinamik Model Seçimi**: Mevcut modelleri otomatik olarak alır
+- 🔄 **İki Farklı Mod**: 
+  - 📝 İstek/öneri metninden cevap üretme
+  - ✏️ Kendi yazdığınız cevabı iyileştirme
+- 📊 **Gerçek Zamanlı İstatistikler**: Üretim süresi, model adı, karakter sayısı
+- 🗄️ **Veritabanı Entegrasyonu**: Tüm istekler ve yanıtlar SQLite'da saklanır
+- 🌐 **Modern Web Arayüzü**: HTML+CSS+JavaScript ile responsive tasarım
+- 📋 **Yanıt Geçmişi**: Önceki yanıtları görüntüleme ve seçme
+- 📋 **Panoya Kopyalama**: JavaScript ile tek tıkla yanıt kopyalama
+- ✅ **Yanıt Seçimi Takibi**: Hangi yanıtların seçildiğini veritabanında saklama
+- ⚙️ **LLM Parametre Kontrolü**: Temperature, Top-p, Repetition Penalty ayarları
+- 💡 **Tooltip Desteği**: Parametreler hakkında açıklayıcı bilgiler
+- 🔐 **Güvenli Authentication**: Magic Link + OTP ile giriş sistemi
+- 🏢 **Domain Kısıtlaması**: Sadece @nilufer.bel.tr e-posta adresleri
+- 👤 **Profil Yönetimi**: Ad soyad ve müdürlük bilgileri
+- 🛡️ **Rate Limiting**: Brute force koruması ve günlük limitler
+- 🎨 **Modern UI/UX**: Gelişmiş gölge efektleri ve responsive tasarım
+- 🐳 **Docker Deployment**: Kolay kurulum ve deployment
+- 👥 **Admin Paneli**: Kullanıcı istatistikleri ve yönetim
 
 ## 🛠️ Teknolojiler
 
-### Backend
-- **FastAPI**: Modern Python web framework
-- **SQLAlchemy**: ORM ile veritabanı yönetimi
-- **SQLite**: Ana veritabanı (production-ready)
-- **Ollama**: Yerel LLM entegrasyonu
-- **Gemini API**: Google Gemini modelleri entegrasyonu
-- **Pydantic**: Veri doğrulama ve serileştirme
-- **JWT**: JSON Web Token authentication
-- **SMTP**: E-posta gönderimi (Google Workspace)
-- **Rate Limiting**: Brute force koruması
+### 🐍 Backend
+- 🚀 **FastAPI**: Modern Python web framework
+- 🗄️ **SQLAlchemy**: ORM ile veritabanı yönetimi
+- 📊 **SQLite**: Ana veritabanı (production-ready)
+- 🤖 **Ollama**: Yerel LLM entegrasyonu
+- 🧠 **Gemini API**: Google Gemini modelleri entegrasyonu
+- ✅ **Pydantic**: Veri doğrulama ve serileştirme
+- 🔑 **JWT**: JSON Web Token authentication
+- 📧 **SMTP**: E-posta gönderimi (Google Workspace)
+- 🛡️ **Rate Limiting**: Brute force koruması
 
-### Frontend
-- **HTML5 + CSS3 + JavaScript**: Modern web teknolojileri
-- **Responsive Design**: Mobil ve masaüstü uyumlu
-- **Modern UI**: Temiz ve kullanıcı dostu arayüz
-- **Nginx**: Web server ve reverse proxy
-- **CSS Styling**: Özel tasarım ve gölge efektleri
+### 🌐 Frontend
+- 🌐 **HTML5 + CSS3 + JavaScript**: Modern web teknolojileri
+- 📱 **Responsive Design**: Mobil ve masaüstü uyumlu
+- 🎨 **Modern UI**: Temiz ve kullanıcı dostu arayüz
+- 🌐 **Nginx**: Web server ve reverse proxy
+- ✨ **CSS Styling**: Özel tasarım ve gölge efektleri
 
-### Deployment
-- **Docker**: Containerization
-- **Nginx**: Web server ve reverse proxy
-- **Cloudflare**: CDN ve SSL sertifikası
-- **Volume Mounting**: Veri ve log persistence
+### 🚀 Deployment
+- 🐳 **Docker**: Containerization
+- 🌐 **Nginx**: Web server ve reverse proxy
+- ☁️ **Cloudflare**: CDN ve SSL sertifikası
+- 💾 **Volume Mounting**: Veri ve log persistence
 
 ## 📋 Gereksinimler
 
-- Docker
-- Python 3.11+ (development için)
-- SQLite (production'da otomatik)
+- 🐳 Docker
+- 🐍 Python 3.11+ (development için)
+- 📊 SQLite (production'da otomatik)
 
 ## 🚀 Kurulum
 
 ### 🐳 Docker ile Hızlı Kurulum (Önerilen)
 
-1. **Projeyi Klonlayın**
+1. 📥 **Projeyi Klonlayın**
 ```bash
 git clone <repository-url>
 cd ai_helper
 ```
 
-2. **Ortam Değişkenlerini Ayarlayın**
+2. ⚙️ **Ortam Değişkenlerini Ayarlayın**
 `.env` dosyası oluşturun:
 ```env
 # Database Configuration
@@ -105,7 +109,7 @@ FRONTEND_URL=http://localhost:8500
 BACKEND_URL=http://localhost:8000
 ```
 
-3. **Docker ile Başlatın**
+3. 🚀 **Docker ile Başlatın**
 ```bash
 # Image oluştur
 docker build -t ai_helper_v3 .
@@ -118,14 +122,11 @@ docker run -d --name ai_yardimci --restart always \
   ai_helper_v3
 ```
 
-4. **Uygulamaya Erişin**
-- **Frontend**: https://yardimci.niluferyapayzeka.tr/
-- **Backend API**: https://yardimci.niluferyapayzeka.tr/api/v1/
-- **Health Check**: https://yardimci.niluferyapayzeka.tr/api/v1/auth/health
+✅ **Kurulum tamamlandı!** Uygulama `https://yardimci.niluferyapayzeka.tr` adresinde çalışıyor.
 
 ### 🔧 Geliştirme Ortamı Kurulumu
 
-1. **Sanal Ortam Oluşturun**
+1. 🐍 **Sanal Ortam Oluşturun**
 ```bash
 python -m venv venv
 source venv/bin/activate  # Linux/Mac
@@ -133,18 +134,18 @@ source venv/bin/activate  # Linux/Mac
 venv\Scripts\activate  # Windows
 ```
 
-2. **Bağımlılıkları Yükleyin**
+2. 📦 **Bağımlılıkları Yükleyin**
 ```bash
 pip install -r requirements.txt
 ```
 
-3. **Backend'i Başlatın**
+3. 🚀 **Backend'i Başlatın**
 ```bash
 python main.py
 ```
 Backend `http://localhost:8000` adresinde çalışacak.
 
-4. **Frontend'i Başlatın**
+4. 🌐 **Frontend'i Başlatın**
 ```bash
 cd frontend
 python -m http.server 8500
@@ -153,83 +154,82 @@ Frontend `http://localhost:8500` adresinde çalışacak.
 
 ## 📖 Kullanım
 
-### Ana Özellikler
+### 🎯 Ana Özellikler
 
-1. **E-posta ile Giriş**:
+1. 📧 **E-posta ile Giriş**:
    - @nilufer.bel.tr e-posta adresinizi girin
    - E-posta adresinize gönderilen kodu girin
    - Profil bilgilerinizi tamamlayın
 
-2. **İstek/Öneri Metninden Cevap Üretme**:
+2. 🤖 **İstek/Öneri Metninden Cevap Üretme**:
    - Sol sütunda metin girişi yapın
    - Yanıt ayarlarını düzenleyin (Temperature, Top-p, Repetition Penalty)
    - Model seçin (Gemini veya Ollama)
    - "🚀 Yanıt Üret" butonuna tıklayın
 
-3. **Kendi Cevabınızı İyileştirme**:
+3. ✏️ **Kendi Cevabınızı İyileştirme**:
    - Sol sütunda kendi yazdığınız cevabı girin
    - "🚀 Yanıt Üret" butonuna tıklayın
    - AI metni daha kibar ve resmi hale getirecek
 
-4. **Yanıt Geçmişi ve Seçimi**:
+4. 📋 **Yanıt Geçmişi ve Seçimi**:
    - Sağ sütunda en son yanıtı görüntüleyin
    - "📋 Seç ve Kopyala" ile yanıtı panoya kopyalayın
    - Önceki yanıtları expander'larda görüntüleyin
    - Her yanıt için ayrı "📋 Seç ve Kopyala" butonu
 
-5. **Admin Paneli** (Admin kullanıcılar için):
+5. 👥 **Admin Paneli** (Admin kullanıcılar için):
    - Kullanıcı istatistikleri
    - Toplam istek ve yanıt sayıları
    - En çok kullanılan modeller
 
-### API Endpoints
+### 🔌 API Endpoints
 
-#### Authentication
-- `POST /api/v1/send`: Magic link ve OTP gönderimi
-- `POST /api/v1/verify-code`: OTP doğrulama
-- `GET /api/v1/auth`: Magic link doğrulama
-- `GET /api/v1/profile`: Kullanıcı profili
-- `POST /api/v1/complete-profile`: Profil tamamlama
-- `POST /api/v1/logout`: Çıkış yapma
+#### 🔐 Authentication
+- 📧 `POST /api/v1/send`: Magic link ve OTP gönderimi
+- ✅ `POST /api/v1/verify-code`: OTP doğrulama
+- 🔗 `GET /api/v1/auth`: Magic link doğrulama
+- 👤 `GET /api/v1/profile`: Kullanıcı profili
+- ✏️ `POST /api/v1/complete-profile`: Profil tamamlama
+- 🚪 `POST /api/v1/logout`: Çıkış yapma
 
-#### Core API
-- `GET /api/v1/models`: Mevcut modelleri listele
-- `POST /api/v1/requests`: Yeni istek oluştur
-- `POST /api/v1/generate`: AI yanıtı üret
-- `POST /api/v1/responses/feedback`: Yanıt geri bildirimi
+#### 🤖 Core API
+- 📋 `GET /api/v1/models`: Mevcut modelleri listele
+- 📝 `POST /api/v1/requests`: Yeni istek oluştur
+- 🚀 `POST /api/v1/generate`: AI yanıtı üret
+- 💬 `POST /api/v1/responses/feedback`: Yanıt geri bildirimi
 
-#### Admin API
-- `GET /api/v1/admin/users`: Kullanıcı listesi
-- `GET /api/v1/admin/stats`: İstatistikler
+#### 👥 Admin API
+- 📊 `GET /api/v1/admin/users`: Kullanıcı listesi
+- 📈 `GET /api/v1/admin/stats`: İstatistikler
 
 ## 📁 Proje Yapısı
 
 ```
 ai_helper/
-├── main.py               # FastAPI backend
-├── config.py             # Konfigürasyon
-├── connection.py         # Veritabanı bağlantısı
-├── models.py             # SQLAlchemy modelleri
-├── api_models.py         # Pydantic modelleri
-├── endpoints.py          # API endpoint'leri
-├── auth_endpoints.py     # Authentication endpoints
-├── auth_system.py        # Authentication logic
-├── ollama_client.py      # Ollama entegrasyonu
-├── gemini_client.py      # Gemini API entegrasyonu
-├── requirements.txt      # Python bağımlılıkları
-├── Dockerfile            # Docker container build
-├── start.sh              # Container startup script
-├── nginx.conf            # Nginx configuration
-├── frontend/             # Frontend dosyaları
-│   ├── index.html        # Ana HTML dosyası
-│   ├── style.css         # CSS stilleri
-│   └── app.js            # JavaScript kodu
-├── data/                 # Database storage directory
-├── logs/                 # Log dosyaları
-├── .env                  # Ortam değişkenleri
-├── .gitignore           # Git ignore kuralları
-├── README.md            # Bu dosya
-└── ROADMAP.md           # Geliştirme yol haritası
+├── 🐍 main.py               # FastAPI backend
+├── ⚙️ config.py             # Konfigürasyon
+├── 🔌 connection.py         # Veritabanı bağlantısı
+├── 🗄️ models.py             # SQLAlchemy modelleri
+├── 📋 api_models.py         # Pydantic modelleri
+├── 🔌 endpoints.py          # API endpoint'leri
+├── 🔐 auth_endpoints.py     # Authentication endpoints
+├── 🔑 auth_system.py        # Authentication logic
+├── 🤖 ollama_client.py      # Ollama entegrasyonu
+├── 🧠 gemini_client.py      # Gemini API entegrasyonu
+├── 📦 requirements.txt      # Python bağımlılıkları
+├── 🐳 Dockerfile            # Docker container build
+├── 🚀 start.sh              # Container startup script
+├── 🌐 nginx.conf            # Nginx configuration
+├── 📁 frontend/             # Frontend dosyaları
+│   ├── 🌐 index.html        # Ana HTML dosyası
+│   ├── 🎨 style.css         # CSS stilleri
+│   └── ⚡ app.js            # JavaScript kodu
+├── 💾 data/                 # Database storage directory
+├── 📝 logs/                 # Log dosyaları
+├── 🔧 .env                  # Ortam değişkenleri
+├── 📖 README.md            # Bu dosya
+└── 🗺️ ROADMAP.md           # Geliştirme yol haritası
 ```
 
 ## 🎯 Özellikler
