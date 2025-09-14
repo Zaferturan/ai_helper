@@ -1,17 +1,25 @@
-# 🤖 AI Helper
+# 🤖 AI Yardımcı - Nilüfer Belediyesi
 
 Vatandaş taleplerine cevaplarınızı hazırlayın. İstek ve önerilere uygun, resmi ve anlaşılır cevaplar oluşturun.
 
+## 📸 Ekran Görüntüleri
+
+### Ana Uygulama
+![Ana Uygulama](./ekran%201.png)
+
+### İstatistikler Paneli
+![İstatistikler](./istatistikler.png)
+
 ## ✨ Özellikler
 
-- **AI Destekli Metin Düzenleme**: Ollama LLM modelleri ile metinleri daha kibar ve anlaşılır hale getirin
-- **Dinamik Model Seçimi**: Ollama'dan mevcut modelleri otomatik olarak alır
+- **AI Destekli Metin Düzenleme**: Gemini ve Ollama LLM modelleri ile metinleri daha kibar ve anlaşılır hale getirin
+- **Dinamik Model Seçimi**: Mevcut modelleri otomatik olarak alır
 - **İki Farklı Mod**: 
   - İstek/öneri metninden cevap üretme
   - Kendi yazdığınız cevabı iyileştirme
 - **Gerçek Zamanlı İstatistikler**: Üretim süresi, model adı, karakter sayısı
 - **Veritabanı Entegrasyonu**: Tüm istekler ve yanıtlar SQLite'da saklanır
-- **İki Sütunlu Modern Layout**: Sol sütunda giriş, sağ sütunda yanıtlar
+- **Modern Web Arayüzü**: HTML+CSS+JavaScript ile responsive tasarım
 - **Yanıt Geçmişi**: Önceki yanıtları görüntüleme ve seçme
 - **Panoya Kopyalama**: JavaScript ile tek tıkla yanıt kopyalama
 - **Yanıt Seçimi Takibi**: Hangi yanıtların seçildiğini veritabanında saklama
@@ -22,7 +30,8 @@ Vatandaş taleplerine cevaplarınızı hazırlayın. İstek ve önerilere uygun,
 - **Profil Yönetimi**: Ad soyad ve müdürlük bilgileri
 - **Rate Limiting**: Brute force koruması ve günlük limitler
 - **Modern UI/UX**: Gelişmiş gölge efektleri ve responsive tasarım
-- **Docker Compose Deployment**: Kolay kurulum ve deployment
+- **Docker Deployment**: Kolay kurulum ve deployment
+- **Admin Paneli**: Kullanıcı istatistikleri ve yönetim
 
 ## 🛠️ Teknolojiler
 
@@ -31,28 +40,29 @@ Vatandaş taleplerine cevaplarınızı hazırlayın. İstek ve önerilere uygun,
 - **SQLAlchemy**: ORM ile veritabanı yönetimi
 - **SQLite**: Ana veritabanı (production-ready)
 - **Ollama**: Yerel LLM entegrasyonu
-- **Pydantic**: Veri doğrulama ve serileştirme
 - **Gemini API**: Google Gemini modelleri entegrasyonu
+- **Pydantic**: Veri doğrulama ve serileştirme
 - **JWT**: JSON Web Token authentication
 - **SMTP**: E-posta gönderimi (Google Workspace)
 - **Rate Limiting**: Brute force koruması
 
 ### Frontend
-- **Streamlit**: Python tabanlı web uygulaması
+- **HTML5 + CSS3 + JavaScript**: Modern web teknolojileri
 - **Responsive Design**: Mobil ve masaüstü uyumlu
 - **Modern UI**: Temiz ve kullanıcı dostu arayüz
-- **JavaScript Integration**: Panoya kopyalama için client-side script
+- **Nginx**: Web server ve reverse proxy
 - **CSS Styling**: Özel tasarım ve gölge efektleri
 
 ### Deployment
 - **Docker**: Containerization
-- **Docker Compose**: Multi-service orchestration
-- **Cloudflare Tunnel**: Production URL routing
+- **Nginx**: Web server ve reverse proxy
+- **Cloudflare**: CDN ve SSL sertifikası
+- **Volume Mounting**: Veri ve log persistence
 
 ## 📋 Gereksinimler
 
-- Docker ve Docker Compose
-- Python 3.10+ (development için)
+- Docker
+- Python 3.11+ (development için)
 - SQLite (production'da otomatik)
 
 ## 🚀 Kurulum
@@ -69,7 +79,7 @@ cd ai_helper
 `.env` dosyası oluşturun:
 ```env
 # Database Configuration
-DATABASE_URL=sqlite:///./ai_helper.db
+DATABASE_URL=sqlite:///./data/ai_helper.db
 
 # Ollama Configuration
 OLLAMA_HOST=http://localhost:11434
@@ -77,14 +87,14 @@ OLLAMA_HOST=http://localhost:11434
 # Authentication Configuration
 JWT_SECRET_KEY=your-super-secret-jwt-key
 JWT_ALGORITHM=HS256
-ACCESS_TOKEN_EXPIRE_MINUTES=720
+ACCESS_TOKEN_EXPIRE_MINUTES=900
 
 # SMTP Configuration (Google Workspace)
 SMTP_HOST=smtp.gmail.com
 SMTP_PORT=587
 SMTP_USERNAME=your-email@niluferyapayzeka.tr
 SMTP_PASSWORD=your-app-password
-SENDER_EMAIL=yonetici@niluferyapayzeka.tr
+SENDER_EMAIL=admin@niluferyapayzeka.tr
 
 # Gemini API Configuration
 GEMINI_API_KEY=your-gemini-api-key
@@ -95,9 +105,17 @@ FRONTEND_URL=http://localhost:8500
 BACKEND_URL=http://localhost:8000
 ```
 
-3. **Docker Compose ile Başlatın**
+3. **Docker ile Başlatın**
 ```bash
-docker compose up --build -d
+# Image oluştur
+docker build -t ai_helper_v3 .
+
+# Container başlat
+docker run -d --name ai_yardimci --restart always \
+  -p 8000:8000 -p 8500:80 \
+  -v ai_helper_data:/app/data \
+  -v ai_helper_logs:/app/logs \
+  ai_helper_v3
 ```
 
 4. **Uygulamaya Erişin**
@@ -128,40 +146,51 @@ Backend `http://localhost:8000` adresinde çalışacak.
 
 4. **Frontend'i Başlatın**
 ```bash
-streamlit run app.py
+cd frontend
+python -m http.server 8500
 ```
-Frontend `http://localhost:8501` adresinde çalışacak.
+Frontend `http://localhost:8500` adresinde çalışacak.
 
 ## 📖 Kullanım
 
 ### Ana Özellikler
 
-1. **İstek/Öneri Metninden Cevap Üretme**:
+1. **E-posta ile Giriş**:
+   - @nilufer.bel.tr e-posta adresinizi girin
+   - E-posta adresinize gönderilen kodu girin
+   - Profil bilgilerinizi tamamlayın
+
+2. **İstek/Öneri Metninden Cevap Üretme**:
    - Sol sütunda metin girişi yapın
    - Yanıt ayarlarını düzenleyin (Temperature, Top-p, Repetition Penalty)
    - Model seçin (Gemini veya Ollama)
    - "🚀 Yanıt Üret" butonuna tıklayın
 
-2. **Kendi Cevabınızı İyileştirme**:
+3. **Kendi Cevabınızı İyileştirme**:
    - Sol sütunda kendi yazdığınız cevabı girin
    - "🚀 Yanıt Üret" butonuna tıklayın
    - AI metni daha kibar ve resmi hale getirecek
 
-3. **Yanıt Geçmişi ve Seçimi**:
+4. **Yanıt Geçmişi ve Seçimi**:
    - Sağ sütunda en son yanıtı görüntüleyin
    - "📋 Seç ve Kopyala" ile yanıtı panoya kopyalayın
    - Önceki yanıtları expander'larda görüntüleyin
    - Her yanıt için ayrı "📋 Seç ve Kopyala" butonu
 
+5. **Admin Paneli** (Admin kullanıcılar için):
+   - Kullanıcı istatistikleri
+   - Toplam istek ve yanıt sayıları
+   - En çok kullanılan modeller
+
 ### API Endpoints
 
 #### Authentication
-- `POST /api/v1/auth/request-magic-link`: Magic link ve OTP isteği
-- `POST /api/v1/auth/verify-otp`: OTP doğrulama
-- `GET /api/v1/auth/verify-magic-link`: Magic link doğrulama
-- `GET /api/v1/auth/profile`: Kullanıcı profili
-- `POST /api/v1/auth/complete-profile`: Profil tamamlama
-- `POST /api/v1/auth/logout`: Çıkış yapma
+- `POST /api/v1/send`: Magic link ve OTP gönderimi
+- `POST /api/v1/verify-code`: OTP doğrulama
+- `GET /api/v1/auth`: Magic link doğrulama
+- `GET /api/v1/profile`: Kullanıcı profili
+- `POST /api/v1/complete-profile`: Profil tamamlama
+- `POST /api/v1/logout`: Çıkış yapma
 
 #### Core API
 - `GET /api/v1/models`: Mevcut modelleri listele
@@ -169,11 +198,14 @@ Frontend `http://localhost:8501` adresinde çalışacak.
 - `POST /api/v1/generate`: AI yanıtı üret
 - `POST /api/v1/responses/feedback`: Yanıt geri bildirimi
 
+#### Admin API
+- `GET /api/v1/admin/users`: Kullanıcı listesi
+- `GET /api/v1/admin/stats`: İstatistikler
+
 ## 📁 Proje Yapısı
 
 ```
 ai_helper/
-├── app.py                 # Streamlit frontend
 ├── main.py               # FastAPI backend
 ├── config.py             # Konfigürasyon
 ├── connection.py         # Veritabanı bağlantısı
@@ -186,9 +218,14 @@ ai_helper/
 ├── gemini_client.py      # Gemini API entegrasyonu
 ├── requirements.txt      # Python bağımlılıkları
 ├── Dockerfile            # Docker container build
-├── docker-compose.yml    # Multi-service orchestration
-├── docker/start.sh       # Multi-service startup script
+├── start.sh              # Container startup script
+├── nginx.conf            # Nginx configuration
+├── frontend/             # Frontend dosyaları
+│   ├── index.html        # Ana HTML dosyası
+│   ├── style.css         # CSS stilleri
+│   └── app.js            # JavaScript kodu
 ├── data/                 # Database storage directory
+├── logs/                 # Log dosyaları
 ├── .env                  # Ortam değişkenleri
 ├── .gitignore           # Git ignore kuralları
 ├── README.md            # Bu dosya
@@ -212,11 +249,12 @@ ai_helper/
 - ✅ Rate limiting ve brute force koruması
 - ✅ SMTP entegrasyonu (Google Workspace)
 - ✅ Login attempt logging
-- ✅ Session yönetimi (19:00'a kadar geçerli)
+- ✅ Session yönetimi
+- ✅ Admin paneli ve istatistikler
 
 ### Frontend Özellikleri
-- ✅ Streamlit ile modern web arayüzü
-- ✅ İki sütunlu responsive layout
+- ✅ HTML5 + CSS3 + JavaScript ile modern web arayüzü
+- ✅ Responsive tasarım (mobil ve masaüstü uyumlu)
 - ✅ Dinamik model seçimi (Gemini + Ollama)
 - ✅ Gerçek zamanlı yanıt üretimi
 - ✅ İstatistik gösterimi
@@ -228,34 +266,40 @@ ai_helper/
 - ✅ Authentication sistemi (Magic Link + OTP)
 - ✅ Profil tamamlama sayfası
 - ✅ Domain kontrolü (@nilufer.bel.tr)
-- ✅ Responsive tasarım ve modern UI
-- ✅ Gelişmiş gölge efektleri (çoklu gölge sistemi)
-- ✅ Hover animasyonları ve geçiş efektleri
+- ✅ Admin paneli (admin kullanıcılar için)
+- ✅ Loading states ve error handling
+- ✅ Cache-busting ile güncel dosya yükleme
 
 ### Deployment Özellikleri
 - ✅ Docker containerization
-- ✅ Docker Compose multi-service orchestration
-- ✅ Database persistence
+- ✅ Nginx web server ve reverse proxy
+- ✅ Database persistence with volumes
 - ✅ Health checks
 - ✅ Production-ready configuration
-- ✅ Cloudflare Tunnel integration
+- ✅ Cloudflare CDN ve SSL sertifikası
 - ✅ Automatic restart policy
+- ✅ Environment variable management
+- ✅ Log management
 
 ## 🔧 Geliştirme
 
 ### Docker ile Geliştirme
 ```bash
 # Container'ı başlat
-docker compose up --build
+docker run -d --name ai_yardimci --restart always \
+  -p 8000:8000 -p 8500:80 \
+  -v ai_helper_data:/app/data \
+  -v ai_helper_logs:/app/logs \
+  ai_helper_v3
 
 # Logları izle
-docker compose logs -f
+docker logs -f ai_yardimci
 
 # Container'a bağlan
-docker exec -it ai-helperv2-container bash
+docker exec -it ai_yardimci bash
 
 # Container'ı durdur
-docker compose down
+docker stop ai_yardimci && docker rm ai_yardimci
 ```
 
 ### Yerel Geliştirme
@@ -263,14 +307,21 @@ docker compose down
 # Backend'i geliştirme modunda başlat
 uvicorn main:app --reload --host 0.0.0.0 --port 8000
 
-# Streamlit'i geliştirme modunda başlat
-streamlit run app.py --server.port 8501
+# Frontend'i geliştirme modunda başlat
+cd frontend && python -m http.server 8500
 ```
 
 ### Veritabanı İşlemleri
 ```bash
 # Container içinde veritabanını kontrol et
-docker exec ai-helperv2-container python -c "import sqlite3; conn = sqlite3.connect('/app/ai_helper.db'); cursor = conn.cursor(); cursor.execute('SELECT COUNT(*) FROM users'); print(f'Users: {cursor.fetchone()[0]}'); conn.close()"
+docker exec ai_yardimci python -c "
+import sqlite3
+conn = sqlite3.connect('/app/data/ai_helper.db')
+cursor = conn.cursor()
+cursor.execute('SELECT COUNT(*) FROM users')
+print(f'Users: {cursor.fetchone()[0]}')
+conn.close()
+"
 ```
 
 ## 📊 Veritabanı Şeması
@@ -289,11 +340,15 @@ docker exec ai-helperv2-container python -c "import sqlite3; conn = sqlite3.conn
 ### LoginTokens Tablosu
 - `id`: Birincil anahtar
 - `user_id`: Kullanıcı referansı
-- `token`: JWT token
-- `otp_code`: 6 haneli OTP kodu
-- `is_used`: Kullanım durumu
+- `email`: E-posta adresi
+- `token_hash`: Token hash'i
+- `code_hash`: OTP kodu hash'i
 - `expires_at`: Son kullanım tarihi
-- `created_at`: Oluşturulma tarihi
+- `used_at`: Kullanım tarihi
+- `ip_created`: Oluşturulma IP'si
+- `user_agent_created`: User agent
+- `attempt_count`: Deneme sayısı
+- `last_attempt_at`: Son deneme tarihi
 
 ### LoginAttempts Tablosu
 - `id`: Birincil anahtar
@@ -338,31 +393,36 @@ docker exec ai-helperv2-container python -c "import sqlite3; conn = sqlite3.conn
 ## 🚀 Deployment
 
 ### Production Ortamı
-1. **Docker Compose**: Multi-service orchestration
-2. **Database**: SQLite with persistence
-3. **Frontend**: Streamlit (port 8500)
+1. **Docker**: Containerization
+2. **Database**: SQLite with volume persistence
+3. **Frontend**: Nginx (port 80)
 4. **Backend**: FastAPI (port 8000)
-5. **Cloudflare Tunnel**: Production URL routing
+5. **Cloudflare**: CDN ve SSL sertifikası
 
 ### Docker Commands
 ```bash
 # Production deployment
-docker compose up --build -d
+docker build -t ai_helper_v3 .
+docker run -d --name ai_yardimci --restart always \
+  -p 8000:8000 -p 8500:80 \
+  -v ai_helper_data:/app/data \
+  -v ai_helper_logs:/app/logs \
+  ai_helper_v3
 
 # Logları izle
-docker compose logs -f ai-helperv2
+docker logs -f ai_yardimci
 
 # Container durumunu kontrol et
-docker compose ps
+docker ps
 
 # Health check
-curl http://localhost:8000/api/v1/auth/health
+curl https://yardimci.niluferyapayzeka.tr/api/v1/auth/health
 
 # Container'ı yeniden başlat
-docker compose restart ai-helperv2
+docker restart ai_yardimci
 
 # Container'ı durdur
-docker compose down
+docker stop ai_yardimci && docker rm ai_yardimci
 ```
 
 ### Environment Variables
@@ -372,8 +432,8 @@ APP_ENV=production
 DEBUG_MODE=false
 LOG_LEVEL=INFO
 API_PORT=8000
-WEB_PORT=8500
-DATABASE_URL=sqlite:///./ai_helper.db
+WEB_PORT=80
+DATABASE_URL=sqlite:///./data/ai_helper.db
 ALLOWED_ORIGINS=https://yardimci.niluferyapayzeka.tr
 ```
 
@@ -392,11 +452,21 @@ Bu proje MIT lisansı altında lisanslanmıştır.
 ## 📞 İletişim
 
 * **Proje Sahibi**: Zafer TURAN
-* **E-posta**: zaferturan@gmail.com
+* **E-posta**: zaferturan@nilufer.bel.tr
 * **GitHub**: @Zaferturan
 * **Issues**: GitHub Issues
 
 ## 🔄 Güncellemeler
+
+### v2.0.0 - Modern Web Arayüzü
+- ✅ HTML5 + CSS3 + JavaScript ile modern web arayüzü
+- ✅ Nginx web server ve reverse proxy
+- ✅ Responsive tasarım (mobil ve masaüstü uyumlu)
+- ✅ Admin paneli ve istatistikler
+- ✅ Loading states ve error handling
+- ✅ Cache-busting ile güncel dosya yükleme
+- ✅ Docker volume mounting ile veri persistence
+- ✅ Production-ready deployment
 
 ### v1.7.0 - Docker Compose Deployment
 - ✅ Docker Compose multi-service orchestration
@@ -416,7 +486,7 @@ Bu proje MIT lisansı altında lisanslanmıştır.
 - ✅ Rate limiting ve brute force koruması
 - ✅ SMTP entegrasyonu (Google Workspace)
 - ✅ Login attempt logging
-- ✅ Session yönetimi (19:00'a kadar geçerli)
+- ✅ Session yönetimi
 - ✅ Production URL desteği (Cloudflare Tunnel)
 - ✅ Modern UI/UX ve gelişmiş gölge efektleri
 
@@ -465,7 +535,9 @@ Bu proje MIT lisansı altında lisanslanmıştır.
 - 🔄 Advanced monitoring
 - 🔄 Multi-language support
 - 🔄 API rate limiting
+- 🔄 Mobile app
+- 🔄 Advanced analytics
 
 ---
 
-**AI Helper** - Vatandaş taleplerine profesyonel cevaplar hazırlayın! 🤖 
+**AI Yardımcı** - Nilüfer Belediyesi için profesyonel cevaplar hazırlayın! 🤖
