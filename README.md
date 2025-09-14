@@ -234,56 +234,56 @@ ai_helper/
 
 ## 🎯 Özellikler
 
-### Backend Özellikleri
-- ✅ FastAPI ile modern REST API
-- ✅ SQLAlchemy ORM ile veritabanı yönetimi
-- ✅ Ollama entegrasyonu
-- ✅ Gemini API entegrasyonu
-- ✅ Pydantic ile veri doğrulama
-- ✅ Asenkron HTTP istekleri
-- ✅ Hata yönetimi ve logging
-- ✅ LLM parametre kontrolü (Temperature, Top-p, Repetition Penalty)
-- ✅ JWT tabanlı authentication sistemi
-- ✅ Magic Link + OTP giriş yöntemi
-- ✅ Domain kısıtlaması (@nilufer.bel.tr)
-- ✅ Rate limiting ve brute force koruması
-- ✅ SMTP entegrasyonu (Google Workspace)
-- ✅ Login attempt logging
-- ✅ Session yönetimi
-- ✅ Admin paneli ve istatistikler
+### 🐍 Backend Özellikleri
+- 🚀 **FastAPI ile modern REST API**
+- 🗄️ **SQLAlchemy ORM ile veritabanı yönetimi**
+- 🤖 **Ollama entegrasyonu**
+- 🧠 **Gemini API entegrasyonu**
+- ✅ **Pydantic ile veri doğrulama**
+- ⚡ **Asenkron HTTP istekleri**
+- 🛠️ **Hata yönetimi ve logging**
+- ⚙️ **LLM parametre kontrolü** (Temperature, Top-p, Repetition Penalty)
+- 🔑 **JWT tabanlı authentication sistemi**
+- 🔗 **Magic Link + OTP giriş yöntemi**
+- 🏢 **Domain kısıtlaması** (@nilufer.bel.tr)
+- 🛡️ **Rate limiting ve brute force koruması**
+- 📧 **SMTP entegrasyonu** (Google Workspace)
+- 📝 **Login attempt logging**
+- 🔐 **Session yönetimi**
+- 👥 **Admin paneli ve istatistikler**
 
-### Frontend Özellikleri
-- ✅ HTML5 + CSS3 + JavaScript ile modern web arayüzü
-- ✅ Responsive tasarım (mobil ve masaüstü uyumlu)
-- ✅ Dinamik model seçimi (Gemini + Ollama)
-- ✅ Gerçek zamanlı yanıt üretimi
-- ✅ İstatistik gösterimi
-- ✅ Yanıt geçmişi ve expander'lar
-- ✅ JavaScript ile panoya kopyalama
-- ✅ Yanıt seçimi ve veritabanı takibi
-- ✅ Tooltip desteği (parametre açıklamaları)
-- ✅ Modern CSS tasarım ve gölge efektleri
-- ✅ Authentication sistemi (Magic Link + OTP)
-- ✅ Profil tamamlama sayfası
-- ✅ Domain kontrolü (@nilufer.bel.tr)
-- ✅ Admin paneli (admin kullanıcılar için)
-- ✅ Loading states ve error handling
-- ✅ Cache-busting ile güncel dosya yükleme
+### 🌐 Frontend Özellikleri
+- 🌐 **HTML5 + CSS3 + JavaScript ile modern web arayüzü**
+- 📱 **Responsive tasarım** (mobil ve masaüstü uyumlu)
+- ⚡ **Dinamik model seçimi** (Gemini + Ollama)
+- ⏱️ **Gerçek zamanlı yanıt üretimi**
+- 📊 **İstatistik gösterimi**
+- 📋 **Yanıt geçmişi ve expander'lar**
+- 📋 **JavaScript ile panoya kopyalama**
+- ✅ **Yanıt seçimi ve veritabanı takibi**
+- 💡 **Tooltip desteği** (parametre açıklamaları)
+- 🎨 **Modern CSS tasarım ve gölge efektleri**
+- 🔐 **Authentication sistemi** (Magic Link + OTP)
+- 👤 **Profil tamamlama sayfası**
+- 🏢 **Domain kontrolü** (@nilufer.bel.tr)
+- 👥 **Admin paneli** (admin kullanıcılar için)
+- ⏳ **Loading states ve error handling**
+- 🔄 **Cache-busting ile güncel dosya yükleme**
 
-### Deployment Özellikleri
-- ✅ Docker containerization
-- ✅ Nginx web server ve reverse proxy
-- ✅ Database persistence with volumes
-- ✅ Health checks
-- ✅ Production-ready configuration
-- ✅ Cloudflare CDN ve SSL sertifikası
-- ✅ Automatic restart policy
-- ✅ Environment variable management
-- ✅ Log management
+### 🚀 Deployment Özellikleri
+- 🐳 **Docker containerization**
+- 🌐 **Nginx web server ve reverse proxy**
+- 💾 **Database persistence with volumes**
+- ❤️ **Health checks**
+- 🏭 **Production-ready configuration**
+- ☁️ **Cloudflare CDN ve SSL sertifikası**
+- 🔄 **Automatic restart policy**
+- ⚙️ **Environment variable management**
+- 📝 **Log management**
 
 ## 🔧 Geliştirme
 
-### Docker ile Geliştirme
+### 🐳 Docker ile Geliştirme
 ```bash
 # Container'ı başlat
 docker run -d --name ai_yardimci --restart always \
@@ -302,7 +302,7 @@ docker exec -it ai_yardimci bash
 docker stop ai_yardimci && docker rm ai_yardimci
 ```
 
-### Yerel Geliştirme
+### 💻 Yerel Geliştirme
 ```bash
 # Backend'i geliştirme modunda başlat
 uvicorn main:app --reload --host 0.0.0.0 --port 8000
@@ -311,7 +311,7 @@ uvicorn main:app --reload --host 0.0.0.0 --port 8000
 cd frontend && python -m http.server 8500
 ```
 
-### Veritabanı İşlemleri
+### 🗄️ Veritabanı İşlemleri
 ```bash
 # Container içinde veritabanını kontrol et
 docker exec ai_yardimci python -c "
@@ -326,80 +326,80 @@ conn.close()
 
 ## 📊 Veritabanı Şeması
 
-### Users Tablosu
-- `id`: Birincil anahtar
-- `email`: E-posta adresi (unique, @nilufer.bel.tr)
-- `full_name`: Ad soyad
-- `department`: Müdürlük bilgisi
-- `is_active`: Aktif kullanıcı durumu
-- `created_at`: Oluşturulma tarihi
-- `last_login`: Son giriş tarihi
-- `profile_completed`: Profil tamamlanma durumu
-- `is_admin`: Admin yetkisi
+### 👤 Users Tablosu
+- 🔑 `id`: Birincil anahtar
+- 📧 `email`: E-posta adresi (unique, @nilufer.bel.tr)
+- 👤 `full_name`: Ad soyad
+- 🏢 `department`: Müdürlük bilgisi
+- ✅ `is_active`: Aktif kullanıcı durumu
+- 📅 `created_at`: Oluşturulma tarihi
+- 🔐 `last_login`: Son giriş tarihi
+- ✅ `profile_completed`: Profil tamamlanma durumu
+- 👑 `is_admin`: Admin yetkisi
 
-### LoginTokens Tablosu
-- `id`: Birincil anahtar
-- `user_id`: Kullanıcı referansı
-- `email`: E-posta adresi
-- `token_hash`: Token hash'i
-- `code_hash`: OTP kodu hash'i
-- `expires_at`: Son kullanım tarihi
-- `used_at`: Kullanım tarihi
-- `ip_created`: Oluşturulma IP'si
-- `user_agent_created`: User agent
-- `attempt_count`: Deneme sayısı
-- `last_attempt_at`: Son deneme tarihi
+### 🔑 LoginTokens Tablosu
+- 🔑 `id`: Birincil anahtar
+- 👤 `user_id`: Kullanıcı referansı
+- 📧 `email`: E-posta adresi
+- 🔐 `token_hash`: Token hash'i
+- 🔢 `code_hash`: OTP kodu hash'i
+- ⏰ `expires_at`: Son kullanım tarihi
+- ✅ `used_at`: Kullanım tarihi
+- 🌐 `ip_created`: Oluşturulma IP'si
+- 🖥️ `user_agent_created`: User agent
+- 🔢 `attempt_count`: Deneme sayısı
+- ⏰ `last_attempt_at`: Son deneme tarihi
 
-### LoginAttempts Tablosu
-- `id`: Birincil anahtar
-- `user_id`: Kullanıcı referansı
-- `email`: E-posta adresi
-- `ip_address`: IP adresi
-- `success`: Başarı durumu
-- `method`: Giriş yöntemi (magic_link, otp)
-- `timestamp`: Zaman damgası
+### 📝 LoginAttempts Tablosu
+- 🔑 `id`: Birincil anahtar
+- 👤 `user_id`: Kullanıcı referansı
+- 📧 `email`: E-posta adresi
+- 🌐 `ip_address`: IP adresi
+- ✅ `success`: Başarı durumu
+- 🔐 `method`: Giriş yöntemi (magic_link, otp)
+- ⏰ `timestamp`: Zaman damgası
 
-### Requests Tablosu
-- `id`: Birincil anahtar
-- `user_id`: Kullanıcı referansı
-- `original_text`: Orijinal metin
-- `response_type`: Yanıt tipi (positive/negative/informative/other)
-- `created_at`: Oluşturulma tarihi
-- `is_active`: Aktif durum
-- `remaining_responses`: Kalan yanıt sayısı
-- `is_new_request`: Yeni istek durumu
+### 📋 Requests Tablosu
+- 🔑 `id`: Birincil anahtar
+- 👤 `user_id`: Kullanıcı referansı
+- 📝 `original_text`: Orijinal metin
+- 🎯 `response_type`: Yanıt tipi (positive/negative/informative/other)
+- 📅 `created_at`: Oluşturulma tarihi
+- ✅ `is_active`: Aktif durum
+- 🔢 `remaining_responses`: Kalan yanıt sayısı
+- 🆕 `is_new_request`: Yeni istek durumu
 
-### Responses Tablosu
-- `id`: Birincil anahtar
-- `request_id`: İstek referansı
-- `model_name`: Kullanılan model
-- `response_text`: AI yanıtı
-- `temperature`: Temperature parametresi
-- `top_p`: Top-p parametresi
-- `repetition_penalty`: Repetition penalty parametresi
-- `latency_ms`: Üretim süresi
-- `is_selected`: Seçilme durumu
-- `copied`: Kopyalanma durumu
-- `created_at`: Oluşturulma tarihi
-- `tokens_used`: Kullanılan token sayısı
+### 💬 Responses Tablosu
+- 🔑 `id`: Birincil anahtar
+- 📋 `request_id`: İstek referansı
+- 🤖 `model_name`: Kullanılan model
+- 💬 `response_text`: AI yanıtı
+- 🌡️ `temperature`: Temperature parametresi
+- 📊 `top_p`: Top-p parametresi
+- 🔄 `repetition_penalty`: Repetition penalty parametresi
+- ⏱️ `latency_ms`: Üretim süresi
+- ✅ `is_selected`: Seçilme durumu
+- 📋 `copied`: Kopyalanma durumu
+- 📅 `created_at`: Oluşturulma tarihi
+- 🔢 `tokens_used`: Kullanılan token sayısı
 
-### Models Tablosu
-- `id`: Birincil anahtar
-- `name`: Model adı
-- `display_name`: Görünen ad
-- `supports_embedding`: Embedding desteği
-- `supports_chat`: Chat desteği
+### 🤖 Models Tablosu
+- 🔑 `id`: Birincil anahtar
+- 🤖 `name`: Model adı
+- 🏷️ `display_name`: Görünen ad
+- 🔗 `supports_embedding`: Embedding desteği
+- 💬 `supports_chat`: Chat desteği
 
 ## 🚀 Deployment
 
-### Production Ortamı
-1. **Docker**: Containerization
-2. **Database**: SQLite with volume persistence
-3. **Frontend**: Nginx (port 80)
-4. **Backend**: FastAPI (port 8000)
-5. **Cloudflare**: CDN ve SSL sertifikası
+### 🏭 Production Ortamı
+1. 🐳 **Docker**: Containerization
+2. 🗄️ **Database**: SQLite with volume persistence
+3. 🌐 **Frontend**: Nginx (port 80)
+4. 🚀 **Backend**: FastAPI (port 8000)
+5. ☁️ **Cloudflare**: CDN ve SSL sertifikası
 
-### Docker Commands
+### 🐳 Docker Commands
 ```bash
 # Production deployment
 docker build -t ai_helper_v3 .
@@ -425,7 +425,7 @@ docker restart ai_yardimci
 docker stop ai_yardimci && docker rm ai_yardimci
 ```
 
-### Environment Variables
+### ⚙️ Environment Variables
 ```bash
 # Production environment
 APP_ENV=production
@@ -439,105 +439,109 @@ ALLOWED_ORIGINS=https://yardimci.niluferyapayzeka.tr
 
 ## 🤝 Katkıda Bulunma
 
-1. Fork yapın
-2. Feature branch oluşturun (`git checkout -b feature/amazing-feature`)
-3. Commit yapın (`git commit -m 'Add amazing feature'`)
-4. Push yapın (`git push origin feature/amazing-feature`)
-5. Pull Request oluşturun
+1. 🍴 **Fork yapın**
+2. 🌿 **Feature branch oluşturun** (`git checkout -b feature/amazing-feature`)
+3. 💾 **Commit yapın** (`git commit -m 'Add amazing feature'`)
+4. 📤 **Push yapın** (`git push origin feature/amazing-feature`)
+5. 🔄 **Pull Request oluşturun**
 
 ## 📝 Lisans
 
-Bu proje MIT lisansı altında lisanslanmıştır.
+📄 Bu proje MIT lisansı altında lisanslanmıştır.
 
 ## 📞 İletişim
 
-* **Proje Sahibi**: Zafer TURAN
-* **E-posta**: zaferturan@nilufer.bel.tr
-* **GitHub**: @Zaferturan
-* **Issues**: GitHub Issues
+* 👤 **Proje Sahibi**: Zafer TURAN
+* 📧 **E-posta**: zaferturan@nilufer.bel.tr
+* 🐙 **GitHub**: @Zaferturan
+* 🐛 **Issues**: GitHub Issues
 
 ## 🔄 Güncellemeler
 
-### v2.0.0 - Modern Web Arayüzü
-- ✅ HTML5 + CSS3 + JavaScript ile modern web arayüzü
-- ✅ Nginx web server ve reverse proxy
-- ✅ Responsive tasarım (mobil ve masaüstü uyumlu)
-- ✅ Admin paneli ve istatistikler
-- ✅ Loading states ve error handling
-- ✅ Cache-busting ile güncel dosya yükleme
-- ✅ Docker volume mounting ile veri persistence
-- ✅ Production-ready deployment
+### 🎨 v2.0.0 - Modern Web Arayüzü
+- 🌐 **HTML5 + CSS3 + JavaScript ile modern web arayüzü**
+- 🌐 **Nginx web server ve reverse proxy**
+- 📱 **Responsive tasarım** (mobil ve masaüstü uyumlu)
+- 👥 **Admin paneli ve istatistikler**
+- ⏳ **Loading states ve error handling**
+- 🔄 **Cache-busting ile güncel dosya yükleme**
+- 💾 **Docker volume mounting ile veri persistence**
+- 🏭 **Production-ready deployment**
 
-### v1.7.0 - Docker Compose Deployment
-- ✅ Docker Compose multi-service orchestration
-- ✅ Database persistence with SQLite
-- ✅ Production-ready containerization
-- ✅ Health checks and monitoring
-- ✅ Cloudflare Tunnel integration
-- ✅ Automatic restart policy
-- ✅ Environment variable management
-- ✅ Multi-service startup script
+### 🐳 v1.7.0 - Docker Compose Deployment
+- 🐳 **Docker Compose multi-service orchestration**
+- 🗄️ **Database persistence with SQLite**
+- 🏭 **Production-ready containerization**
+- ❤️ **Health checks and monitoring**
+- ☁️ **Cloudflare Tunnel integration**
+- 🔄 **Automatic restart policy**
+- ⚙️ **Environment variable management**
+- 🚀 **Multi-service startup script**
 
-### v1.6.0
-- ✅ JWT tabanlı authentication sistemi
-- ✅ Magic Link + OTP giriş yöntemi
-- ✅ Domain kısıtlaması (@nilufer.bel.tr)
-- ✅ Profil yönetimi (ad soyad, müdürlük)
-- ✅ Rate limiting ve brute force koruması
-- ✅ SMTP entegrasyonu (Google Workspace)
-- ✅ Login attempt logging
-- ✅ Session yönetimi
-- ✅ Production URL desteği (Cloudflare Tunnel)
-- ✅ Modern UI/UX ve gelişmiş gölge efektleri
+### 🔐 v1.6.0 - Authentication System
+- 🔑 **JWT tabanlı authentication sistemi**
+- 🔗 **Magic Link + OTP giriş yöntemi**
+- 🏢 **Domain kısıtlaması** (@nilufer.bel.tr)
+- 👤 **Profil yönetimi** (ad soyad, müdürlük)
+- 🛡️ **Rate limiting ve brute force koruması**
+- 📧 **SMTP entegrasyonu** (Google Workspace)
+- 📝 **Login attempt logging**
+- 🔐 **Session yönetimi**
+- ☁️ **Production URL desteği** (Cloudflare Tunnel)
+- 🎨 **Modern UI/UX ve gelişmiş gölge efektleri**
 
-### v1.5.0
-- ✅ Authentication sistemi entegrasyonu
-- ✅ Kullanıcı profil yönetimi
-- ✅ Güvenlik önlemleri ve rate limiting
-- ✅ E-posta gönderim sistemi
+### 🔐 v1.5.0 - Security & Profile
+- 🔐 **Authentication sistemi entegrasyonu**
+- 👤 **Kullanıcı profil yönetimi**
+- 🛡️ **Güvenlik önlemleri ve rate limiting**
+- 📧 **E-posta gönderim sistemi**
 
-### v1.4.0
-- ✅ İki sütunlu modern layout
-- ✅ Yanıt geçmişi ve expander'lar
-- ✅ JavaScript ile panoya kopyalama
-- ✅ Yanıt seçimi veritabanı takibi
-- ✅ LLM parametre kontrolü (Temperature, Top-p, Repetition Penalty)
-- ✅ Tooltip desteği
-- ✅ Modern CSS tasarım
+### 🎨 v1.4.0 - UI/UX Improvements
+- 📐 **İki sütunlu modern layout**
+- 📋 **Yanıt geçmişi ve expander'lar**
+- 📋 **JavaScript ile panoya kopyalama**
+- ✅ **Yanıt seçimi veritabanı takibi**
+- ⚙️ **LLM parametre kontrolü** (Temperature, Top-p, Repetition Penalty)
+- 💡 **Tooltip desteği**
+- 🎨 **Modern CSS tasarım**
 
-### v1.3.0
-- ✅ Gemini API entegrasyonu
-- ✅ Çoklu model desteği (Gemini + Ollama)
-- ✅ Model filtreleme ve varsayılan seçim
-- ✅ Sistem prompt yönetimi
-- ✅ Token limit optimizasyonu
+### 🧠 v1.3.0 - AI Model Integration
+- 🧠 **Gemini API entegrasyonu**
+- 🤖 **Çoklu model desteği** (Gemini + Ollama)
+- 🔍 **Model filtreleme ve varsayılan seçim**
+- ⚙️ **Sistem prompt yönetimi**
+- 🔢 **Token limit optimizasyonu**
 
-### v1.2.0
-- ✅ Docker containerization
-- ✅ Always restart policy
-- ✅ Varsayılan ayarlar güncellendi
-- ✅ Environment variables düzeltildi
+### 🐳 v1.2.0 - Docker Deployment
+- 🐳 **Docker containerization**
+- 🔄 **Always restart policy**
+- ⚙️ **Varsayılan ayarlar güncellendi**
+- 🔧 **Environment variables düzeltildi**
 
-### v1.1.0
-- ✅ Ollama entegrasyonu
-- ✅ Çoklu model desteği
-- ✅ Gelişmiş model seçimi
+### 🤖 v1.1.0 - Ollama Integration
+- 🤖 **Ollama entegrasyonu**
+- 🔄 **Çoklu model desteği**
+- 🎯 **Gelişmiş model seçimi**
 
-### v1.0.0
-- ✅ Temel FastAPI backend
-- ✅ Streamlit frontend
-- ✅ Ollama entegrasyonu
-- ✅ SQLite veritabanı
-- ✅ İki farklı kullanım modu
+### 🚀 v1.0.0 - Initial Release
+- 🚀 **Temel FastAPI backend**
+- 🌐 **Streamlit frontend**
+- 🤖 **Ollama entegrasyonu**
+- 🗄️ **SQLite veritabanı**
+- 🔄 **İki farklı kullanım modu**
 
-### Gelecek Sürümler
-- 🔄 CI/CD pipeline
-- 🔄 Advanced monitoring
-- 🔄 Multi-language support
-- 🔄 API rate limiting
-- 🔄 Mobile app
-- 🔄 Advanced analytics
+### 🔮 Gelecek Sürümler
+- 🔄 **CI/CD pipeline**
+- 📊 **Advanced monitoring**
+- 🌍 **Multi-language support**
+- 🛡️ **API rate limiting**
+- 📱 **Mobile app**
+- 📈 **Advanced analytics**
 
 ---
 
-**AI Yardımcı** - Nilüfer Belediyesi için profesyonel cevaplar hazırlayın! 🤖
+<div align="center">
+
+**🤖 AI Yardımcı** - Nilüfer Belediyesi için profesyonel cevaplar hazırlayın! 🎉
+
+</div>
