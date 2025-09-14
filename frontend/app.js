@@ -1040,16 +1040,10 @@ class AIResponseManager {
         this.updatePreviousResponses();
         this.updateButtonVisibility();
         
-        // updateButtonVisibility() çağrısından sonra ana butonu tekrar gizle
+        // Ana "Seç ve Kopyala" düğmesini gizli tut (yanıt üretilmeden önce)
         if (ui.elements.mainCopyBtn) {
             ui.elements.mainCopyBtn.style.display = 'none';
         }
-        
-        // Önceki yanıtlardaki tüm "Seç ve Kopyala" butonlarını gizle
-        const prevCopyBtns = document.querySelectorAll('.prev-copy-btn');
-        prevCopyBtns.forEach(btn => {
-            btn.style.display = 'none';
-        });
         
         // Input alanlarını varsayılan değerlerle doldur
         this.setDefaultTextboxValues();

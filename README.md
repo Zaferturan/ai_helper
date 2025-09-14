@@ -2,14 +2,6 @@
 
 Vatandaş taleplerine cevaplarınızı hazırlayın. İstek ve önerilere uygun, resmi ve anlaşılır cevaplar oluşturun.
 
-## 📸 Ekran Görüntüleri
-
-### Ana Uygulama Arayüzü
-![Ana Uygulama](./ekran%201.png)
-
-### İstatistikler ve Yanıt Geçmişi
-![İstatistikler](./istatistikler.png)
-
 ## ✨ Özellikler
 
 - **AI Destekli Metin Düzenleme**: Ollama LLM modelleri ile metinleri daha kibar ve anlaşılır hale getirin
@@ -46,8 +38,7 @@ Vatandaş taleplerine cevaplarınızı hazırlayın. İstek ve önerilere uygun,
 - **Rate Limiting**: Brute force koruması
 
 ### Frontend
-- **HTML/CSS/JavaScript**: Modern web teknolojileri
-- **Nginx**: Static file serving ve reverse proxy
+- **Streamlit**: Python tabanlı web uygulaması
 - **Responsive Design**: Mobil ve masaüstü uyumlu
 - **Modern UI**: Temiz ve kullanıcı dostu arayüz
 - **JavaScript Integration**: Panoya kopyalama için client-side script
@@ -55,14 +46,13 @@ Vatandaş taleplerine cevaplarınızı hazırlayın. İstek ve önerilere uygun,
 
 ### Deployment
 - **Docker**: Containerization
-- **Docker Volumes**: Persistent data storage
-- **Nginx**: Frontend serving ve API proxy
-- **Cloudflare**: Production URL routing
+- **Docker Compose**: Multi-service orchestration
+- **Cloudflare Tunnel**: Production URL routing
 
 ## 📋 Gereksinimler
 
-- Docker
-- Python 3.11+ (development için)
+- Docker ve Docker Compose
+- Python 3.10+ (development için)
 - SQLite (production'da otomatik)
 
 ## 🚀 Kurulum
@@ -75,17 +65,11 @@ git clone <repository-url>
 cd ai_helper
 ```
 
-2. **Docker Volumes Oluşturun**
-```bash
-docker volume create ai_helper_data
-docker volume create ai_helper_logs
-```
-
-3. **Ortam Değişkenlerini Ayarlayın**
-`.env` dosyası oluşturun ve `ai_helper_data` volume'una kopyalayın:
+2. **Ortam Değişkenlerini Ayarlayın**
+`.env` dosyası oluşturun:
 ```env
 # Database Configuration
-DATABASE_URL=sqlite:///./data/ai_helper.db
+DATABASE_URL=sqlite:///./ai_helper.db
 
 # Ollama Configuration
 OLLAMA_HOST=http://localhost:11434
@@ -107,26 +91,19 @@ GEMINI_API_KEY=your-gemini-api-key
 
 # Production URLs
 PRODUCTION_URL=https://yardimci.niluferyapayzeka.tr
-FRONTEND_URL=https://yardimci.niluferyapayzeka.tr
-BACKEND_URL=https://yardimci.niluferyapayzeka.tr/api/v1
+FRONTEND_URL=http://localhost:8500
+BACKEND_URL=http://localhost:8000
 ```
 
-4. **Docker Image Build Edin ve Container'ı Çalıştırın**
+3. **Docker Compose ile Başlatın**
 ```bash
-docker build -t ai_helper_v3 .
-docker run -d --name ai_yardimci --restart always \
-  -p 8500:80 -p 8000:8000 \
-  -v ai_helper_data:/app/data \
-  -v ai_helper_logs:/app/logs \
-  ai_helper_v3
+docker compose up --build -d
 ```
 
-5. **Uygulamaya Erişin**
+4. **Uygulamaya Erişin**
 - **Frontend**: https://yardimci.niluferyapayzeka.tr/
 - **Backend API**: https://yardimci.niluferyapayzeka.tr/api/v1/
 - **Health Check**: https://yardimci.niluferyapayzeka.tr/api/v1/auth/health
-
-> **Not**: Detaylı Docker kurulum bilgileri için [DOCKER_SETUP.md](./DOCKER_SETUP.md) dosyasına bakın.
 
 ### 🔧 Geliştirme Ortamı Kurulumu
 
@@ -151,13 +128,9 @@ Backend `http://localhost:8000` adresinde çalışacak.
 
 4. **Frontend'i Başlatın**
 ```bash
-# Nginx ile frontend serve etmek için
-nginx -c /path/to/nginx.conf
-
-# Veya development için basit HTTP server
-python -m http.server 8500 --directory frontend/
+streamlit run app.py
 ```
-Frontend `http://localhost:8500` adresinde çalışacak.
+Frontend `http://localhost:8501` adresinde çalışacak.
 
 ## 📖 Kullanım
 
@@ -200,31 +173,26 @@ Frontend `http://localhost:8500` adresinde çalışacak.
 
 ```
 ai_helper/
-├── frontend/             # Frontend dosyaları
-│   ├── index.html       # Ana HTML dosyası
-│   ├── app.js           # JavaScript logic
-│   └── style.css        # CSS stilleri
-├── main.py              # FastAPI backend
-├── config.py            # Konfigürasyon
-├── connection.py        # Veritabanı bağlantısı
-├── models.py            # SQLAlchemy modelleri
-├── api_models.py        # Pydantic modelleri
-├── endpoints.py         # API endpoint'leri
-├── auth_endpoints.py    # Authentication endpoints
-├── auth_system.py       # Authentication logic
-├── ollama_client.py     # Ollama entegrasyonu
-├── gemini_client.py     # Gemini API entegrasyonu
-├── requirements.txt     # Python bağımlılıkları
-├── Dockerfile           # Docker container build
-├── nginx.conf           # Nginx konfigürasyonu
-├── start.sh             # Container startup script
-├── .env                 # Ortam değişkenleri
-├── .gitignore          # Git ignore kuralları
+├── app.py                 # Streamlit frontend
+├── main.py               # FastAPI backend
+├── config.py             # Konfigürasyon
+├── connection.py         # Veritabanı bağlantısı
+├── models.py             # SQLAlchemy modelleri
+├── api_models.py         # Pydantic modelleri
+├── endpoints.py          # API endpoint'leri
+├── auth_endpoints.py     # Authentication endpoints
+├── auth_system.py        # Authentication logic
+├── ollama_client.py      # Ollama entegrasyonu
+├── gemini_client.py      # Gemini API entegrasyonu
+├── requirements.txt      # Python bağımlılıkları
+├── Dockerfile            # Docker container build
+├── docker-compose.yml    # Multi-service orchestration
+├── docker/start.sh       # Multi-service startup script
+├── data/                 # Database storage directory
+├── .env                  # Ortam değişkenleri
+├── .gitignore           # Git ignore kuralları
 ├── README.md            # Bu dosya
-├── ROADMAP.md           # Geliştirme yol haritası
-├── DOCKER_SETUP.md      # Docker kurulum rehberi
-├── ekran 1.png          # Ana uygulama ekran görüntüsü
-└── istatistikler.png    # İstatistikler ekran görüntüsü
+└── ROADMAP.md           # Geliştirme yol haritası
 ```
 
 ## 🎯 Özellikler
@@ -247,8 +215,7 @@ ai_helper/
 - ✅ Session yönetimi (19:00'a kadar geçerli)
 
 ### Frontend Özellikleri
-- ✅ HTML/CSS/JavaScript ile modern web arayüzü
-- ✅ Nginx ile static file serving
+- ✅ Streamlit ile modern web arayüzü
 - ✅ İki sütunlu responsive layout
 - ✅ Dinamik model seçimi (Gemini + Ollama)
 - ✅ Gerçek zamanlı yanıt üretimi
@@ -267,11 +234,11 @@ ai_helper/
 
 ### Deployment Özellikleri
 - ✅ Docker containerization
-- ✅ Docker volumes ile persistent data storage
-- ✅ Nginx ile frontend serving ve API proxy
-- ✅ Health checks ve monitoring
+- ✅ Docker Compose multi-service orchestration
+- ✅ Database persistence
+- ✅ Health checks
 - ✅ Production-ready configuration
-- ✅ Cloudflare integration
+- ✅ Cloudflare Tunnel integration
 - ✅ Automatic restart policy
 
 ## 🔧 Geliştirme
@@ -279,21 +246,16 @@ ai_helper/
 ### Docker ile Geliştirme
 ```bash
 # Container'ı başlat
-docker run -d --name ai_yardimci --restart always \
-  -p 8500:80 -p 8000:8000 \
-  -v ai_helper_data:/app/data \
-  -v ai_helper_logs:/app/logs \
-  ai_helper_v3
+docker compose up --build
 
 # Logları izle
-docker logs -f ai_yardimci
+docker compose logs -f
 
 # Container'a bağlan
-docker exec -it ai_yardimci bash
+docker exec -it ai-helperv2-container bash
 
 # Container'ı durdur
-docker stop ai_yardimci
-docker rm ai_yardimci
+docker compose down
 ```
 
 ### Yerel Geliştirme
@@ -301,14 +263,14 @@ docker rm ai_yardimci
 # Backend'i geliştirme modunda başlat
 uvicorn main:app --reload --host 0.0.0.0 --port 8000
 
-# Frontend'i geliştirme modunda başlat
-python -m http.server 8500 --directory frontend/
+# Streamlit'i geliştirme modunda başlat
+streamlit run app.py --server.port 8501
 ```
 
 ### Veritabanı İşlemleri
 ```bash
 # Container içinde veritabanını kontrol et
-docker exec ai_yardimci python -c "import sqlite3; conn = sqlite3.connect('/app/data/ai_helper.db'); cursor = conn.cursor(); cursor.execute('SELECT COUNT(*) FROM users'); print(f'Users: {cursor.fetchone()[0]}'); conn.close()"
+docker exec ai-helperv2-container python -c "import sqlite3; conn = sqlite3.connect('/app/ai_helper.db'); cursor = conn.cursor(); cursor.execute('SELECT COUNT(*) FROM users'); print(f'Users: {cursor.fetchone()[0]}'); conn.close()"
 ```
 
 ## 📊 Veritabanı Şeması
@@ -376,37 +338,31 @@ docker exec ai_yardimci python -c "import sqlite3; conn = sqlite3.connect('/app/
 ## 🚀 Deployment
 
 ### Production Ortamı
-1. **Docker**: Single container deployment
-2. **Database**: SQLite with Docker volumes persistence
-3. **Frontend**: Nginx (port 80)
+1. **Docker Compose**: Multi-service orchestration
+2. **Database**: SQLite with persistence
+3. **Frontend**: Streamlit (port 8500)
 4. **Backend**: FastAPI (port 8000)
-5. **Cloudflare**: Production URL routing
+5. **Cloudflare Tunnel**: Production URL routing
 
 ### Docker Commands
 ```bash
 # Production deployment
-docker build -t ai_helper_v3 .
-docker run -d --name ai_yardimci --restart always \
-  -p 8500:80 -p 8000:8000 \
-  -v ai_helper_data:/app/data \
-  -v ai_helper_logs:/app/logs \
-  ai_helper_v3
+docker compose up --build -d
 
 # Logları izle
-docker logs -f ai_yardimci
+docker compose logs -f ai-helperv2
 
 # Container durumunu kontrol et
-docker ps
+docker compose ps
 
 # Health check
-curl https://yardimci.niluferyapayzeka.tr/api/v1/auth/health
+curl http://localhost:8000/api/v1/auth/health
 
 # Container'ı yeniden başlat
-docker restart ai_yardimci
+docker compose restart ai-helperv2
 
 # Container'ı durdur
-docker stop ai_yardimci
-docker rm ai_yardimci
+docker compose down
 ```
 
 ### Environment Variables
@@ -416,8 +372,8 @@ APP_ENV=production
 DEBUG_MODE=false
 LOG_LEVEL=INFO
 API_PORT=8000
-WEB_PORT=80
-DATABASE_URL=sqlite:///./data/ai_helper.db
+WEB_PORT=8500
+DATABASE_URL=sqlite:///./ai_helper.db
 ALLOWED_ORIGINS=https://yardimci.niluferyapayzeka.tr
 ```
 
@@ -442,16 +398,15 @@ Bu proje MIT lisansı altında lisanslanmıştır.
 
 ## 🔄 Güncellemeler
 
-### v1.8.0 - Docker Single Container Deployment
-- ✅ Docker single container deployment
-- ✅ Docker volumes ile persistent data storage
-- ✅ Nginx ile frontend serving ve API proxy
+### v1.7.0 - Docker Compose Deployment
+- ✅ Docker Compose multi-service orchestration
+- ✅ Database persistence with SQLite
 - ✅ Production-ready containerization
-- ✅ Health checks ve monitoring
-- ✅ Cloudflare integration
+- ✅ Health checks and monitoring
+- ✅ Cloudflare Tunnel integration
 - ✅ Automatic restart policy
 - ✅ Environment variable management
-- ✅ Modern HTML/CSS/JavaScript frontend
+- ✅ Multi-service startup script
 
 ### v1.6.0
 - ✅ JWT tabanlı authentication sistemi
