@@ -12,7 +12,7 @@
 
 // Configuration
 const CONFIG = {
-        BACKEND_URL: 'http://localhost:8000/api/v1',
+        BACKEND_URL: 'https://yardimci.niluferyapayzeka.tr/api/v1',
     PRODUCTION_URL: 'https://yardimci.niluferyapayzeka.tr',
     STORAGE_KEYS: {
         AUTH_TOKEN: 'auth_token',
