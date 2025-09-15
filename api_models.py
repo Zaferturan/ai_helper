@@ -25,6 +25,7 @@ class CodeVerifyResponse(BaseModel):
     user_id: int
     email: str
     full_name: Optional[str] = None
+    department: Optional[str] = None
     profile_completed: bool = False
     is_admin: bool = False
 
