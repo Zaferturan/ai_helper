@@ -251,6 +251,7 @@ class AuthManager {
                             this.appState.userEmail = response.email;
                             this.appState.isAdmin = response.is_admin || false;
                             this.appState.accessToken = response.access_token; // ✅ accessToken field
+                            this.appState.authToken = response.access_token; // ✅ authToken field (backward compatibility)
                             this.appState.userProfile = {
                                 email: response.email,
                                 full_name: response.full_name || '',
@@ -623,7 +624,8 @@ class AuthManager {
             accessToken: this.appState.accessToken ? 'present' : 'missing',
             authToken: this.appState.authToken ? 'present' : 'missing',
             finalToken: token ? 'present' : 'missing',
-            userEmail: this.appState.userEmail
+            userEmail: this.appState.userEmail,
+            tokenValue: token ? token.substring(0, 20) + '...' : 'null'
         });
         
         // ✅ Consistent localStorage key naming
@@ -631,6 +633,11 @@ class AuthManager {
         localStorage.setItem(CONFIG.STORAGE_KEYS.USER_EMAIL, this.appState.userEmail);
         localStorage.setItem(CONFIG.STORAGE_KEYS.IS_ADMIN, this.appState.isAdmin.toString());
         localStorage.setItem(CONFIG.STORAGE_KEYS.USER_PROFILE, JSON.stringify(this.appState.userProfile));
+        
+        console.log('localStorage after save:', {
+            authToken: localStorage.getItem(CONFIG.STORAGE_KEYS.AUTH_TOKEN) ? 'saved' : 'missing',
+            userEmail: localStorage.getItem(CONFIG.STORAGE_KEYS.USER_EMAIL)
+        });
     }
 
     // Authentication state kontrolü için helper fonksiyon
@@ -648,6 +655,14 @@ class AuthManager {
         const isValid = this.appState.authenticated && 
                        this.appState.userEmail && 
                        (this.appState.accessToken || this.appState.authToken);
+        
+        console.log('checkAuthenticationState validation:', {
+            authenticated: this.appState.authenticated,
+            hasUserEmail: !!this.appState.userEmail,
+            hasAccessToken: !!this.appState.accessToken,
+            hasAuthToken: !!this.appState.authToken,
+            isValid: isValid
+        });
         
         if (!isValid) {
             console.error('Authentication state validation failed:', {
