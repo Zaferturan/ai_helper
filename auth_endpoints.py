@@ -21,6 +21,7 @@ from api_models import (
     TokenConsumeResponse,
     UserProfile,
     ProfileCompletionRequest,
+    MagicTokenRequest,
     AdminStats,
     AdminUsersResponse,
     UserStats,
@@ -340,6 +341,78 @@ async def verify_login_code(
             detail="İşlem tamamlanamadı. Lütfen tekrar dene"
         )
 
+
+@auth_router.post("/verify-magic-token")
+async def verify_magic_token(
+    request: MagicTokenRequest,
+    db: Session = Depends(get_db)
+):
+    """
+    Verify magic link token and return user info
+    """
+    try:
+        # Token'ı hash'le
+        token_hash = hashlib.sha256(request.token.encode()).hexdigest()
+        
+        # Token'ı veritabanında bul
+        login_token = db.query(LoginToken).filter(
+            LoginToken.token_hash == token_hash,
+            LoginToken.expires_at > datetime.utcnow(),
+            LoginToken.used_at.is_(None)
+        ).first()
+        
+        if not login_token:
+            raise HTTPException(
+                status_code=400,
+                detail="Geçersiz veya süresi dolmuş token"
+            )
+        
+        # Token'ı kullanıldı olarak işaretle
+        login_token.used_at = datetime.utcnow()
+        
+        # Kullanıcıyı bul
+        user = db.query(User).filter(User.email == login_token.email).first()
+        if not user:
+            raise HTTPException(
+                status_code=404,
+                detail="Kullanıcı bulunamadı"
+            )
+        
+        # JWT token oluştur
+        access_token = auth_service.create_access_token(
+            data={"sub": str(user.id), "email": user.email}
+        )
+        
+        # Login attempt kaydet
+        login_attempt = LoginAttempt(
+            user_id=user.id,
+            email=user.email,
+            ip_address="127.0.0.1",  # Magic link için
+            success=True,
+            method="magic_link"
+        )
+        db.add(login_attempt)
+        db.commit()
+        
+        return {
+            "access_token": access_token,
+            "token_type": "bearer",
+            "user_id": user.id,
+            "email": user.email,
+            "full_name": user.full_name,
+            "department": user.department,
+            "profile_completed": user.profile_completed,
+            "is_admin": user.is_admin
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error in verify_magic_token: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Token doğrulama hatası"
+        )
 
 @auth_router.post("/complete-profile")
 async def complete_user_profile(

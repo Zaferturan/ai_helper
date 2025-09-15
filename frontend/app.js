@@ -60,6 +60,16 @@ class APIClient {
         });
     }
 
+    async verifyMagicToken(token) {
+        return this.request('/auth/verify-magic-token', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ token: token })
+        });
+    }
+
     async getProfile() {
         const token = localStorage.getItem(CONFIG.STORAGE_KEYS.AUTH_TOKEN);
         return this.request('/profile', {
@@ -195,9 +205,9 @@ class AuthManager {
         try {
             console.log('=== checkBackendSession START ===');
             
-            // Magic link ile geliyorsa (auto_login=true varsa) çıkış flag'ini kontrol etme
+            // Magic link ile geliyorsa (auto_login=true veya token parametresi varsa) çıkış flag'ini kontrol etme
             const urlParams = new URLSearchParams(window.location.search);
-            const isMagicLink = urlParams.get('auto_login') === 'true';
+            const isMagicLink = urlParams.get('auto_login') === 'true' || urlParams.get('token');
             console.log('URL params:', window.location.search);
             console.log('isMagicLink:', isMagicLink);
             
@@ -206,12 +216,61 @@ class AuthManager {
                 console.log('Magic link detected, clearing logout flag and forcing login');
                 localStorage.removeItem('user_logged_out');
                 
-                // URL'den auto_login parametresini temizle
+                // URL'den magic link parametrelerini temizle
                 const url = new URL(window.location);
                 url.searchParams.delete('auto_login');
+                url.searchParams.delete('token');
                 window.history.replaceState({}, document.title, url.pathname + url.search);
                 
-                // GELİŞTİRME MODU: Magic link ile gelen kullanıcı için sabit bilgiler
+                // Magic link token'ını backend'e gönder ve kullanıcı bilgilerini al
+                const token = urlParams.get('token');
+                if (token) {
+                    console.log('Magic link token found, verifying with backend...');
+                    try {
+                        const response = await this.api.verifyMagicToken(token);
+                        if (response && response.access_token) {
+                            console.log('Magic link verification successful:', response);
+                            
+                            // Authentication state'i güncelle
+                            this.appState.authenticated = true;
+                            this.appState.userEmail = response.email;
+                            this.appState.isAdmin = response.is_admin || false;
+                            this.appState.authToken = response.access_token;
+                            this.appState.userProfile = {
+                                email: response.email,
+                                full_name: response.full_name || '',
+                                department: response.department || '',
+                                profile_completed: response.profile_completed || false
+                            };
+                            
+                            // Local storage'a kaydet
+                            this.saveToStorage();
+                            
+                            // Profil tamamlama kontrolü
+                            if (!response.profile_completed || !response.full_name || !response.department) {
+                                console.log('Profil tamamlanmamış, profil sayfasına yönlendiriliyor');
+                                ui.showProfileCompletion();
+                            } else {
+                                console.log('Profil tamamlanmış, ana sayfaya yönlendiriliyor');
+                                ui.showMainApp();
+                                if (this.appState.isAdmin) {
+                                    await responseManager.loadAdminStats();
+                                }
+                            }
+                            
+                            console.log('=== checkBackendSession SUCCESS (Magic Link) ===');
+                            return true;
+                        }
+                    } catch (error) {
+                        console.error('Magic link verification failed:', error);
+                        // Magic link başarısızsa normal login'e yönlendir
+                        ui.hideLoadingScreen();
+                        ui.showLogin();
+                        return false;
+                    }
+                }
+                
+                // Fallback: GELİŞTİRME MODU (token yoksa)
                 console.log('Magic link mode: bypassing authentication check');
                 this.appState.authenticated = true;
                 this.appState.userEmail = 'enginakyildiz@nilufer.bel.tr';
@@ -1675,11 +1734,12 @@ document.addEventListener('DOMContentLoaded', async () => {
         const userEmail = urlParams.get('user_email');
         const isAdmin = urlParams.get('is_admin');
         const accessToken = urlParams.get('access_token');
+        const magicToken = urlParams.get('token'); // Magic link token'ı
         
-        // Magic link ile geliyorsa (auto_login=true varsa) çıkış flag'ini kontrol etme
-        const isMagicLink = autoLogin === 'true';
+        // Magic link ile geliyorsa (token parametresi varsa) çıkış flag'ini kontrol etme
+        const isMagicLink = autoLogin === 'true' || magicToken;
         
-        if (autoLogin === 'true' || sessionId || userEmail || isAdmin || accessToken) {
+        if (autoLogin === 'true' || sessionId || userEmail || isAdmin || accessToken || magicToken) {
             console.log('Auto login or magic link detected, checking backend session...');
             await authManager.checkBackendSession();
         } else {
