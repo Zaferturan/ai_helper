@@ -12,7 +12,7 @@
 
 // Configuration
 const CONFIG = {
-        BACKEND_URL: 'https://yardimci.niluferyapayzeka.tr/api/v1',
+    BACKEND_URL: 'https://yardimci.niluferyapayzeka.tr/api/v1',
     PRODUCTION_URL: 'https://yardimci.niluferyapayzeka.tr',
     STORAGE_KEYS: {
         AUTH_TOKEN: 'auth_token',
@@ -37,15 +37,6 @@ class APIClient {
             }
         };
 
-        // Debug logging for token
-        const hasToken = defaultOptions.headers['Authorization'] || options.headers?.['Authorization'];
-        console.log('API Request:', {
-            method: options.method || 'GET',
-            url,
-            hasToken: !!hasToken,
-            tokenLength: hasToken ? hasToken.length : 0
-        });
-
         const response = await fetch(url, { ...defaultOptions, ...options });
         
         if (!response.ok) {
@@ -69,16 +60,6 @@ class APIClient {
         });
     }
 
-    async verifyMagicToken(token) {
-        return this.request('/auth/verify-magic-token', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({ token: token })
-        });
-    }
-
     async getProfile() {
         const token = localStorage.getItem(CONFIG.STORAGE_KEYS.AUTH_TOKEN);
         return this.request('/profile', {
@@ -88,14 +69,19 @@ class APIClient {
         });
     }
 
+    async verifyMagicLink(token) {
+        // Magic link için backend'e POST request yap
+        return this.request('/verify-magic-link', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ code: token })
+        });
+    }
+
     async completeProfile(profileData) {
         const token = localStorage.getItem(CONFIG.STORAGE_KEYS.AUTH_TOKEN);
-        console.log('APIClient.completeProfile called:', {
-            hasToken: !!token,
-            tokenLength: token ? token.length : 0,
-            profileData
-        });
-        
         return this.request('/complete-profile', {
             method: 'POST',
             headers: {
@@ -190,9 +176,10 @@ class AuthManager {
         console.log('AuthManager initializing...');
         this.appState.loadFromStorage();
         
-        if (this.appState.authenticated) {
-            await this.validateToken();
-        } else {
+        // Magic link kontrolü için checkBackendSession çağır
+        const hasSession = await this.checkBackendSession();
+        
+        if (!hasSession) {
             // Authentication yoksa loading screen'i gizle ve login göster
             ui.hideLoadingScreen();
             ui.showLogin();
@@ -220,83 +207,31 @@ class AuthManager {
         try {
             console.log('=== checkBackendSession START ===');
             
-            // Magic link ile geliyorsa (auto_login=true veya token parametresi varsa) çıkış flag'ini kontrol etme
+            // Magic link ile geliyorsa (auto_login=true varsa) çıkış flag'ini kontrol etme
             const urlParams = new URLSearchParams(window.location.search);
-            const isMagicLink = urlParams.get('auto_login') === 'true' || urlParams.get('token');
+            const isMagicLink = urlParams.get('auto_login') === 'true';
             console.log('URL params:', window.location.search);
             console.log('isMagicLink:', isMagicLink);
             
-            // Magic link ile geldiyse çıkış flag'ini temizle ve doğrudan giriş yap
+            // Magic link ile geldiyse gerçek authentication yap
             if (isMagicLink) {
-                console.log('Magic link detected, clearing logout flag and forcing login');
+                console.log('Magic link detected, processing real authentication');
                 localStorage.removeItem('user_logged_out');
                 
-                // URL'den magic link parametrelerini temizle
-                const url = new URL(window.location);
-                url.searchParams.delete('auto_login');
-                url.searchParams.delete('token');
-                window.history.replaceState({}, document.title, url.pathname + url.search);
+                // URL'den token'ı al
+                const urlParams = new URLSearchParams(window.location.search);
+                const magicToken = urlParams.get('token') || urlParams.get('auth_token');
                 
-                // Magic link token'ını backend'e gönder ve kullanıcı bilgilerini al
-                const token = urlParams.get('token') || urlParams.get('auth_token');
-                if (token) {
-                    console.log('Magic link token found, verifying with backend...');
-                    try {
-                        const response = await this.api.verifyMagicToken(token);
-                        if (response && response.access_token) {
-                            console.log('Magic link verification successful:', response);
-                            
-                            // Authentication state'i güncelle - Field name consistency
-                            this.appState.authenticated = true;
-                            this.appState.userEmail = response.email;
-                            this.appState.isAdmin = response.is_admin || false;
-                            this.appState.accessToken = response.access_token; // ✅ accessToken field
-                            this.appState.authToken = response.access_token; // ✅ authToken field (backward compatibility)
-                            this.appState.userProfile = {
-                                email: response.email,
-                                full_name: response.full_name || '',
-                                department: response.department || '',
-                                profile_completed: response.profile_completed || false
-                            };
-                            
-                            console.log('Authentication state set:', {
-                                authenticated: this.appState.authenticated,
-                                accessToken: this.appState.accessToken ? 'present' : 'missing',
-                                authToken: this.appState.authToken ? 'present' : 'missing',
-                                userEmail: this.appState.userEmail,
-                                profileCompleted: this.appState.userProfile.profile_completed,
-                                tokenValue: this.appState.accessToken ? this.appState.accessToken.substring(0, 20) + '...' : 'null'
-                            });
-                            
-                            // Local storage'a kaydet
-                            this.saveToStorage();
-                            
-                            // Profil tamamlama kontrolü
-                            if (!response.profile_completed || !response.full_name || !response.department) {
-                                console.log('Profil tamamlanmamış, profil sayfasına yönlendiriliyor');
-                                ui.showProfileCompletion();
-                            } else {
-                                console.log('Profil tamamlanmış, ana sayfaya yönlendiriliyor');
-                                ui.showMainApp();
-                                if (this.appState.isAdmin) {
-                                    await responseManager.loadAdminStats();
-                                }
-                            }
-                            
-                            console.log('=== checkBackendSession SUCCESS (Magic Link) ===');
-                            return true;
-                        }
-                    } catch (error) {
-                        console.error('Magic link verification failed:', error);
-                        // Magic link başarısızsa normal login'e yönlendir
-                        ui.hideLoadingScreen();
-                        ui.showLogin();
-                        return false;
+                if (magicToken) {
+                    console.log('Magic token found, processing authentication:', magicToken);
+                    const authResult = await this.handleMagicLinkAuth(magicToken);
+                    if (authResult) {
+                        return true;
                     }
                 }
                 
-                // Magic link verification başarısız - login sayfasına yönlendir
-                console.log('Magic link verification failed, redirecting to login');
+                // Token yoksa veya authentication başarısızsa login göster
+                console.log('Magic link authentication failed, showing login');
                 ui.hideLoadingScreen();
                 ui.showLogin();
                 return false;
@@ -312,47 +247,17 @@ class AuthManager {
             // Çıkış yapıldıysa ve magic link değilse auto login'i engelle
             if (!isMagicLink && localStorage.getItem('user_logged_out') === 'true') {
                 console.log('User logged out, auto login disabled');
-                await this.init();
-                return;
+                ui.hideLoadingScreen();
+                ui.showLogin();
+                return false;
             }
             
-            if (sessionStatus.sessions && sessionStatus.sessions.length > 0) {
-                const latestSession = sessionStatus.sessions[0];
-                console.log('Latest session:', latestSession);
-                const sessionDetails = await this.api.getSessionDetails(latestSession.session_id);
-                console.log('Session details:', sessionDetails);
-                
-                if (sessionDetails.user_email) {
-                    console.log('Backend session found:', sessionDetails.user_email);
-                    
-                    // Update app state
-                    this.appState.authenticated = true;
-                    this.appState.userEmail = sessionDetails.user_email;
-                    this.appState.isAdmin = sessionDetails.is_admin || false;
-                    this.appState.authToken = sessionDetails.access_token;
-                    
-                    // Save to localStorage
-                    this.saveToStorage();
-                    
-                    // Çıkış flag'ini temizle (başarılı giriş)
-                    localStorage.removeItem('user_logged_out');
-                    
-                    // Kullanıcı profil bilgilerini güncelle
-                    await this.updateUserProfile();
-                    
-                    // Show main app
-                    console.log('About to show main app. AppState:', this.appState);
-                    ui.showMainApp();
-                    console.log('Main app shown successfully');
-                    
-                    // Load admin stats if admin
-                    if (this.appState.isAdmin) {
-                        await responseManager.loadAdminStats();
-                    }
-                    
-                    console.log('=== checkBackendSession SUCCESS ===');
-                    return true;
-                }
+            // Magic link değilse ve session varsa bile login göster (normal flow için)
+            if (!isMagicLink) {
+                console.log('Not a magic link, showing login screen');
+                ui.hideLoadingScreen();
+                ui.showLogin();
+                return false;
             }
             
             console.log('No backend session found');
@@ -448,6 +353,7 @@ class AuthManager {
                 this.appState.userEmail = response.email || email;
                 this.appState.isAdmin = response.is_admin || false;
                 this.appState.authToken = response.access_token;
+                this.appState.accessToken = response.access_token; // Eksik olan bu!
                 this.appState.userProfile = {
                     email: response.email || email,
                     full_name: response.full_name || '',
@@ -606,36 +512,10 @@ class AuthManager {
     }
 
     saveToStorage() {
-        const token = this.appState.accessToken || this.appState.authToken;
-        console.log('Saving to storage:', {
-            accessToken: this.appState.accessToken ? 'present' : 'missing',
-            authToken: this.appState.authToken ? 'present' : 'missing',
-            finalToken: token ? 'present' : 'missing',
-            userEmail: this.appState.userEmail,
-            tokenValue: token ? token.substring(0, 20) + '...' : 'null',
-            appStateKeys: Object.keys(this.appState)
-        });
-        
-        if (!token) {
-            console.error('❌ CRITICAL: No token to save!', {
-                accessToken: this.appState.accessToken,
-                authToken: this.appState.authToken,
-                appState: this.appState
-            });
-            return;
-        }
-        
-        // ✅ Consistent localStorage key naming
-        localStorage.setItem(CONFIG.STORAGE_KEYS.AUTH_TOKEN, token);
+        localStorage.setItem(CONFIG.STORAGE_KEYS.AUTH_TOKEN, this.appState.authToken);
         localStorage.setItem(CONFIG.STORAGE_KEYS.USER_EMAIL, this.appState.userEmail);
         localStorage.setItem(CONFIG.STORAGE_KEYS.IS_ADMIN, this.appState.isAdmin.toString());
         localStorage.setItem(CONFIG.STORAGE_KEYS.USER_PROFILE, JSON.stringify(this.appState.userProfile));
-        
-        console.log('localStorage after save:', {
-            authToken: localStorage.getItem(CONFIG.STORAGE_KEYS.AUTH_TOKEN) ? 'saved' : 'missing',
-            userEmail: localStorage.getItem(CONFIG.STORAGE_KEYS.USER_EMAIL),
-            savedTokenValue: localStorage.getItem(CONFIG.STORAGE_KEYS.AUTH_TOKEN) ? localStorage.getItem(CONFIG.STORAGE_KEYS.AUTH_TOKEN).substring(0, 20) + '...' : 'null'
-        });
     }
 
     // Authentication state kontrolü için helper fonksiyon
@@ -650,17 +530,20 @@ class AuthManager {
         
         console.log('Current authentication state:', state);
         
-        const isValid = this.appState.authenticated && 
-                       this.appState.userEmail && 
-                       (this.appState.accessToken || this.appState.authToken);
-        
-        console.log('checkAuthenticationState validation:', {
+        const validation = {
             authenticated: this.appState.authenticated,
             hasUserEmail: !!this.appState.userEmail,
             hasAccessToken: !!this.appState.accessToken,
             hasAuthToken: !!this.appState.authToken,
-            isValid: isValid
-        });
+            isValid: null  // Bu satır problemi gösteriyor
+        };
+        
+        console.log('checkAuthenticationState validation:', validation);
+        
+        // KRITIK DÜZELTME: Boolean değer döndür
+        const isValid = this.appState.authenticated && 
+                       this.appState.userEmail && 
+                       (this.appState.accessToken || this.appState.authToken);
         
         if (!isValid) {
             console.error('Authentication state validation failed:', {
@@ -671,32 +554,85 @@ class AuthManager {
             });
         }
         
-        return isValid;
+        console.log('checkAuthenticationState() result:', isValid, typeof isValid);
+        
+        // KRITIK: Boolean değer return et
+        return isValid;  // true veya false döndür, null değil
     }
 
-    // Debug için comprehensive logging
-    debugAuthState() {
-        console.log('=== FULL AUTH STATE DEBUG ===');
-        console.log('appState:', JSON.stringify(this.appState, null, 2));
-        console.log('localStorage items:', {
-            authenticated: localStorage.getItem('authenticated'),
-            authToken: localStorage.getItem(CONFIG.STORAGE_KEYS.AUTH_TOKEN) ? 'present' : 'missing',
-            userEmail: localStorage.getItem(CONFIG.STORAGE_KEYS.USER_EMAIL),
-            isAdmin: localStorage.getItem(CONFIG.STORAGE_KEYS.IS_ADMIN),
-            userProfile: localStorage.getItem(CONFIG.STORAGE_KEYS.USER_PROFILE) ? 'present' : 'missing'
-        });
-        console.log('checkAuthenticationState():', this.checkAuthenticationState());
-        console.log('=============================');
+    async handleMagicLinkAuth(token) {
+        try {
+            console.log('Magic link authentication başlatılıyor:', token);
+            
+            // Magic link token'ını doğrula
+            const response = await this.api.verifyMagicLink(token);
+            
+            if (response.access_token) {
+                console.log('Magic link doğrulama başarılı:', response);
+                
+                // Authentication state'i güncelle
+                this.appState.authenticated = true;
+                this.appState.userEmail = response.email;
+                this.appState.isAdmin = response.is_admin || false;
+                this.appState.authToken = response.access_token;
+                this.appState.accessToken = response.access_token; // Eksik olan bu!
+                this.appState.userProfile = {
+                    email: response.email,
+                    full_name: response.full_name || '',
+                    department: response.department || '',
+                    profile_completed: response.profile_completed || false
+                };
+                
+                console.log('Magic link authentication state güncellendi:', {
+                    authenticated: this.appState.authenticated,
+                    userEmail: this.appState.userEmail,
+                    profileCompleted: this.appState.userProfile.profile_completed
+                });
+                
+                // Session'ı localStorage'a kaydet
+                this.saveToStorage();
+                
+                // Çıkış flag'ini temizle
+                localStorage.removeItem('user_logged_out');
+                
+                // Loading screen'i gizle
+                ui.hideLoadingScreen();
+                
+                // Profil tamamlama kontrolü
+                if (!response.profile_completed || !response.full_name || !response.department) {
+                    console.log('Profil tamamlanmamış, profil sayfasına yönlendiriliyor');
+                    ui.showProfileCompletion();
+                } else {
+                    console.log('Profil tamamlanmış, ana sayfaya yönlendiriliyor');
+                    ui.showMainApp();
+                    if (this.appState.isAdmin) {
+                        await responseManager.loadAdminStats();
+                    }
+                }
+                
+                return true;
+            }
+            return false;
+        } catch (error) {
+            console.error('Magic link authentication hatası:', error);
+            ui.hideLoadingScreen();
+            this.showErrorMessage('❌ Magic link doğrulama hatası. Lütfen tekrar deneyin.');
+            ui.showLogin();
+            return false;
+        }
     }
 
     async completeProfile() {
         try {
-            console.log('=== PROFILE COMPLETION START ===');
-            this.debugAuthState();
+            console.log('Profil tamamlama başlatılıyor...');
             
-            // Authentication state kontrolü
-            if (!this.checkAuthenticationState()) {
+            // Authentication state kontrolü - KRITIK: Boolean karşılaştırma yap
+            const isAuthenticated = this.checkAuthenticationState();
+            console.log('checkAuthenticationState() result:', isAuthenticated, typeof isAuthenticated);
+            
+            if (!isAuthenticated) {  // Boolean check
                 console.error('AUTHENTICATION FAILED - Cannot complete profile');
+                console.error('Authentication check returned:', isAuthenticated);
                 this.showErrorMessage('❌ Kimlik doğrulama hatası. Lütfen yeniden giriş yapın.');
                 ui.showLogin();
                 return;
@@ -855,6 +791,11 @@ class UIManager {
         this.elements.profileScreen.classList.remove('hidden');
     }
 
+    // Alias for compatibility
+    showProfileUpdate() {
+        this.showProfileCompletion();
+    }
+
     showCodeInput(email) {
         this.hideAllScreens();
         
@@ -989,6 +930,7 @@ class AppState {
         this.isAdmin = false;
         this.userProfile = null;
         this.authToken = null;
+        this.accessToken = null; // Eksik olan bu!
         this.responseHistory = [];
         this.currentResponseId = null;
     }
@@ -996,6 +938,7 @@ class AppState {
     // Load state from localStorage
     loadFromStorage() {
         this.authToken = localStorage.getItem(CONFIG.STORAGE_KEYS.AUTH_TOKEN);
+        this.accessToken = localStorage.getItem(CONFIG.STORAGE_KEYS.AUTH_TOKEN); // accessToken = authToken
         this.userEmail = localStorage.getItem(CONFIG.STORAGE_KEYS.USER_EMAIL);
         this.isAdmin = localStorage.getItem(CONFIG.STORAGE_KEYS.IS_ADMIN) === 'true';
         this.userProfile = JSON.parse(localStorage.getItem(CONFIG.STORAGE_KEYS.USER_PROFILE) || 'null');
@@ -1803,24 +1746,9 @@ document.addEventListener('DOMContentLoaded', async () => {
         
         console.log('Page loaded - state reset to initial state');
         
-        // Check for auto_login parameter veya magic link parametreleri
-        const urlParams = new URLSearchParams(window.location.search);
-        const autoLogin = urlParams.get('auto_login');
-        const sessionId = urlParams.get('session_id');
-        const userEmail = urlParams.get('user_email');
-        const isAdmin = urlParams.get('is_admin');
-        const accessToken = urlParams.get('access_token');
-        const magicToken = urlParams.get('token'); // Magic link token'ı
-        
-        // Magic link ile geliyorsa (token parametresi varsa) çıkış flag'ini kontrol etme
-        const isMagicLink = autoLogin === 'true' || magicToken;
-        
-        if (autoLogin === 'true' || sessionId || userEmail || isAdmin || accessToken || magicToken) {
-            console.log('Auto login or magic link detected, checking backend session...');
-            await authManager.checkBackendSession();
-        } else {
-            await authManager.init();
-        }
+        // Magic link kontrolü checkBackendSession içinde yapılıyor
+        // Burada sadece normal init yap
+        await authManager.init();
         
         // Buton görünürlüğünü başlangıçta güncelle
         responseManager.updateButtonVisibility();
@@ -1834,12 +1762,27 @@ document.addEventListener('DOMContentLoaded', async () => {
 
 // Debug fonksiyonları
 function debugAuthState() {
-    console.log('=== AUTH STATE DEBUG ===');
-    console.log('appState:', authManager.appState);
-    console.log('localStorage auth:', localStorage.getItem(CONFIG.STORAGE_KEYS.AUTH_TOKEN) ? 'present' : 'missing');
-    console.log('localStorage email:', localStorage.getItem(CONFIG.STORAGE_KEYS.USER_EMAIL));
-    console.log('localStorage profile:', localStorage.getItem(CONFIG.STORAGE_KEYS.USER_PROFILE));
-    console.log('========================');
+    console.log('=== FULL AUTH STATE DEBUG ===');
+    console.log('appState type:', typeof authManager.appState);
+    console.log('appState:', JSON.stringify(authManager.appState, null, 2));
+    
+    console.log('Authentication properties:');
+    console.log('- authenticated:', authManager.appState.authenticated, typeof authManager.appState.authenticated);
+    console.log('- userEmail:', authManager.appState.userEmail, typeof authManager.appState.userEmail);
+    console.log('- accessToken:', authManager.appState.accessToken ? 'present' : 'missing', typeof authManager.appState.accessToken);
+    console.log('- authToken:', authManager.appState.authToken ? 'present' : 'missing', typeof authManager.appState.authToken);
+    
+    console.log('localStorage items:', {
+        authenticated: localStorage.getItem('authenticated'),
+        accessToken: localStorage.getItem('accessToken') ? 'present' : 'missing',
+        authToken: localStorage.getItem('authToken') ? 'present' : 'missing',
+        userEmail: localStorage.getItem('userEmail'),
+        userProfile: localStorage.getItem('userProfile') ? 'present' : 'missing'
+    });
+    
+    const authResult = authManager.checkAuthenticationState();
+    console.log('checkAuthenticationState() result:', authResult, typeof authResult);
+    console.log('=============================');
 }
 
 // Debug için son request detayları

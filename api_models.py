@@ -47,17 +47,11 @@ class UserProfile(BaseModel):
     last_login: Optional[datetime] = None
     profile_completed: bool = False
 
-class MagicTokenRequest(BaseModel):
-    token: str
-
 class ProfileCompletionRequest(BaseModel):
     full_name: str
     department: str
     email: str
 
-# GELİŞTİRME MODU: Direkt email ile giriş
-class DevLoginRequest(BaseModel):
-    email: EmailStr
 
 # Request Models
 class RequestCreate(BaseModel):

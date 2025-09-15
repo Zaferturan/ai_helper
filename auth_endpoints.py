@@ -1,4 +1,5 @@
 from fastapi import APIRouter, Depends, HTTPException, Request, Response, status
+from fastapi.responses import RedirectResponse
 from fastapi.security import HTTPBearer
 from sqlalchemy.orm import Session
 from typing import Optional
@@ -21,11 +22,9 @@ from api_models import (
     TokenConsumeResponse,
     UserProfile,
     ProfileCompletionRequest,
-    MagicTokenRequest,
     AdminStats,
     AdminUsersResponse,
     UserStats,
-    DevLoginRequest  # GELİŞTİRME MODU
 )
 from config import PRODUCTION_URL, FRONTEND_URL
 
@@ -225,6 +224,158 @@ async def consume_login_token(
             detail="İşlem tamamlanamadı. Lütfen tekrar dene"
         )
 
+@auth_router.get("/magic-link")
+async def magic_link_auth(
+    token: str,
+    db: Session = Depends(get_db),
+    client_request: Request = None
+):
+    """
+    Magic link ile giriş yap (GET method)
+    Token'ı doğrula ve frontend'e yönlendir
+    """
+    
+    try:
+        # Frontend'den gelen ham token'ı hash'le
+        token_hash = hashlib.sha256(token.encode()).hexdigest()
+        
+        # Find the login token
+        login_token = db.query(LoginToken).filter(
+            LoginToken.token_hash == token_hash,
+            LoginToken.expires_at > datetime.utcnow(),
+            LoginToken.used_at.is_(None)
+        ).first()
+        
+        if not login_token:
+            # Token bulunamadı, süresi dolmuş veya kullanılmış
+            logger.error(f"Magic link token not found or expired: {token}")
+            # Frontend'e error parametresi ile yönlendir
+            return RedirectResponse(
+                url=f"https://yardimci.niluferyapayzeka.tr/?error=invalid_token",
+                status_code=302
+            )
+        
+        # Mark token as used
+        login_token.used_at = datetime.utcnow()
+        db.commit()
+        
+        # Get user
+        user = db.query(User).filter(User.email == login_token.email).first()
+        if not user:
+            logger.error(f"User not found for email: {login_token.email}")
+            return RedirectResponse(
+                url=f"https://yardimci.niluferyapayzeka.tr/?error=user_not_found",
+                status_code=302
+            )
+        
+        # Update last login
+        user.last_login = datetime.utcnow()
+        db.commit()
+        
+        # Log successful login
+        login_attempt = LoginAttempt(
+            user_id=user.id,
+            email=user.email,
+            ip_address=get_client_ip(client_request),
+            success=True,
+            method="magic_link"
+        )
+        db.add(login_attempt)
+        db.commit()
+        
+        logger.info(f"User {user.email} logged in successfully via magic link from IP {get_client_ip(client_request)}")
+        
+        # Frontend'e token ve auto_login parametreleri ile yönlendir
+        return RedirectResponse(
+            url=f"https://yardimci.niluferyapayzeka.tr/?auto_login=true&token={token}",
+            status_code=302
+        )
+        
+    except Exception as e:
+        logger.error(f"Error processing magic link: {str(e)}")
+        return RedirectResponse(
+            url=f"https://yardimci.niluferyapayzeka.tr/?error=server_error",
+            status_code=302
+        )
+
+@auth_router.post("/verify-magic-link")
+async def verify_magic_link(
+    request: TokenConsumeRequest,
+    db: Session = Depends(get_db),
+    client_request: Request = None
+):
+    """
+    Magic link token'ını doğrula (POST method)
+    Frontend için JSON response döndür
+    """
+    
+    try:
+        # Frontend'den gelen ham token'ı hash'le
+        token_hash = hashlib.sha256(request.code.encode()).hexdigest()
+        
+        # Find the login token (Magic link için used_at kontrolü yok)
+        login_token = db.query(LoginToken).filter(
+            LoginToken.token_hash == token_hash,
+            LoginToken.expires_at > datetime.utcnow()
+        ).first()
+        
+        if not login_token:
+            # Token bulunamadı, süresi dolmuş veya kullanılmış
+            logger.error(f"Magic link token not found or expired: {request.code}")
+            raise HTTPException(
+                status_code=400,
+                detail="Bağlantının süresi dolmuş veya kullanılmış"
+            )
+        
+        # Mark token as used (Magic link için tekrar kullanılabilir)
+        # login_token.used_at = datetime.utcnow()
+        # db.commit()
+        
+        # Get user
+        user = db.query(User).filter(User.email == login_token.email).first()
+        if not user:
+            logger.error(f"User not found for email: {login_token.email}")
+            raise HTTPException(status_code=404, detail="Kullanıcı bulunamadı")
+        
+        # Update last login
+        user.last_login = datetime.utcnow()
+        db.commit()
+        
+        # Create access token
+        access_token = auth_service.create_access_token(
+            data={"sub": str(user.id), "email": user.email}
+        )
+        
+        # Log successful login
+        login_attempt = LoginAttempt(
+            user_id=user.id,
+            email=user.email,
+            ip_address=get_client_ip(client_request),
+            success=True,
+            method="magic_link"
+        )
+        db.add(login_attempt)
+        db.commit()
+        
+        logger.info(f"User {user.email} logged in successfully via magic link from IP {get_client_ip(client_request)}")
+        
+        # Return JSON response with token
+        return {
+            "access_token": access_token,
+            "email": user.email,
+            "full_name": user.full_name,
+            "department": user.department,
+            "profile_completed": user.profile_completed,
+            "is_admin": user.is_admin
+        }
+        
+    except Exception as e:
+        logger.error(f"Error verifying magic link: {str(e)}")
+        raise HTTPException(
+            status_code=500,
+            detail="İşlem tamamlanamadı. Lütfen tekrar dene"
+        )
+
 @auth_router.get("/profile", response_model=UserProfile)
 async def get_user_profile(current_user: User = Depends(get_current_user)):
     """
@@ -341,78 +492,6 @@ async def verify_login_code(
             detail="İşlem tamamlanamadı. Lütfen tekrar dene"
         )
 
-
-@auth_router.post("/verify-magic-token")
-async def verify_magic_token(
-    request: MagicTokenRequest,
-    db: Session = Depends(get_db)
-):
-    """
-    Verify magic link token and return user info
-    """
-    try:
-        # Token'ı hash'le
-        token_hash = hashlib.sha256(request.token.encode()).hexdigest()
-        
-        # Token'ı veritabanında bul
-        login_token = db.query(LoginToken).filter(
-            LoginToken.token_hash == token_hash,
-            LoginToken.expires_at > datetime.utcnow(),
-            LoginToken.used_at.is_(None)
-        ).first()
-        
-        if not login_token:
-            raise HTTPException(
-                status_code=400,
-                detail="Geçersiz veya süresi dolmuş token"
-            )
-        
-        # Token'ı kullanıldı olarak işaretle
-        login_token.used_at = datetime.utcnow()
-        
-        # Kullanıcıyı bul
-        user = db.query(User).filter(User.email == login_token.email).first()
-        if not user:
-            raise HTTPException(
-                status_code=404,
-                detail="Kullanıcı bulunamadı"
-            )
-        
-        # JWT token oluştur
-        access_token = auth_service.create_access_token(
-            data={"sub": str(user.id), "email": user.email}
-        )
-        
-        # Login attempt kaydet
-        login_attempt = LoginAttempt(
-            user_id=user.id,
-            email=user.email,
-            ip_address="127.0.0.1",  # Magic link için
-            success=True,
-            method="magic_link"
-        )
-        db.add(login_attempt)
-        db.commit()
-        
-        return {
-            "access_token": access_token,
-            "token_type": "bearer",
-            "user_id": user.id,
-            "email": user.email,
-            "full_name": user.full_name,
-            "department": user.department,
-            "profile_completed": user.profile_completed,
-            "is_admin": user.is_admin
-        }
-        
-    except HTTPException:
-        raise
-    except Exception as e:
-        logger.error(f"Error in verify_magic_token: {str(e)}")
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Token doğrulama hatası"
-        )
 
 @auth_router.post("/complete-profile")
 async def complete_user_profile(
@@ -652,79 +731,7 @@ async def get_admin_users(
             detail="Kullanıcı bilgileri alınırken hata oluştu"
         )
 
-# GELİŞTİRME MODU: Direkt email ile giriş endpoint'i
-@auth_router.post("/dev-login", response_model=LoginResponse)
-async def dev_login(
-    request: DevLoginRequest,
-    db: Session = Depends(get_db)
-):
-    """
-    GELİŞTİRME MODU: Direkt email ile giriş (JWT validation bypass)
-    """
-    try:
-        # Email'e göre user bul
-        user = db.query(User).filter(User.email == request.email).first()
-        if not user:
-            # Yeni kullanıcı oluştur
-            user = User(
-                email=request.email,
-                full_name="",
-                department="",
-                is_active=True,
-                profile_completed=False
-            )
-            db.add(user)
-            db.commit()
-            db.refresh(user)
-        
-        # GELİŞTİRME MODU: Token yerine email döndür
-        return LoginResponse(
-            access_token=user.email,  # Token yerine email
-            token_type="dev",
-            user_id=user.id,
-            email=user.email,
-            full_name=user.full_name
-        )
-        
-    except Exception as e:
-        logger.error(f"Error in dev_login: {str(e)}")
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Giriş yapılırken hata oluştu"
-        )
 
-@auth_router.post("/dev-token", response_model=CodeVerifyResponse)
-async def get_dev_token(
-    db: Session = Depends(get_db)
-):
-    """
-    Geliştirme için süresi dolmayan token al
-    """
-    # Kullanıcıyı bul - enginakyildiz için
-    user = db.query(User).filter(User.email == "enginakyildiz@nilufer.bel.tr").first()
-    if not user:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Kullanıcı bulunamadı"
-        )
-    
-    # Süresi dolmayan token oluştur (1 yıl)
-    token_data = {
-        "sub": str(user.id),
-        "email": user.email,
-        "exp": datetime.utcnow() + timedelta(days=365)
-    }
-    
-    token = auth_service.create_access_token(token_data)
-    
-    return CodeVerifyResponse(
-        access_token=token,
-        token_type="bearer",
-        user_id=user.id,
-        email=user.email,
-        full_name=user.full_name,
-        profile_completed=user.profile_completed
-    ) 
 
 @auth_router.post("/verify-token")
 async def verify_token(request: dict, db: Session = Depends(get_db)):
@@ -773,64 +780,6 @@ async def verify_token(request: dict, db: Session = Depends(get_db)):
     except Exception as e:
         logger.error(f"Token verification error: {str(e)}")
         return {"success": False, "message": f"Token doğrulama hatası: {str(e)}"}
-
-@auth_router.get("/verify-magic-link")
-async def verify_magic_link(
-    token: str,
-    db: Session = Depends(get_db)
-):
-    """
-    Magic link token'ını doğrula ve session bilgilerini döndür
-    """
-    try:
-        # Token hash'ini oluştur
-        token_hash = hashlib.sha256(token.encode()).hexdigest()
-        
-        # Token'ı bul
-        login_token = db.query(LoginToken).filter(
-            LoginToken.token_hash == token_hash,
-            LoginToken.used_at.is_(None),  # Kullanılmamış
-            LoginToken.expires_at > datetime.utcnow()
-        ).first()
-        
-        if not login_token:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Geçersiz veya süresi dolmuş token"
-            )
-        
-        # Kullanıcıyı bul
-        user = db.query(User).filter(User.email == login_token.email).first()
-        if not user:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail="Kullanıcı bulunamadı"
-            )
-        
-        # Token'ı kullanılmış olarak işaretle
-        login_token.used_at = datetime.utcnow()
-        
-        # JWT token oluştur
-        jwt_token = auth_service.create_access_token({"sub": str(user.id)})
-        
-        # Session bilgilerini döndür
-        return {
-            "email": user.email,
-            "jwt_token": jwt_token,
-            "full_name": user.full_name or "",
-            "department": user.department or "",
-            "created_at": datetime.utcnow().isoformat(),
-            "is_admin": user.is_admin
-        }
-        
-    except HTTPException:
-        raise
-    except Exception as e:
-        logger.error(f"Magic link verification error: {str(e)}")
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Magic link doğrulama hatası: {str(e)}"
-        )
 
 @auth_router.post("/save-session")
 async def save_session(
@@ -973,6 +922,12 @@ async def get_session(session_id: str):
             session_data['full_name'] = user.full_name
             session_data['department'] = user.department
             session_data['profile_completed'] = user.profile_completed
+            
+            # JWT token oluştur
+            access_token = auth_service.create_access_token(
+                data={"sub": str(user.id), "email": user.email}
+            )
+            session_data['access_token'] = access_token
             
             print(f"DEBUG: Session returned - email: {user_email}, admin: {user.is_admin}")
         
