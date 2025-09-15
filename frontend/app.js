@@ -596,6 +596,11 @@ class AuthManager {
     }
 
     saveToStorage() {
+        console.log('Saving to storage:', {
+            authToken: this.appState.authToken,
+            accessToken: this.appState.accessToken,
+            userEmail: this.appState.userEmail
+        });
         localStorage.setItem(CONFIG.STORAGE_KEYS.AUTH_TOKEN, this.appState.authToken || this.appState.accessToken);
         localStorage.setItem(CONFIG.STORAGE_KEYS.USER_EMAIL, this.appState.userEmail);
         localStorage.setItem(CONFIG.STORAGE_KEYS.IS_ADMIN, this.appState.isAdmin.toString());
@@ -607,7 +612,8 @@ class AuthManager {
         console.log('Current authentication state:', {
             authenticated: this.appState.authenticated,
             userEmail: this.appState.userEmail,
-            accessToken: this.appState.authToken ? 'present' : 'missing',
+            authToken: this.appState.authToken ? 'present' : 'missing',
+            accessToken: this.appState.accessToken ? 'present' : 'missing',
             profileCompleted: this.appState.userProfile?.profile_completed
         });
         
