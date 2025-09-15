@@ -295,28 +295,11 @@ class AuthManager {
                     }
                 }
                 
-                // Fallback: GELİŞTİRME MODU (token yoksa)
-                console.log('Magic link mode: bypassing authentication check');
-                this.appState.authenticated = true;
-                this.appState.userEmail = 'enginakyildiz@nilufer.bel.tr';
-                this.appState.isAdmin = false;
-                this.appState.accessToken = 'dev_token_' + Date.now(); // ✅ Dev token
-                this.appState.authToken = 'dev_token_' + Date.now(); // ✅ Dev token
-                this.appState.userProfile = {
-                    email: 'enginakyildiz@nilufer.bel.tr',
-                    full_name: '',
-                    department: '',
-                    profile_completed: false
-                };
-                
-                // Local storage'a kaydet
-                this.saveToStorage();
-                
-                // Profil tamamlanmamışsa profil sayfasını göster
-                console.log('Magic link: showing profile page');
+                // Magic link verification başarısız - login sayfasına yönlendir
+                console.log('Magic link verification failed, redirecting to login');
                 ui.hideLoadingScreen();
-                ui.showProfileCompletion();
-                return true;
+                ui.showLogin();
+                return false;
             }
             
             // Önce session'ı kontrol et
