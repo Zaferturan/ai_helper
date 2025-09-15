@@ -379,12 +379,18 @@ class AuthManager {
                     codeScreen.classList.add('hidden');
                 }
                 
-                // Profil tamamlama kontrolü
+                // Profil tamamlama kontrolü - DEBUG LOGLARI
+                console.log('=== PROFIL KONTROL DEBUG ===');
+                console.log('response.profile_completed:', response.profile_completed, typeof response.profile_completed);
+                console.log('response.full_name:', response.full_name);
+                console.log('response.department:', response.department);
+                console.log('Kontrol sonucu:', !response.profile_completed || !response.full_name || !response.department);
+                
                 if (!response.profile_completed || !response.full_name || !response.department) {
-                    console.log('Profil tamamlanmamış, profil sayfasına yönlendiriliyor');
+                    console.log('❌ Profil tamamlanmamış, profil sayfasına yönlendiriliyor');
                     ui.showProfileCompletion();
                 } else {
-                    console.log('Profil tamamlanmış, ana sayfaya yönlendiriliyor');
+                    console.log('✅ Profil tamamlanmış, ana sayfaya yönlendiriliyor');
                     // Kullanıcı profil bilgilerini güncelle
                     await this.updateUserProfile();
                     ui.showMainApp();

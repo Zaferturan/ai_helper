@@ -239,15 +239,14 @@ async def magic_link_auth(
         # Frontend'den gelen ham token'ı hash'le
         token_hash = hashlib.sha256(token.encode()).hexdigest()
         
-        # Find the login token
+        # Find the login token - sadece süre kontrolü yap, used_at kontrolü yapma
         login_token = db.query(LoginToken).filter(
             LoginToken.token_hash == token_hash,
-            LoginToken.expires_at > datetime.utcnow(),
-            LoginToken.used_at.is_(None)
+            LoginToken.expires_at > datetime.utcnow()
         ).first()
         
         if not login_token:
-            # Token bulunamadı, süresi dolmuş veya kullanılmış
+            # Token bulunamadı veya süresi dolmuş
             logger.error(f"Magic link token not found or expired: {token}")
             # Frontend'e error parametresi ile yönlendir
             return RedirectResponse(
@@ -255,9 +254,9 @@ async def magic_link_auth(
                 status_code=302
             )
         
-        # Mark token as used
-        login_token.used_at = datetime.utcnow()
-        db.commit()
+        # Token'ı used_at ile işaretleme - 5 saat boyunca tekrar kullanılabilir
+        # login_token.used_at = datetime.utcnow()
+        # db.commit()
         
         # Get user
         user = db.query(User).filter(User.email == login_token.email).first()
@@ -473,12 +472,22 @@ async def verify_login_code(
         
         logger.info(f"User {user.email} logged in successfully via code from IP {get_client_ip(client_request)}")
         
+        # DEBUG: Profil durumunu logla
+        logger.info(f"=== PROFILE DEBUG ===")
+        logger.info(f"User ID: {user.id}")
+        logger.info(f"Email: {user.email}")
+        logger.info(f"Full Name: {user.full_name}")
+        logger.info(f"Department: {user.department}")
+        logger.info(f"Profile Completed: {user.profile_completed}")
+        logger.info(f"Profile Completed Type: {type(user.profile_completed)}")
+        
         return CodeVerifyResponse(
             access_token=access_token,
             token_type="bearer",
             user_id=user.id,
             email=user.email,
             full_name=user.full_name,
+            department=user.department,
             profile_completed=user.profile_completed,
             is_admin=user.is_admin
         )
