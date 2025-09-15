@@ -382,5 +382,53 @@
     "full_name": "",
     "department": "",
     "profile_completed": false
+  },
+  "1402cd6e09ea": {
+    "user_email": "enginakyildiz@nilufer.bel.tr",
+    "access_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIyIiwiZW1haWwiOiJlbmdpbmFreWlsZGl6QG5pbHVmZXIuYmVsLnRyIiwiZXhwIjoxNzU3OTY0ODAyLjUyMDQ1NX0.NZd2TTDtBmNDtPE9tQSRa4murGFOWpN-WDpDT1NL9Ns",
+    "login_time": 1757957602.5207858,
+    "user_agent": "MagicLink",
+    "ip_address": "127.0.0.1",
+    "last_activity": 1757957602.5207858,
+    "is_admin": false,
+    "full_name": "",
+    "department": "",
+    "profile_completed": false
+  },
+  "7abe1ff44c82": {
+    "user_email": "enginakyildiz@nilufer.bel.tr",
+    "access_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIyIiwiZW1haWwiOiJlbmdpbmFreWlsZGl6QG5pbHVmZXIuYmVsLnRyIiwiZXhwIjoxNzU3OTY0ODI2LjUxMDk0N30.3tE8eOeD10gUaV_Ro1tlhPce1W9fnTd55pcMlBwExqE",
+    "login_time": 1757957626.5112,
+    "user_agent": "MagicLink",
+    "ip_address": "127.0.0.1",
+    "last_activity": 1757957626.5112,
+    "is_admin": false,
+    "full_name": "",
+    "department": "",
+    "profile_completed": false
+  },
+  "41f30da6afb7": {
+    "user_email": "enginakyildiz@nilufer.bel.tr",
+    "access_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIyIiwiZW1haWwiOiJlbmdpbmFreWlsZGl6QG5pbHVmZXIuYmVsLnRyIiwiZXhwIjoxNzU3OTY0ODc1LjA0ODEyNn0.e1QkioFez2VDCAmoepkB2azLr2EyTfXY2siTs6yM96g",
+    "login_time": 1757957675.0483768,
+    "user_agent": "MagicLink",
+    "ip_address": "127.0.0.1",
+    "last_activity": 1757957675.0483768,
+    "is_admin": false,
+    "full_name": "",
+    "department": "",
+    "profile_completed": false
+  },
+  "04339e3df2df": {
+    "user_email": "enginakyildiz@nilufer.bel.tr",
+    "access_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIyIiwiZW1haWwiOiJlbmdpbmFreWlsZGl6QG5pbHVmZXIuYmVsLnRyIiwiZXhwIjoxNzU3OTY0OTA1LjM0NjI2MX0.Zlt5uituIKBp5N1Gk-3lrXqbK1-mdqbZzkf7qmiS68g",
+    "login_time": 1757957705.34651,
+    "user_agent": "MagicLink",
+    "ip_address": "127.0.0.1",
+    "last_activity": 1757957705.34651,
+    "is_admin": false,
+    "full_name": "",
+    "department": "",
+    "profile_completed": false
   }
 }
