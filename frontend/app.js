@@ -238,7 +238,7 @@ class AuthManager {
                 window.history.replaceState({}, document.title, url.pathname + url.search);
                 
                 // Magic link token'ını backend'e gönder ve kullanıcı bilgilerini al
-                const token = urlParams.get('token');
+                const token = urlParams.get('token') || urlParams.get('auth_token');
                 if (token) {
                     console.log('Magic link token found, verifying with backend...');
                     try {
@@ -300,6 +300,8 @@ class AuthManager {
                 this.appState.authenticated = true;
                 this.appState.userEmail = 'enginakyildiz@nilufer.bel.tr';
                 this.appState.isAdmin = false;
+                this.appState.accessToken = 'dev_token_' + Date.now(); // ✅ Dev token
+                this.appState.authToken = 'dev_token_' + Date.now(); // ✅ Dev token
                 this.appState.userProfile = {
                     email: 'enginakyildiz@nilufer.bel.tr',
                     full_name: '',

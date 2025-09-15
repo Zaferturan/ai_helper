@@ -514,5 +514,41 @@
     "full_name": "",
     "department": "",
     "profile_completed": false
+  },
+  "3c2de3be5ec5": {
+    "user_email": "enginakyildiz@nilufer.bel.tr",
+    "access_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIyIiwiZW1haWwiOiJlbmdpbmFreWlsZGl6QG5pbHVmZXIuYmVsLnRyIiwiZXhwIjoxNzU3OTY2NTUxLjIwMzQ4Mn0.4MEkrHyjZONEhbzxY5cqc5pP1_DtS57rN_RhmJCeEs4",
+    "login_time": 1757959351.2038825,
+    "user_agent": "MagicLink",
+    "ip_address": "127.0.0.1",
+    "last_activity": 1757959351.2038825,
+    "is_admin": false,
+    "full_name": "",
+    "department": "",
+    "profile_completed": false
+  },
+  "41f04df6037b": {
+    "user_email": "enginakyildiz@nilufer.bel.tr",
+    "access_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIyIiwiZW1haWwiOiJlbmdpbmFreWlsZGl6QG5pbHVmZXIuYmVsLnRyIiwiZXhwIjoxNzU3OTY2NTkwLjMyODEwMX0.a2lKLBFIynHULyDskTD3-ZXdDQ0jWYsMdP2nMeNEUEQ",
+    "login_time": 1757959390.3284047,
+    "user_agent": "MagicLink",
+    "ip_address": "127.0.0.1",
+    "last_activity": 1757959390.3284047,
+    "is_admin": false,
+    "full_name": "",
+    "department": "",
+    "profile_completed": false
+  },
+  "b8e7b559e0b3": {
+    "user_email": "enginakyildiz@nilufer.bel.tr",
+    "access_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIyIiwiZW1haWwiOiJlbmdpbmFreWlsZGl6QG5pbHVmZXIuYmVsLnRyIiwiZXhwIjoxNzU3OTY2NzAzLjgxNDUzNX0.kuVMogSyowoJbCeIm2nwSGK2xS9Ne1rFvQGu8B_s66k",
+    "login_time": 1757959503.8148754,
+    "user_agent": "MagicLink",
+    "ip_address": "127.0.0.1",
+    "last_activity": 1757959503.8148756,
+    "is_admin": false,
+    "full_name": "",
+    "department": "",
+    "profile_completed": false
   }
 }
