@@ -502,5 +502,17 @@
     "full_name": "",
     "department": "",
     "profile_completed": false
+  },
+  "0b3133d8800a": {
+    "user_email": "enginakyildiz@nilufer.bel.tr",
+    "access_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIyIiwiZW1haWwiOiJlbmdpbmFreWlsZGl6QG5pbHVmZXIuYmVsLnRyIiwiZXhwIjoxNzU3OTY2MjA2LjczNzI2Mn0.z4khKFcH36LNgKhlX0Iz1ep74niJwWRxu_OyU0GUhXw",
+    "login_time": 1757959006.7376502,
+    "user_agent": "MagicLink",
+    "ip_address": "127.0.0.1",
+    "last_activity": 1757959006.7376504,
+    "is_admin": false,
+    "full_name": "",
+    "department": "",
+    "profile_completed": false
   }
 }
