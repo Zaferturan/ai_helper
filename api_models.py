@@ -50,6 +50,7 @@ class UserProfile(BaseModel):
 class ProfileCompletionRequest(BaseModel):
     full_name: str
     department: str
+    email: str
 
 # GELİŞTİRME MODU: Direkt email ile giriş
 class DevLoginRequest(BaseModel):
