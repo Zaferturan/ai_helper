@@ -37,6 +37,15 @@ class APIClient {
             }
         };
 
+        // Debug logging for token
+        const hasToken = defaultOptions.headers['Authorization'] || options.headers?.['Authorization'];
+        console.log('API Request:', {
+            method: options.method || 'GET',
+            url,
+            hasToken: !!hasToken,
+            tokenLength: hasToken ? hasToken.length : 0
+        });
+
         const response = await fetch(url, { ...defaultOptions, ...options });
         
         if (!response.ok) {
@@ -81,6 +90,12 @@ class APIClient {
 
     async completeProfile(profileData) {
         const token = localStorage.getItem(CONFIG.STORAGE_KEYS.AUTH_TOKEN);
+        console.log('APIClient.completeProfile called:', {
+            hasToken: !!token,
+            tokenLength: token ? token.length : 0,
+            profileData
+        });
+        
         return this.request('/complete-profile', {
             method: 'POST',
             headers: {
@@ -231,17 +246,24 @@ class AuthManager {
                         if (response && response.access_token) {
                             console.log('Magic link verification successful:', response);
                             
-                            // Authentication state'i güncelle
+                            // Authentication state'i güncelle - Field name consistency
                             this.appState.authenticated = true;
                             this.appState.userEmail = response.email;
                             this.appState.isAdmin = response.is_admin || false;
-                            this.appState.authToken = response.access_token;
+                            this.appState.accessToken = response.access_token; // ✅ accessToken field
                             this.appState.userProfile = {
                                 email: response.email,
                                 full_name: response.full_name || '',
                                 department: response.department || '',
                                 profile_completed: response.profile_completed || false
                             };
+                            
+                            console.log('Authentication state set:', {
+                                authenticated: this.appState.authenticated,
+                                accessToken: this.appState.accessToken ? 'present' : 'missing',
+                                userEmail: this.appState.userEmail,
+                                profileCompleted: this.appState.userProfile.profile_completed
+                            });
                             
                             // Local storage'a kaydet
                             this.saveToStorage();
@@ -596,12 +618,16 @@ class AuthManager {
     }
 
     saveToStorage() {
+        const token = this.appState.accessToken || this.appState.authToken;
         console.log('Saving to storage:', {
-            authToken: this.appState.authToken,
-            accessToken: this.appState.accessToken,
+            accessToken: this.appState.accessToken ? 'present' : 'missing',
+            authToken: this.appState.authToken ? 'present' : 'missing',
+            finalToken: token ? 'present' : 'missing',
             userEmail: this.appState.userEmail
         });
-        localStorage.setItem(CONFIG.STORAGE_KEYS.AUTH_TOKEN, this.appState.authToken || this.appState.accessToken);
+        
+        // ✅ Consistent localStorage key naming
+        localStorage.setItem(CONFIG.STORAGE_KEYS.AUTH_TOKEN, token);
         localStorage.setItem(CONFIG.STORAGE_KEYS.USER_EMAIL, this.appState.userEmail);
         localStorage.setItem(CONFIG.STORAGE_KEYS.IS_ADMIN, this.appState.isAdmin.toString());
         localStorage.setItem(CONFIG.STORAGE_KEYS.USER_PROFILE, JSON.stringify(this.appState.userProfile));
@@ -609,24 +635,55 @@ class AuthManager {
 
     // Authentication state kontrolü için helper fonksiyon
     checkAuthenticationState() {
-        console.log('Current authentication state:', {
+        const state = {
             authenticated: this.appState.authenticated,
             userEmail: this.appState.userEmail,
-            authToken: this.appState.authToken ? 'present' : 'missing',
             accessToken: this.appState.accessToken ? 'present' : 'missing',
+            authToken: this.appState.authToken ? 'present' : 'missing',
             profileCompleted: this.appState.userProfile?.profile_completed
-        });
+        };
         
-        return this.appState.authenticated && this.appState.userEmail && (this.appState.authToken || this.appState.accessToken);
+        console.log('Current authentication state:', state);
+        
+        const isValid = this.appState.authenticated && 
+                       this.appState.userEmail && 
+                       (this.appState.accessToken || this.appState.authToken);
+        
+        if (!isValid) {
+            console.error('Authentication state validation failed:', {
+                authenticated: this.appState.authenticated,
+                hasUserEmail: !!this.appState.userEmail,
+                hasAccessToken: !!this.appState.accessToken,
+                hasAuthToken: !!this.appState.authToken
+            });
+        }
+        
+        return isValid;
+    }
+
+    // Debug için comprehensive logging
+    debugAuthState() {
+        console.log('=== FULL AUTH STATE DEBUG ===');
+        console.log('appState:', JSON.stringify(this.appState, null, 2));
+        console.log('localStorage items:', {
+            authenticated: localStorage.getItem('authenticated'),
+            authToken: localStorage.getItem(CONFIG.STORAGE_KEYS.AUTH_TOKEN) ? 'present' : 'missing',
+            userEmail: localStorage.getItem(CONFIG.STORAGE_KEYS.USER_EMAIL),
+            isAdmin: localStorage.getItem(CONFIG.STORAGE_KEYS.IS_ADMIN),
+            userProfile: localStorage.getItem(CONFIG.STORAGE_KEYS.USER_PROFILE) ? 'present' : 'missing'
+        });
+        console.log('checkAuthenticationState():', this.checkAuthenticationState());
+        console.log('=============================');
     }
 
     async completeProfile() {
         try {
-            console.log('Profil tamamlama başlatılıyor...');
+            console.log('=== PROFILE COMPLETION START ===');
+            this.debugAuthState();
             
             // Authentication state kontrolü
             if (!this.checkAuthenticationState()) {
-                console.error('Authentication state eksik, profil tamamlanamıyor');
+                console.error('AUTHENTICATION FAILED - Cannot complete profile');
                 this.showErrorMessage('❌ Kimlik doğrulama hatası. Lütfen yeniden giriş yapın.');
                 ui.showLogin();
                 return;
