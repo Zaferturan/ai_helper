@@ -596,7 +596,7 @@ class AuthManager {
     }
 
     saveToStorage() {
-        localStorage.setItem(CONFIG.STORAGE_KEYS.AUTH_TOKEN, this.appState.authToken);
+        localStorage.setItem(CONFIG.STORAGE_KEYS.AUTH_TOKEN, this.appState.authToken || this.appState.accessToken);
         localStorage.setItem(CONFIG.STORAGE_KEYS.USER_EMAIL, this.appState.userEmail);
         localStorage.setItem(CONFIG.STORAGE_KEYS.IS_ADMIN, this.appState.isAdmin.toString());
         localStorage.setItem(CONFIG.STORAGE_KEYS.USER_PROFILE, JSON.stringify(this.appState.userProfile));
@@ -611,7 +611,7 @@ class AuthManager {
             profileCompleted: this.appState.userProfile?.profile_completed
         });
         
-        return this.appState.authenticated && this.appState.userEmail && this.appState.authToken;
+        return this.appState.authenticated && this.appState.userEmail && (this.appState.authToken || this.appState.accessToken);
     }
 
     async completeProfile() {
