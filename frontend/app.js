@@ -288,7 +288,7 @@ class AuthManager {
                 // Profil tamamlanmamışsa profil sayfasını göster
                 console.log('Magic link: showing profile page');
                 ui.hideLoadingScreen();
-                ui.showProfileUpdate();
+                ui.showProfileCompletion();
                 return true;
             }
             
