@@ -351,15 +351,28 @@ async def complete_user_profile(
     Complete user profile with full name and department
     """
     try:
+        # Token'dan email'i al
+        email = current_user.email
+        
+        # Kullanıcıyı email ile bul
+        user = db.query(User).filter(User.email == email).first()
+        if not user:
+            raise HTTPException(
+                status_code=404,
+                detail="Kullanıcı bulunamadı"
+            )
+        
         # Update user profile
-        current_user.full_name = profile_data.full_name
-        current_user.department = profile_data.department
-        current_user.profile_completed = True
+        user.full_name = profile_data.full_name
+        user.department = profile_data.department
+        user.profile_completed = True
         
         db.commit()
         
         return {"message": "Profil başarıyla tamamlandı"}
         
+    except HTTPException:
+        raise
     except Exception as e:
         logger.error(f"Error in complete_user_profile: {str(e)}")
         raise HTTPException(

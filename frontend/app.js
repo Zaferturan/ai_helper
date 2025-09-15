@@ -69,6 +69,18 @@ class APIClient {
         });
     }
 
+    async completeProfile(profileData) {
+        const token = localStorage.getItem(CONFIG.STORAGE_KEYS.AUTH_TOKEN);
+        return this.request('/complete-profile', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify(profileData)
+        });
+    }
+
     async updateProfile(profileData) {
         const token = localStorage.getItem(CONFIG.STORAGE_KEYS.AUTH_TOKEN);
         return this.request('/profile', {
@@ -198,6 +210,27 @@ class AuthManager {
                 const url = new URL(window.location);
                 url.searchParams.delete('auto_login');
                 window.history.replaceState({}, document.title, url.pathname + url.search);
+                
+                // GELİŞTİRME MODU: Magic link ile gelen kullanıcı için sabit bilgiler
+                console.log('Magic link mode: bypassing authentication check');
+                this.appState.authenticated = true;
+                this.appState.userEmail = 'enginakyildiz@nilufer.bel.tr';
+                this.appState.isAdmin = false;
+                this.appState.userProfile = {
+                    email: 'enginakyildiz@nilufer.bel.tr',
+                    full_name: '',
+                    department: '',
+                    profile_completed: false
+                };
+                
+                // Local storage'a kaydet
+                this.saveToStorage();
+                
+                // Profil tamamlanmamışsa profil sayfasını göster
+                console.log('Magic link: showing profile page');
+                ui.hideLoadingScreen();
+                ui.showProfileUpdate();
+                return true;
             }
             
             // Önce session'ı kontrol et
@@ -331,21 +364,39 @@ class AuthManager {
             // Spinner'ı göster
             this.showSpinner('verify');
             
+            console.log('Kod doğrulama başlatılıyor:', {
+                email: email,
+                code: code
+            });
+            
             const response = await this.api.verifyCode(email, code);
             
             if (response.access_token) {
+                console.log('Kod doğrulama başarılı:', response);
+                
+                // KRITIK: Authentication state'i tam olarak güncelle
                 this.appState.authenticated = true;
-                this.appState.userEmail = email;
+                this.appState.userEmail = response.email || email;
                 this.appState.isAdmin = response.is_admin || false;
                 this.appState.authToken = response.access_token;
+                this.appState.userProfile = {
+                    email: response.email || email,
+                    full_name: response.full_name || '',
+                    department: response.department || '',
+                    profile_completed: response.profile_completed || false
+                };
                 
+                console.log('Authentication state güncellendi:', {
+                    authenticated: this.appState.authenticated,
+                    userEmail: this.appState.userEmail,
+                    profileCompleted: this.appState.userProfile.profile_completed
+                });
+                
+                // Session'ı localStorage'a kaydet
                 this.saveToStorage();
                 
                 // Çıkış flag'ini temizle (başarılı giriş)
                 localStorage.removeItem('user_logged_out');
-                
-                // Kullanıcı profil bilgilerini güncelle
-                await this.updateUserProfile();
                 
                 // Kod ekranını gizle
                 const codeScreen = document.getElementById('code-screen');
@@ -353,14 +404,18 @@ class AuthManager {
                     codeScreen.classList.add('hidden');
                 }
                 
-                // Check if profile is completed
-                if (response.profile_completed) {
+                // Profil tamamlama kontrolü
+                if (!response.profile_completed || !response.full_name || !response.department) {
+                    console.log('Profil tamamlanmamış, profil sayfasına yönlendiriliyor');
+                    ui.showProfileCompletion();
+                } else {
+                    console.log('Profil tamamlanmış, ana sayfaya yönlendiriliyor');
+                    // Kullanıcı profil bilgilerini güncelle
+                    await this.updateUserProfile();
                     ui.showMainApp();
                     if (this.appState.isAdmin) {
                         await responseManager.loadAdminStats();
                     }
-                } else {
-                    ui.showProfileCompletion();
                 }
                 
                 return true;
@@ -486,6 +541,109 @@ class AuthManager {
         localStorage.setItem(CONFIG.STORAGE_KEYS.USER_EMAIL, this.appState.userEmail);
         localStorage.setItem(CONFIG.STORAGE_KEYS.IS_ADMIN, this.appState.isAdmin.toString());
         localStorage.setItem(CONFIG.STORAGE_KEYS.USER_PROFILE, JSON.stringify(this.appState.userProfile));
+    }
+
+    // Authentication state kontrolü için helper fonksiyon
+    checkAuthenticationState() {
+        console.log('Current authentication state:', {
+            authenticated: this.appState.authenticated,
+            userEmail: this.appState.userEmail,
+            accessToken: this.appState.authToken ? 'present' : 'missing',
+            profileCompleted: this.appState.userProfile?.profile_completed
+        });
+        
+        return this.appState.authenticated && this.appState.userEmail && this.appState.authToken;
+    }
+
+    async completeProfile() {
+        try {
+            console.log('Profil tamamlama başlatılıyor...');
+            
+            // Authentication state kontrolü
+            if (!this.checkAuthenticationState()) {
+                console.error('Authentication state eksik, profil tamamlanamıyor');
+                this.showErrorMessage('❌ Kimlik doğrulama hatası. Lütfen yeniden giriş yapın.');
+                ui.showLogin();
+                return;
+            }
+            
+            // Form verilerini al
+            const fullNameInput = document.getElementById('profile-name');
+            const departmentSelect = document.getElementById('profile-department');
+            
+            if (!fullNameInput || !departmentSelect) {
+                console.error('Profil form elementleri bulunamadı');
+                this.showErrorMessage('❌ Form elementleri bulunamadı. Sayfayı yenileyin.');
+                return;
+            }
+            
+            const fullName = fullNameInput.value.trim();
+            const department = departmentSelect.value;
+            
+            // Validasyon
+            if (!fullName) {
+                this.showErrorMessage('❌ Ad soyad alanı zorunludur.');
+                return;
+            }
+            
+            if (!department) {
+                this.showErrorMessage('❌ Birim/Müdürlük seçimi zorunludur.');
+                return;
+            }
+            
+            // Spinner göster
+            this.showSpinner('profile');
+            
+            console.log('Profil tamamlama isteği:', {
+                email: this.appState.userEmail,
+                fullName: fullName,
+                department: department
+            });
+            
+            // API'ye gönder - production backend email bekliyor
+            const response = await this.api.completeProfile({
+                full_name: fullName,
+                department: department,
+                email: this.appState.userEmail
+            });
+            
+            if (response) {
+                console.log('Profil başarıyla tamamlandı');
+                
+                // App state'i güncelle
+                this.appState.userProfile = {
+                    ...this.appState.userProfile,
+                    full_name: fullName,
+                    department: department,
+                    profile_completed: true
+                };
+                
+                this.saveToStorage();
+                
+                // Kullanıcı profil elementini güncelle
+                await this.updateUserProfile();
+                
+                // Ana uygulamayı göster
+                ui.showMainApp();
+                
+                // Admin ise istatistikleri yükle
+                if (this.appState.isAdmin) {
+                    await responseManager.loadAdminStats();
+                }
+            }
+            
+        } catch (error) {
+            console.error('Profil tamamlama hatası:', error);
+            if (error.message.includes('401')) {
+                this.showErrorMessage('❌ Oturum süreniz dolmuş. Lütfen tekrar giriş yapın.');
+                ui.showLogin();
+            } else {
+                this.showErrorMessage('❌ Profil güncellenirken hata oluştu. Lütfen tekrar deneyin.');
+            }
+        } finally {
+            // Spinner'ı gizle
+            this.hideSpinner('profile');
+        }
     }
 
     async logout() {
@@ -1345,8 +1503,8 @@ class EventManager {
         }
         
         // Profile events
-        if (ui.elements.profileBtn) {
-            ui.elements.profileBtn.addEventListener('click', () => authManager.completeProfile());
+        if (ui.elements.saveProfileBtn) {
+            ui.elements.saveProfileBtn.addEventListener('click', () => authManager.completeProfile());
         }
         
         // Logout event
@@ -1538,8 +1696,55 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 });
 
+// Debug fonksiyonları
+function debugAuthState() {
+    console.log('=== AUTH STATE DEBUG ===');
+    console.log('appState:', authManager.appState);
+    console.log('localStorage auth:', localStorage.getItem(CONFIG.STORAGE_KEYS.AUTH_TOKEN) ? 'present' : 'missing');
+    console.log('localStorage email:', localStorage.getItem(CONFIG.STORAGE_KEYS.USER_EMAIL));
+    console.log('localStorage profile:', localStorage.getItem(CONFIG.STORAGE_KEYS.USER_PROFILE));
+    console.log('========================');
+}
+
+// Debug için son request detayları
+function debugLastRequest() {
+    console.log('=== LAST REQUEST DEBUG ===');
+    console.log('URL:', 'https://yardimci.niluferyapayzeka.tr/api/v1/complete-profile');
+    console.log('Method:', 'POST');
+    console.log('Expected Headers:', {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer [token]'
+    });
+    console.log('Expected Body:', {
+        full_name: '[form value]',
+        department: '[form value]'
+    });
+    console.log('========================');
+}
+
+// Test için manuel authentication set
+function setTestAuth(email, token) {
+    authManager.appState.authenticated = true;
+    authManager.appState.userEmail = email;
+    authManager.appState.authToken = token;
+    authManager.appState.userProfile = {
+        email: email,
+        full_name: '',
+        department: '',
+        profile_completed: false
+    };
+    
+    authManager.saveToStorage();
+    
+    console.log('Test authentication set for:', email);
+    ui.showProfileCompletion();
+}
+
 // Export for global access
 window.authManager = authManager;
 window.responseManager = responseManager;
 window.toggleAdminPanel = toggleAdminPanel;
 window.toggleAccordion = toggleAccordion;
+window.debugAuthState = debugAuthState;
+window.debugLastRequest = debugLastRequest;
+window.setTestAuth = setTestAuth;
