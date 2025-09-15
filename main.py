@@ -31,15 +31,6 @@ app.add_middleware(
 app.include_router(router, prefix="/api/v1")
 app.include_router(auth_router, prefix="/api/v1")
 
-# Debug: Print all registered routes
-@app.on_event("startup")
-async def startup_event():
-    print("=== REGISTERED ROUTES ===")
-    for route in app.routes:
-        if hasattr(route, 'path') and hasattr(route, 'methods'):
-            print(f"{route.methods} {route.path}")
-    print("========================")
-
 # Static file serving
 app.mount("/static", StaticFiles(directory="."), name="static")
 
@@ -65,7 +56,7 @@ async def gradio_proxy(path: str):
     import httpx
     try:
         async with httpx.AsyncClient() as client:
-            response = await client.get(f"{PRODUCTION_URL}/gradio_api/{path}")
+            response = await client.get(f"https://yardimci.niluferyapayzeka.tr/gradio_api/{path}")
             return response.json()
     except Exception as e:
         return {"error": str(e)}
@@ -79,7 +70,7 @@ async def gradio_proxy_post(path: str, request: Request):
     try:
         body = await request.body()
         async with httpx.AsyncClient() as client:
-            response = await client.post(f"{PRODUCTION_URL}/gradio_api/{path}", content=body)
+            response = await client.post(f"https://yardimci.niluferyapayzeka.tr/gradio_api/{path}", content=body)
             return response.json()
     except Exception as e:
         return {"error": str(e)}
@@ -101,7 +92,7 @@ async def send_email_and_wait_for_verification(request: dict):
         import httpx
         async with httpx.AsyncClient() as client:
             response = await client.post(
-                f"{PRODUCTION_URL}/api/v1/auth/send",
+                f"https://yardimci.niluferyapayzeka.tr/api/v1/auth/send",
                 json={"email": email}
             )
             
