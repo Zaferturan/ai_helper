@@ -262,8 +262,10 @@ class AuthManager {
                             console.log('Authentication state set:', {
                                 authenticated: this.appState.authenticated,
                                 accessToken: this.appState.accessToken ? 'present' : 'missing',
+                                authToken: this.appState.authToken ? 'present' : 'missing',
                                 userEmail: this.appState.userEmail,
-                                profileCompleted: this.appState.userProfile.profile_completed
+                                profileCompleted: this.appState.userProfile.profile_completed,
+                                tokenValue: this.appState.accessToken ? this.appState.accessToken.substring(0, 20) + '...' : 'null'
                             });
                             
                             // Local storage'a kaydet
@@ -625,8 +627,18 @@ class AuthManager {
             authToken: this.appState.authToken ? 'present' : 'missing',
             finalToken: token ? 'present' : 'missing',
             userEmail: this.appState.userEmail,
-            tokenValue: token ? token.substring(0, 20) + '...' : 'null'
+            tokenValue: token ? token.substring(0, 20) + '...' : 'null',
+            appStateKeys: Object.keys(this.appState)
         });
+        
+        if (!token) {
+            console.error('❌ CRITICAL: No token to save!', {
+                accessToken: this.appState.accessToken,
+                authToken: this.appState.authToken,
+                appState: this.appState
+            });
+            return;
+        }
         
         // ✅ Consistent localStorage key naming
         localStorage.setItem(CONFIG.STORAGE_KEYS.AUTH_TOKEN, token);
@@ -636,7 +648,8 @@ class AuthManager {
         
         console.log('localStorage after save:', {
             authToken: localStorage.getItem(CONFIG.STORAGE_KEYS.AUTH_TOKEN) ? 'saved' : 'missing',
-            userEmail: localStorage.getItem(CONFIG.STORAGE_KEYS.USER_EMAIL)
+            userEmail: localStorage.getItem(CONFIG.STORAGE_KEYS.USER_EMAIL),
+            savedTokenValue: localStorage.getItem(CONFIG.STORAGE_KEYS.AUTH_TOKEN) ? localStorage.getItem(CONFIG.STORAGE_KEYS.AUTH_TOKEN).substring(0, 20) + '...' : 'null'
         });
     }
 
