@@ -550,5 +550,29 @@
     "full_name": "",
     "department": "",
     "profile_completed": false
+  },
+  "6c63798dbe4d": {
+    "user_email": "enginakyildiz@nilufer.bel.tr",
+    "access_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIyIiwiZW1haWwiOiJlbmdpbmFreWlsZGl6QG5pbHVmZXIuYmVsLnRyIiwiZXhwIjoxNzU3OTY2OTg5LjIzODAwMn0.kw7205cjqpctkUP1DG0uNy1I9meI8Qn459aroGVUImA",
+    "login_time": 1757959789.2382753,
+    "user_agent": "MagicLink",
+    "ip_address": "127.0.0.1",
+    "last_activity": 1757959789.2382753,
+    "is_admin": false,
+    "full_name": "",
+    "department": "",
+    "profile_completed": false
+  },
+  "e14c3183739d": {
+    "user_email": "zaferturan@nilufer.bel.tr",
+    "access_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxIiwiZW1haWwiOiJ6YWZlcnR1cmFuQG5pbHVmZXIuYmVsLnRyIiwiZXhwIjoxNzU3OTY3MTU2LjIyMTc3M30.kDXMhEklWe31IdiNMHoOyB1Y4m5iH5QmwSrkd75_yhE",
+    "login_time": 1757959956.222159,
+    "user_agent": "MagicLink",
+    "ip_address": "127.0.0.1",
+    "last_activity": 1757959956.222159,
+    "is_admin": true,
+    "full_name": "zafer turan",
+    "department": "Bilgi İşlem Müdürlüğü",
+    "profile_completed": true
   }
 }
