@@ -865,7 +865,18 @@ class UIManager {
             this.elements.adminPanel.classList.remove('hidden');
             document.body.classList.add('admin-user'); // Admin için body'ye class ekle
         } else {
+            this.elements.adminPanel.classList.add('hidden');
             document.body.classList.remove('admin-user'); // Admin değilse class'ı kaldır
+        }
+        
+        // Show response settings only for admin users
+        const responseSettings = document.getElementById('response-settings');
+        if (responseSettings) {
+            if (isAdmin) {
+                responseSettings.style.display = 'block';
+            } else {
+                responseSettings.style.display = 'none';
+            }
         }
         
         console.log('=== showMainApp END ===');
