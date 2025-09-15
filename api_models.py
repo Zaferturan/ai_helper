@@ -47,6 +47,9 @@ class UserProfile(BaseModel):
     last_login: Optional[datetime] = None
     profile_completed: bool = False
 
+class MagicTokenRequest(BaseModel):
+    token: str
+
 class ProfileCompletionRequest(BaseModel):
     full_name: str
     department: str

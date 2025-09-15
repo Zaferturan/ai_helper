@@ -1,40 +1,4 @@
 {
-  "87edb1a8b9ab": {
-    "user_email": "enginakyildiz@nilufer.bel.tr",
-    "access_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiI4IiwiZW1haWwiOiJlbmdpbmFreWlsZGl6QG5pbHVmZXIuYmVsLnRyIiwiZXhwIjoxNzU3Nzg3Njc2LjcxNDY0NH0.jNFQ-fWxmjKdTXEUNuYc73MxdKyvWgnIboCDNjc8-2M",
-    "login_time": 1757780476.7147908,
-    "user_agent": "MagicLink",
-    "ip_address": "127.0.0.1",
-    "last_activity": 1757780477.1452386,
-    "is_admin": false,
-    "full_name": "Engin AKYILDIZ",
-    "department": "Bilgi \u0130\u015flem M\u00fcd\u00fcrl\u00fc\u011f\u00fc",
-    "profile_completed": true
-  },
-  "9615a8b48274": {
-    "user_email": "enginakyildiz@nilufer.bel.tr",
-    "access_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiI4IiwiZW1haWwiOiJlbmdpbmFreWlsZGl6QG5pbHVmZXIuYmVsLnRyIiwiZXhwIjoxNzU3Nzg3NzUyLjM2MTYyNX0.KhPMThOINpEeIfkBU4ZnrkUU7L8kWohhuo9QcqcX-G8",
-    "login_time": 1757780552.3618197,
-    "user_agent": "MagicLink",
-    "ip_address": "127.0.0.1",
-    "last_activity": 1757780552.6926284,
-    "is_admin": false,
-    "full_name": "Engin AKYILDIZ",
-    "department": "Bilgi \u0130\u015flem M\u00fcd\u00fcrl\u00fc\u011f\u00fc",
-    "profile_completed": true
-  },
-  "ec812f93205f": {
-    "user_email": "enginakyildiz@nilufer.bel.tr",
-    "access_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiI4IiwiZW1haWwiOiJlbmdpbmFreWlsZGl6QG5pbHVmZXIuYmVsLnRyIiwiZXhwIjoxNzU3Nzg3OTg2LjM3MTIwN30.lRfRYypn0jTtgs2352-14CpvD22hXuxg7jFQIF0oWdk",
-    "login_time": 1757780786.3713794,
-    "user_agent": "MagicLink",
-    "ip_address": "127.0.0.1",
-    "last_activity": 1757780786.6897955,
-    "is_admin": false,
-    "full_name": "Engin AKYILDIZ",
-    "department": "Bilgi \u0130\u015flem M\u00fcd\u00fcrl\u00fc\u011f\u00fc",
-    "profile_completed": true
-  },
   "ff6e6f8bb6f6": {
     "user_email": "denizsanli@niluferbeltr",
     "access_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiI3IiwiZW1haWwiOiJkZW5penNhbmxpQG5pbHVmZXJiZWx0ciIsImV4cCI6MTc1Nzc4ODA0MC4wMTk2fQ.jUgeDS_6I5-kpXcTD9kphlxcDd9HOy7U40ET2p4lvdw",
@@ -43,8 +7,8 @@
     "ip_address": "127.0.0.1",
     "last_activity": 1757780840.346234,
     "is_admin": false,
-    "full_name": "DEN\u0130Z \u015eANLI",
-    "department": "Bilgi \u0130\u015flem M\u00fcd\u00fcrl\u00fc\u011f\u00fc",
+    "full_name": "DENİZ ŞANLI",
+    "department": "Bilgi İşlem Müdürlüğü",
     "profile_completed": null
   },
   "d71ab76db9ff": {
@@ -55,8 +19,8 @@
     "ip_address": "127.0.0.1",
     "last_activity": 1757780858.6246285,
     "is_admin": false,
-    "full_name": "DEN\u0130Z \u015eANLI",
-    "department": "Bilgi \u0130\u015flem M\u00fcd\u00fcrl\u00fc\u011f\u00fc",
+    "full_name": "DENİZ ŞANLI",
+    "department": "Bilgi İşlem Müdürlüğü",
     "profile_completed": null
   },
   "71f0161730ff": {
@@ -67,8 +31,8 @@
     "ip_address": "127.0.0.1",
     "last_activity": 1757780879.1947556,
     "is_admin": false,
-    "full_name": "DEN\u0130Z \u015eANLI",
-    "department": "Bilgi \u0130\u015flem M\u00fcd\u00fcrl\u00fc\u011f\u00fc",
+    "full_name": "DENİZ ŞANLI",
+    "department": "Bilgi İşlem Müdürlüğü",
     "profile_completed": null
   },
   "36e1b286134e": {
@@ -79,8 +43,8 @@
     "ip_address": "127.0.0.1",
     "last_activity": 1757780895.4534948,
     "is_admin": false,
-    "full_name": "DEN\u0130Z \u015eANLI",
-    "department": "Bilgi \u0130\u015flem M\u00fcd\u00fcrl\u00fc\u011f\u00fc",
+    "full_name": "DENİZ ŞANLI",
+    "department": "Bilgi İşlem Müdürlüğü",
     "profile_completed": null
   },
   "bfc3b04da7d0": {
@@ -92,7 +56,7 @@
     "last_activity": 1757781426.6153777,
     "is_admin": false,
     "full_name": "Mesut SOLAKLAR",
-    "department": "Bilgi \u0130\u015flem M\u00fcd\u00fcrl\u00fc\u011f\u00fc",
+    "department": "Bilgi İşlem Müdürlüğü",
     "profile_completed": true
   },
   "d0137f9fea08": {
@@ -104,7 +68,7 @@
     "last_activity": 1757781446.7217355,
     "is_admin": false,
     "full_name": "Hakan ULUCAN",
-    "department": "Bilgi \u0130\u015flem M\u00fcd\u00fcrl\u00fc\u011f\u00fc",
+    "department": "Bilgi İşlem Müdürlüğü",
     "profile_completed": true
   },
   "f6345eea931e": {
@@ -115,8 +79,8 @@
     "ip_address": "127.0.0.1",
     "last_activity": 1757781459.0579903,
     "is_admin": false,
-    "full_name": "\u00f6znur avdal",
-    "department": "Bilgi \u0130\u015flem M\u00fcd\u00fcrl\u00fc\u011f\u00fc",
+    "full_name": "öznur avdal",
+    "department": "Bilgi İşlem Müdürlüğü",
     "profile_completed": true
   },
   "12fd1aa07254": {
@@ -127,8 +91,8 @@
     "ip_address": "127.0.0.1",
     "last_activity": 1757781472.1409204,
     "is_admin": false,
-    "full_name": "DEN\u0130Z \u015eANLI",
-    "department": "Bilgi \u0130\u015flem M\u00fcd\u00fcrl\u00fc\u011f\u00fc",
+    "full_name": "DENİZ ŞANLI",
+    "department": "Bilgi İşlem Müdürlüğü",
     "profile_completed": true
   },
   "301c95ac2cf4": {
@@ -140,7 +104,7 @@
     "last_activity": 1757781720.1792972,
     "is_admin": true,
     "full_name": "zafer turan",
-    "department": "Bilgi \u0130\u015flem M\u00fcd\u00fcrl\u00fc\u011f\u00fc",
+    "department": "Bilgi İşlem Müdürlüğü",
     "profile_completed": true
   },
   "4e266010d977": {
@@ -152,7 +116,7 @@
     "last_activity": 1757781847.1979735,
     "is_admin": true,
     "full_name": "zafer turan",
-    "department": "Bilgi \u0130\u015flem M\u00fcd\u00fcrl\u00fc\u011f\u00fc",
+    "department": "Bilgi İşlem Müdürlüğü",
     "profile_completed": true
   },
   "117e9445673c": {
@@ -164,7 +128,7 @@
     "last_activity": 1757782197.0955784,
     "is_admin": true,
     "full_name": "zafer turan",
-    "department": "Bilgi \u0130\u015flem M\u00fcd\u00fcrl\u00fc\u011f\u00fc",
+    "department": "Bilgi İşlem Müdürlüğü",
     "profile_completed": true
   },
   "914237258654": {
@@ -176,7 +140,7 @@
     "last_activity": 1757782378.3143215,
     "is_admin": true,
     "full_name": "zafer turan",
-    "department": "Bilgi \u0130\u015flem M\u00fcd\u00fcrl\u00fc\u011f\u00fc",
+    "department": "Bilgi İşlem Müdürlüğü",
     "profile_completed": true
   },
   "7abd5b3910a5": {
@@ -188,7 +152,7 @@
     "last_activity": 1757782425.2900455,
     "is_admin": true,
     "full_name": "zafer turan",
-    "department": "Bilgi \u0130\u015flem M\u00fcd\u00fcrl\u00fc\u011f\u00fc",
+    "department": "Bilgi İşlem Müdürlüğü",
     "profile_completed": true
   },
   "3a4b37b418a4": {
@@ -200,7 +164,7 @@
     "last_activity": 1757782522.266414,
     "is_admin": true,
     "full_name": "zafer turan",
-    "department": "Bilgi \u0130\u015flem M\u00fcd\u00fcrl\u00fc\u011f\u00fc",
+    "department": "Bilgi İşlem Müdürlüğü",
     "profile_completed": true
   },
   "ed1652e6714b": {
@@ -212,7 +176,7 @@
     "last_activity": 1757782613.0857167,
     "is_admin": true,
     "full_name": "zafer turan",
-    "department": "Bilgi \u0130\u015flem M\u00fcd\u00fcrl\u00fc\u011f\u00fc",
+    "department": "Bilgi İşlem Müdürlüğü",
     "profile_completed": true
   },
   "52aaebae9148": {
@@ -224,7 +188,7 @@
     "last_activity": 1757782863.5739691,
     "is_admin": true,
     "full_name": "zafer turan",
-    "department": "Bilgi \u0130\u015flem M\u00fcd\u00fcrl\u00fc\u011f\u00fc",
+    "department": "Bilgi İşlem Müdürlüğü",
     "profile_completed": true
   },
   "caf03e77c15d": {
@@ -236,7 +200,7 @@
     "last_activity": 1757783271.4817984,
     "is_admin": true,
     "full_name": "zafer turan",
-    "department": "Bilgi \u0130\u015flem M\u00fcd\u00fcrl\u00fc\u011f\u00fc",
+    "department": "Bilgi İşlem Müdürlüğü",
     "profile_completed": true
   },
   "b747dfebc921": {
@@ -248,7 +212,7 @@
     "last_activity": 1757783728.27031,
     "is_admin": true,
     "full_name": "zafer turan",
-    "department": "Bilgi \u0130\u015flem M\u00fcd\u00fcrl\u00fc\u011f\u00fc",
+    "department": "Bilgi İşlem Müdürlüğü",
     "profile_completed": true
   },
   "444937335a95": {
@@ -260,7 +224,7 @@
     "last_activity": 1757783980.3996031,
     "is_admin": true,
     "full_name": "zafer turan",
-    "department": "Bilgi \u0130\u015flem M\u00fcd\u00fcrl\u00fc\u011f\u00fc",
+    "department": "Bilgi İşlem Müdürlüğü",
     "profile_completed": true
   },
   "427c28f9963d": {
@@ -272,7 +236,7 @@
     "last_activity": 1757785058.2086773,
     "is_admin": true,
     "full_name": "zafer turan",
-    "department": "Bilgi \u0130\u015flem M\u00fcd\u00fcrl\u00fc\u011f\u00fc",
+    "department": "Bilgi İşlem Müdürlüğü",
     "profile_completed": true
   },
   "9819d41491e5": {
@@ -284,7 +248,7 @@
     "last_activity": 1757785232.6653326,
     "is_admin": true,
     "full_name": "zafer turan",
-    "department": "Bilgi \u0130\u015flem M\u00fcd\u00fcrl\u00fc\u011f\u00fc",
+    "department": "Bilgi İşlem Müdürlüğü",
     "profile_completed": true
   },
   "6265b9e484bb": {
@@ -296,7 +260,7 @@
     "last_activity": 1757785259.7051735,
     "is_admin": true,
     "full_name": "zafer turan",
-    "department": "Bilgi \u0130\u015flem M\u00fcd\u00fcrl\u00fc\u011f\u00fc",
+    "department": "Bilgi İşlem Müdürlüğü",
     "profile_completed": true
   },
   "39fdff18b2bd": {
@@ -308,7 +272,7 @@
     "last_activity": 1757786692.1375356,
     "is_admin": true,
     "full_name": "zafer turan",
-    "department": "Bilgi \u0130\u015flem M\u00fcd\u00fcrl\u00fc\u011f\u00fc",
+    "department": "Bilgi İşlem Müdürlüğü",
     "profile_completed": true
   },
   "21202d9f1383": {
@@ -320,7 +284,7 @@
     "last_activity": 1757786894.2498336,
     "is_admin": true,
     "full_name": "zafer turan",
-    "department": "Bilgi \u0130\u015flem M\u00fcd\u00fcrl\u00fc\u011f\u00fc",
+    "department": "Bilgi İşlem Müdürlüğü",
     "profile_completed": true
   },
   "06bedb0c221a": {
@@ -331,20 +295,8 @@
     "ip_address": "127.0.0.1",
     "last_activity": 1757787136.068467,
     "is_admin": false,
-    "full_name": "Sencer \u00d6NC\u00dcL",
-    "department": "Bilgi \u0130\u015flem M\u00fcd\u00fcrl\u00fc\u011f\u00fc",
-    "profile_completed": true
-  },
-  "001ec0215db3": {
-    "user_email": "enginakyildiz@nilufer.bel.tr",
-    "access_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiI4IiwiZW1haWwiOiJlbmdpbmFreWlsZGl6QG5pbHVmZXIuYmVsLnRyIiwiZXhwIjoxNzU3Nzk0MzU5LjE1NjgzNn0.njQF4ZUYFNbkfDgwfz8xH50S1Hu4qaNPFtmMNfuoh5E",
-    "login_time": 1757787159.1570327,
-    "user_agent": "MagicLink",
-    "ip_address": "127.0.0.1",
-    "last_activity": 1757787159.713294,
-    "is_admin": false,
-    "full_name": "Engin AKYILDIZ",
-    "department": "Bilgi \u0130\u015flem M\u00fcd\u00fcrl\u00fc\u011f\u00fc",
+    "full_name": "Sencer ÖNCÜL",
+    "department": "Bilgi İşlem Müdürlüğü",
     "profile_completed": true
   },
   "3b750113bade": {
@@ -356,7 +308,7 @@
     "last_activity": 1757787174.051219,
     "is_admin": true,
     "full_name": "zafer turan",
-    "department": "Bilgi \u0130\u015flem M\u00fcd\u00fcrl\u00fc\u011f\u00fc",
+    "department": "Bilgi İşlem Müdürlüğü",
     "profile_completed": true
   },
   "6d69f8544681": {
@@ -368,7 +320,7 @@
     "last_activity": 1757787451.0848265,
     "is_admin": true,
     "full_name": "zafer turan",
-    "department": "Bilgi \u0130\u015flem M\u00fcd\u00fcrl\u00fc\u011f\u00fc",
+    "department": "Bilgi İşlem Müdürlüğü",
     "profile_completed": true
   },
   "b585c966b97f": {
@@ -380,7 +332,7 @@
     "last_activity": 1757787501.0793655,
     "is_admin": true,
     "full_name": "zafer turan",
-    "department": "Bilgi \u0130\u015flem M\u00fcd\u00fcrl\u00fc\u011f\u00fc",
+    "department": "Bilgi İşlem Müdürlüğü",
     "profile_completed": true
   },
   "11fff3920efe": {
@@ -392,7 +344,31 @@
     "last_activity": 1757787551.0602667,
     "is_admin": true,
     "full_name": "zafer turan",
-    "department": "Bilgi \u0130\u015flem M\u00fcd\u00fcrl\u00fc\u011f\u00fc",
+    "department": "Bilgi İşlem Müdürlüğü",
     "profile_completed": true
+  },
+  "c41370a4cc4a": {
+    "user_email": "enginakyildiz@nilufer.bel.tr",
+    "access_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIyIiwiZW1haWwiOiJlbmdpbmFreWlsZGl6QG5pbHVmZXIuYmVsLnRyIiwiZXhwIjoxNzU3OTYyODM0LjQwNTg4Mn0.k2w4d2zA_OviTSW0Kr1mxpNi6X0l_ZXi1uICfoXWTpA",
+    "login_time": 1757955634.406159,
+    "user_agent": "MagicLink",
+    "ip_address": "127.0.0.1",
+    "last_activity": 1757955634.406159,
+    "is_admin": false,
+    "full_name": "",
+    "department": "",
+    "profile_completed": false
+  },
+  "5dfc1809326b": {
+    "user_email": "enginakyildiz@nilufer.bel.tr",
+    "access_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIyIiwiZW1haWwiOiJlbmdpbmFreWlsZGl6QG5pbHVmZXIuYmVsLnRyIiwiZXhwIjoxNzU3OTYyODQyLjg2Mjc2M30.kzYkClZbehFxW6yMJ_4PVvT-O1Jq1MlsLWwgVuzMf7s",
+    "login_time": 1757955642.8631034,
+    "user_agent": "MagicLink",
+    "ip_address": "127.0.0.1",
+    "last_activity": 1757955642.8631036,
+    "is_admin": false,
+    "full_name": "",
+    "department": "",
+    "profile_completed": false
   }
 }
