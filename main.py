@@ -31,6 +31,15 @@ app.add_middleware(
 app.include_router(router, prefix="/api/v1")
 app.include_router(auth_router, prefix="/api/v1")
 
+# Debug: Print all registered routes
+@app.on_event("startup")
+async def startup_event():
+    print("=== REGISTERED ROUTES ===")
+    for route in app.routes:
+        if hasattr(route, 'path') and hasattr(route, 'methods'):
+            print(f"{route.methods} {route.path}")
+    print("========================")
+
 # Static file serving
 app.mount("/static", StaticFiles(directory="."), name="static")
 
