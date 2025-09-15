@@ -56,7 +56,7 @@ async def gradio_proxy(path: str):
     import httpx
     try:
         async with httpx.AsyncClient() as client:
-            response = await client.get(f"http://localhost:8500/gradio_api/{path}")
+            response = await client.get(f"{PRODUCTION_URL}/gradio_api/{path}")
             return response.json()
     except Exception as e:
         return {"error": str(e)}
@@ -70,7 +70,7 @@ async def gradio_proxy_post(path: str, request: Request):
     try:
         body = await request.body()
         async with httpx.AsyncClient() as client:
-            response = await client.post(f"http://localhost:8500/gradio_api/{path}", content=body)
+            response = await client.post(f"{PRODUCTION_URL}/gradio_api/{path}", content=body)
             return response.json()
     except Exception as e:
         return {"error": str(e)}
@@ -92,7 +92,7 @@ async def send_email_and_wait_for_verification(request: dict):
         import httpx
         async with httpx.AsyncClient() as client:
             response = await client.post(
-                f"http://localhost:8000/api/v1/auth/send",
+                f"{PRODUCTION_URL}/api/v1/auth/send",
                 json={"email": email}
             )
             
