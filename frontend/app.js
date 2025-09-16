@@ -1015,8 +1015,10 @@ class AIResponseManager {
             const temperature = parseFloat(ui.elements.temperature.value);
             const maxTokens = parseInt(ui.elements.maxTokens.value);
             
-            if (!originalText) {
-                ui.showError('response-error', 'Lütfen gelen istek/öneri metnini girin.');
+            // Boş alan kontrolü - ikisinden biri boşsa uyarı ver
+            if (!originalText || !customInput) {
+                ui.showError('response-error', '❌ Lütfen hem "Gelen İstek/Öneri" hem de "Hazırladığınız Cevap Taslağı" alanlarını doldurun.');
+                ui.hideLoading();
                 return;
             }
 
@@ -1307,8 +1309,8 @@ class AIResponseManager {
             ui.elements.mainCopyBtn.style.display = 'none';
         }
         
-        // Input alanlarını varsayılan değerlerle doldur
-        this.setDefaultTextboxValues();
+        // Input alanlarını temizle
+        this.clearTextboxValues();
         
         // Ana yanıt alanını temizle
         const mainResponse = document.getElementById('main-response');
@@ -1441,9 +1443,6 @@ class AIResponseManager {
             generateBtn.style.display = generateVisible ? 'block' : 'none';
             newRequestBtn.style.display = newRequestVisible ? 'block' : 'none';
             
-            // Her zaman textbox'lara varsayılan değerleri doldur
-            this.setDefaultTextboxValues();
-            
             console.log(`Button visibility updated: generate=${generateVisible}, newRequest=${newRequestVisible}, state=${this.state}, yanitSayisi=${this.yanitSayisi}`);
         }
         
@@ -1464,20 +1463,20 @@ class AIResponseManager {
         }
     }
     
-    // Textbox'lara varsayılan değerleri doldur
-    setDefaultTextboxValues() {
+    // Textbox'ları boşalt (varsayılan değerler kaldırıldı)
+    clearTextboxValues() {
         const requestInput = document.getElementById('original-text');
         const responseInput = document.getElementById('custom-input');
         
         if (requestInput) {
-            requestInput.value = 'Bursa Nilüfer\'de bir dükkanım var ve yönetim planından tahsisli otoparkımda bulunan dubaları, belediye ekipleri mafyavari şekilde tahsisli alanımdan alıp götürebiliyor. Geri aradığımda ise belediye zabıtası, görevliyi mahkemeye vermemi söylüyor. Bu nasıl bir hizmet anlayışı? Benim tahsisli alanımdan eşyamı alıyorsunuz, buna ne denir? Herkes biliyordur. Bir yeri koruduğunu zannedip başka bir yeri mağdur etmek mi belediyecilik?';
+            requestInput.value = '';
         }
         
         if (responseInput) {
-            responseInput.value = 'Orası size tahsis edilmiş bir yer değil. Nilüfer halkının ortak kullanım alanı. Kaldırımlar da öyle.';
+            responseInput.value = '';
         }
         
-        console.log('✅ Textbox\'lara varsayılan değerler dolduruldu');
+        console.log('✅ Textbox\'lar temizlendi');
     }
     
     async loadAdminStats() {
@@ -1746,6 +1745,9 @@ document.addEventListener('DOMContentLoaded', async () => {
         responseManager.hideAllAccordions();
         responseManager.updatePreviousResponses();
         responseManager.updateButtonVisibility();
+        
+        // Textbox'ları temizle
+        responseManager.clearTextboxValues();
         
         // Ana "Seç ve Kopyala" düğmesini göster
         if (ui.elements.mainCopyBtn) {
