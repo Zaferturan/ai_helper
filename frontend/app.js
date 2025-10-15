@@ -22,6 +22,422 @@ const CONFIG = {
     }
 };
 
+// Templates Manager for template operations
+class TemplatesManager {
+    constructor() {
+        this.categories = [];
+        this.templates = [];
+        this.currentFilters = {
+            category_id: '',
+            only_mine: false,
+            q: ''
+        };
+        this.selectedTemplate = null;
+        this.searchTimeout = null;
+    }
+
+    async loadCategories() {
+        try {
+            console.log('📂 Kategoriler yükleniyor...');
+            const token = localStorage.getItem(CONFIG.STORAGE_KEYS.AUTH_TOKEN);
+            const response = await fetch(`${CONFIG.BACKEND_URL}/categories`, {
+                headers: {
+                    'Authorization': `Bearer ${token}`
+                }
+            });
+
+            if (!response.ok) {
+                throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+            }
+
+            const data = await response.json();
+            this.categories = data.categories || [];
+            
+            console.log('✅ Kategoriler yüklendi:', this.categories.length);
+            this.updateCategoryFilter();
+            
+            return this.categories;
+        } catch (error) {
+            console.error('❌ Kategori yükleme hatası:', error);
+            this.showError('Kategoriler yüklenirken hata oluştu');
+            return [];
+        }
+    }
+
+    async loadTemplates(filters = {}) {
+        try {
+            console.log('📋 Şablonlar yükleniyor...', filters);
+            this.showLoading();
+            
+            const token = localStorage.getItem(CONFIG.STORAGE_KEYS.AUTH_TOKEN);
+            const params = new URLSearchParams();
+            
+            // Filtreleri ekle
+            if (filters.q) params.append('q', filters.q);
+            if (filters.category_id) params.append('category_id', filters.category_id);
+            if (filters.only_mine) params.append('only_mine', 'true');
+            params.append('limit', '50');
+            params.append('offset', '0');
+
+            const response = await fetch(`${CONFIG.BACKEND_URL}/templates?${params}`, {
+                headers: {
+                    'Authorization': `Bearer ${token}`
+                }
+            });
+
+            if (!response.ok) {
+                throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+            }
+
+            const data = await response.json();
+            this.templates = data.templates || [];
+            
+            console.log('✅ Şablonlar yüklendi:', this.templates.length);
+            this.updateTemplatesList();
+            this.updateTemplatesCount();
+            
+            return this.templates;
+        } catch (error) {
+            console.error('❌ Şablon yükleme hatası:', error);
+            this.showError('Şablonlar yüklenirken hata oluştu');
+            this.showEmptyState();
+            return [];
+        }
+    }
+
+    updateCategoryFilter() {
+        const categorySelect = document.getElementById('category-filter');
+        if (!categorySelect) return;
+
+        // Mevcut seçimi sakla
+        const currentValue = categorySelect.value;
+        
+        // Seçenekleri temizle (ilk seçenek hariç)
+        while (categorySelect.children.length > 1) {
+            categorySelect.removeChild(categorySelect.lastChild);
+        }
+
+        // Kategorileri ekle
+        this.categories.forEach(category => {
+            const option = document.createElement('option');
+            option.value = category.id;
+            option.textContent = category.name;
+            categorySelect.appendChild(option);
+        });
+
+        // Önceki seçimi geri yükle
+        categorySelect.value = currentValue;
+    }
+
+    updateTemplatesList() {
+        const templatesList = document.getElementById('templates-list');
+        const emptyState = document.getElementById('templates-empty-state');
+        const categoriesEmptyState = document.getElementById('categories-empty-state');
+        
+        if (!templatesList) return;
+
+        // Boş durumları gizle
+        emptyState.classList.add('hidden');
+        categoriesEmptyState.classList.add('hidden');
+
+        if (this.templates.length === 0) {
+            templatesList.classList.add('hidden');
+            emptyState.classList.remove('hidden');
+            return;
+        }
+
+        // Şablon kartlarını oluştur
+        templatesList.innerHTML = '';
+        this.templates.forEach(template => {
+            const card = this.createTemplateCard(template);
+            templatesList.appendChild(card);
+        });
+
+        templatesList.classList.remove('hidden');
+    }
+
+    createTemplateCard(template) {
+        const card = document.createElement('div');
+        card.className = 'template-card';
+        card.dataset.templateId = template.id;
+
+        const isOwner = template.owner_user_id === this.getCurrentUserId();
+        const isAdmin = this.getCurrentUserAdminStatus();
+
+        card.innerHTML = `
+            <div class="template-header">
+                <div>
+                    <div class="template-title">${this.escapeHtml(template.title)}</div>
+                    ${template.category_name ? `<span class="template-category">${this.escapeHtml(template.category_name)}</span>` : ''}
+                </div>
+                <div class="template-actions">
+                    <button class="btn btn-primary btn-sm use-template-btn" data-template-id="${template.id}">
+                        📋 Kullan
+                    </button>
+                    <button class="btn btn-secondary btn-sm copy-template-btn" data-template-id="${template.id}">
+                        📄 Kopyala
+                    </button>
+                    ${(isOwner || isAdmin) ? `
+                        <button class="btn btn-danger btn-sm delete-template-btn" data-template-id="${template.id}">
+                            🗑️ Sil
+                        </button>
+                    ` : ''}
+                </div>
+            </div>
+            <div class="template-content">${this.escapeHtml(template.content)}</div>
+            <div class="template-meta">
+                <span class="template-owner">👤 ${this.escapeHtml(template.owner_name)}</span>
+                <span class="template-date">📅 ${this.formatDate(template.created_at)}</span>
+            </div>
+        `;
+
+        return card;
+    }
+
+    updateTemplatesCount() {
+        const countElement = document.getElementById('templates-count');
+        if (countElement) {
+            countElement.textContent = `Şablonlar (${this.templates.length})`;
+        }
+    }
+
+    showLoading() {
+        const loading = document.getElementById('templates-loading');
+        const list = document.getElementById('templates-list');
+        const emptyState = document.getElementById('templates-empty-state');
+        
+        if (loading) loading.classList.remove('hidden');
+        if (list) list.classList.add('hidden');
+        if (emptyState) emptyState.classList.add('hidden');
+    }
+
+    showEmptyState() {
+        const loading = document.getElementById('templates-loading');
+        const list = document.getElementById('templates-list');
+        const emptyState = document.getElementById('templates-empty-state');
+        
+        if (loading) loading.classList.add('hidden');
+        if (list) list.classList.add('hidden');
+        if (emptyState) emptyState.classList.remove('hidden');
+    }
+
+    showError(message) {
+        console.error('Templates Error:', message);
+        // TODO: Toast notification ekle
+    }
+
+    // Utility functions
+    escapeHtml(text) {
+        const div = document.createElement('div');
+        div.textContent = text;
+        return div.innerHTML;
+    }
+
+    formatDate(dateString) {
+        const date = new Date(dateString);
+        return date.toLocaleDateString('tr-TR', {
+            year: 'numeric',
+            month: 'short',
+            day: 'numeric'
+        });
+    }
+
+    getCurrentUserId() {
+        const userProfile = localStorage.getItem(CONFIG.STORAGE_KEYS.USER_PROFILE);
+        if (userProfile) {
+            try {
+                const profile = JSON.parse(userProfile);
+                return profile.user_id;
+            } catch (e) {
+                console.error('Profile parse error:', e);
+            }
+        }
+        return null;
+    }
+
+    getCurrentUserAdminStatus() {
+        return localStorage.getItem(CONFIG.STORAGE_KEYS.IS_ADMIN) === 'true';
+    }
+
+    // Filter functions
+    applyFilters() {
+        const categoryFilter = document.getElementById('category-filter');
+        const onlyMineFilter = document.getElementById('only-mine-filter');
+        const searchFilter = document.getElementById('search-filter');
+
+        this.currentFilters = {
+            category_id: categoryFilter ? categoryFilter.value : '',
+            only_mine: onlyMineFilter ? onlyMineFilter.checked : false,
+            q: searchFilter ? searchFilter.value.trim() : ''
+        };
+
+        this.loadTemplates(this.currentFilters);
+    }
+
+    clearFilters() {
+        const categoryFilter = document.getElementById('category-filter');
+        const onlyMineFilter = document.getElementById('only-mine-filter');
+        const searchFilter = document.getElementById('search-filter');
+
+        if (categoryFilter) categoryFilter.value = '';
+        if (onlyMineFilter) onlyMineFilter.checked = false;
+        if (searchFilter) searchFilter.value = '';
+
+        this.currentFilters = {
+            category_id: '',
+            only_mine: false,
+            q: ''
+        };
+
+        this.loadTemplates(this.currentFilters);
+    }
+
+    // Template actions
+    async useTemplate(templateId, action) {
+        const template = this.templates.find(t => t.id == templateId);
+        if (!template) return;
+
+        switch (action) {
+            case 'request':
+                // Gelen İstek/Öneri alanına koy
+                const originalText = document.getElementById('original-text');
+                if (originalText) {
+                    originalText.value = template.content;
+                    navigationManager.showHomeScreen();
+                }
+                break;
+            case 'response':
+                // Hazırladığınız Cevap alanına koy
+                const customInput = document.getElementById('custom-input');
+                if (customInput) {
+                    customInput.value = template.content;
+                    navigationManager.showHomeScreen();
+                }
+                break;
+            case 'clipboard':
+                // Panoya kopyala
+                try {
+                    await navigator.clipboard.writeText(template.content);
+                    console.log('✅ Şablon panoya kopyalandı');
+                    // TODO: Toast notification
+                } catch (error) {
+                    console.error('❌ Pano kopyalama hatası:', error);
+                }
+                break;
+        }
+    }
+
+    async deleteTemplate(templateId) {
+        try {
+            const token = localStorage.getItem(CONFIG.STORAGE_KEYS.AUTH_TOKEN);
+            const response = await fetch(`${CONFIG.BACKEND_URL}/templates/${templateId}`, {
+                method: 'DELETE',
+                headers: {
+                    'Authorization': `Bearer ${token}`
+                }
+            });
+
+            if (!response.ok) {
+                throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+            }
+
+            console.log('✅ Şablon silindi');
+            this.loadTemplates(this.currentFilters);
+        } catch (error) {
+            console.error('❌ Şablon silme hatası:', error);
+            this.showError('Şablon silinirken hata oluştu');
+        }
+    }
+
+    // Initialize templates screen
+    async initializeTemplatesScreen() {
+        console.log('📂 Templates screen başlatılıyor...');
+        
+        // Kategorileri ve şablonları yükle
+        await this.loadCategories();
+        await this.loadTemplates();
+        
+        // Event listener'ları ekle
+        this.setupEventListeners();
+    }
+
+    setupEventListeners() {
+        // Filtre event listener'ları
+        const categoryFilter = document.getElementById('category-filter');
+        const onlyMineFilter = document.getElementById('only-mine-filter');
+        const searchFilter = document.getElementById('search-filter');
+        const clearFiltersBtn = document.getElementById('clear-filters-btn');
+        const refreshBtn = document.getElementById('refresh-templates-btn');
+
+        if (categoryFilter) {
+            categoryFilter.addEventListener('change', () => this.applyFilters());
+        }
+
+        if (onlyMineFilter) {
+            onlyMineFilter.addEventListener('change', () => this.applyFilters());
+        }
+
+        if (searchFilter) {
+            searchFilter.addEventListener('input', () => {
+                clearTimeout(this.searchTimeout);
+                this.searchTimeout = setTimeout(() => this.applyFilters(), 300);
+            });
+        }
+
+        if (clearFiltersBtn) {
+            clearFiltersBtn.addEventListener('click', () => this.clearFilters());
+        }
+
+        if (refreshBtn) {
+            refreshBtn.addEventListener('click', () => this.loadTemplates(this.currentFilters));
+        }
+
+        // Template action event listener'ları
+        document.addEventListener('click', (e) => {
+            if (e.target.classList.contains('use-template-btn')) {
+                const templateId = e.target.dataset.templateId;
+                this.selectedTemplate = templateId;
+                this.showUseModal();
+            } else if (e.target.classList.contains('copy-template-btn')) {
+                const templateId = e.target.dataset.templateId;
+                this.useTemplate(templateId, 'clipboard');
+            } else if (e.target.classList.contains('delete-template-btn')) {
+                const templateId = e.target.dataset.templateId;
+                this.selectedTemplate = templateId;
+                this.showDeleteModal();
+            }
+        });
+    }
+
+    showUseModal() {
+        const modal = document.getElementById('use-template-modal');
+        if (modal) {
+            modal.classList.remove('hidden');
+        }
+    }
+
+    hideUseModal() {
+        const modal = document.getElementById('use-template-modal');
+        if (modal) {
+            modal.classList.add('hidden');
+        }
+    }
+
+    showDeleteModal() {
+        const modal = document.getElementById('delete-template-modal');
+        if (modal) {
+            modal.classList.remove('hidden');
+        }
+    }
+
+    hideDeleteModal() {
+        const modal = document.getElementById('delete-template-modal');
+        if (modal) {
+            modal.classList.add('hidden');
+        }
+    }
+}
+
 // Navigation Manager for screen switching
 class NavigationManager {
     constructor() {
@@ -84,6 +500,9 @@ class NavigationManager {
         
         // Update user profile in both screens
         this.updateUserProfile();
+        
+        // Initialize templates screen
+        templatesManager.initializeTemplatesScreen();
     }
 
     updateUserProfile() {
@@ -1733,6 +2152,82 @@ class EventManager {
             logoutBtnTemplates.addEventListener('click', async () => await authManager.logout());
         }
         
+        // Modal event listeners
+        const useModal = document.getElementById('use-template-modal');
+        const deleteModal = document.getElementById('delete-template-modal');
+        const closeUseModal = document.getElementById('close-use-modal');
+        const closeDeleteModal = document.getElementById('close-delete-modal');
+        const useToRequest = document.getElementById('use-to-request');
+        const useToResponse = document.getElementById('use-to-response');
+        const useToClipboard = document.getElementById('use-to-clipboard');
+        const confirmDelete = document.getElementById('confirm-delete');
+        const cancelDelete = document.getElementById('cancel-delete');
+        const goToHomeBtnCategories = document.getElementById('go-to-home-btn-categories');
+        
+        // Use modal events
+        if (closeUseModal) {
+            closeUseModal.addEventListener('click', () => templatesManager.hideUseModal());
+        }
+        
+        if (useToRequest) {
+            useToRequest.addEventListener('click', () => {
+                templatesManager.useTemplate(templatesManager.selectedTemplate, 'request');
+                templatesManager.hideUseModal();
+            });
+        }
+        
+        if (useToResponse) {
+            useToResponse.addEventListener('click', () => {
+                templatesManager.useTemplate(templatesManager.selectedTemplate, 'response');
+                templatesManager.hideUseModal();
+            });
+        }
+        
+        if (useToClipboard) {
+            useToClipboard.addEventListener('click', () => {
+                templatesManager.useTemplate(templatesManager.selectedTemplate, 'clipboard');
+                templatesManager.hideUseModal();
+            });
+        }
+        
+        // Delete modal events
+        if (closeDeleteModal) {
+            closeDeleteModal.addEventListener('click', () => templatesManager.hideDeleteModal());
+        }
+        
+        if (confirmDelete) {
+            confirmDelete.addEventListener('click', () => {
+                templatesManager.deleteTemplate(templatesManager.selectedTemplate);
+                templatesManager.hideDeleteModal();
+            });
+        }
+        
+        if (cancelDelete) {
+            cancelDelete.addEventListener('click', () => templatesManager.hideDeleteModal());
+        }
+        
+        // Go to home from categories empty state
+        if (goToHomeBtnCategories) {
+            goToHomeBtnCategories.addEventListener('click', () => navigationManager.showHomeScreen());
+        }
+        
+        // Modal backdrop clicks
+        if (useModal) {
+            useModal.addEventListener('click', (e) => {
+                if (e.target === useModal) {
+                    templatesManager.hideUseModal();
+                }
+            });
+        }
+        
+        if (deleteModal) {
+            deleteModal.addEventListener('click', (e) => {
+                if (e.target === deleteModal) {
+                    templatesManager.hideDeleteModal();
+                }
+            });
+        }
+        
         // AI Response events
         if (ui.elements.generateBtn) {
             ui.elements.generateBtn.addEventListener('click', () => responseManager.generateResponse());
@@ -1855,6 +2350,7 @@ const responseManager = new AIResponseManager();
 const ui = new UIManager();
 const eventManager = new EventManager();
 const navigationManager = new NavigationManager();
+const templatesManager = new TemplatesManager();
 
 
 // Start application when DOM is loaded

@@ -324,23 +324,120 @@
 
             <!-- Templates Content -->
             <div class="templates-content">
-                <!-- Boş Durum (Empty State) -->
-                <div id="templates-empty-state" class="empty-state">
-                    <div class="empty-state-icon">📝</div>
-                    <h2>Henüz şablon yok</h2>
-                    <p>Üretim ekranında "Şablon olarak sakla" ile şablonlarınızı kaydedebilirsiniz.</p>
-                    <button id="go-to-home-btn" class="btn btn-primary">🏠 Ana Sayfaya Dön</button>
+                <!-- Templates Layout -->
+                <div class="templates-layout">
+                    <!-- Sol Panel - Filtreler -->
+                    <div class="templates-filters">
+                        <div class="filters-header">
+                            <h3>🔍 Filtreler</h3>
+                        </div>
+                        
+                        <!-- Kategori Seçici -->
+                        <div class="filter-group">
+                            <label for="category-filter">Kategori</label>
+                            <select id="category-filter" class="filter-select">
+                                <option value="">Tüm Kategoriler</option>
+                            </select>
+                        </div>
+                        
+                        <!-- Sadece Benimkiler -->
+                        <div class="filter-group">
+                            <label class="checkbox-label">
+                                <input type="checkbox" id="only-mine-filter" class="filter-checkbox">
+                                <span class="checkmark"></span>
+                                Sadece Benimkiler
+                            </label>
+                        </div>
+                        
+                        <!-- Arama Kutusu -->
+                        <div class="filter-group">
+                            <label for="search-filter">Arama</label>
+                            <input type="text" id="search-filter" class="filter-input" placeholder="Şablon ara...">
+                        </div>
+                        
+                        <!-- Filtreleri Temizle -->
+                        <button id="clear-filters-btn" class="btn btn-secondary">🗑️ Filtreleri Temizle</button>
+                    </div>
+                    
+                    <!-- Sağ Panel - Liste -->
+                    <div class="templates-main">
+                        <!-- Liste Header -->
+                        <div class="templates-header">
+                            <h3 id="templates-count">Şablonlar (0)</h3>
+                            <div class="templates-actions">
+                                <button id="refresh-templates-btn" class="btn btn-secondary">🔄 Yenile</button>
+                            </div>
+                        </div>
+                        
+                        <!-- Loading State -->
+                        <div id="templates-loading" class="loading-state hidden">
+                            <div class="loading-spinner">⏳</div>
+                            <p>Şablonlar yükleniyor...</p>
+                        </div>
+                        
+                        <!-- Boş Durum (Empty State) -->
+                        <div id="templates-empty-state" class="empty-state">
+                            <div class="empty-state-icon">📝</div>
+                            <h2>Henüz şablon yok</h2>
+                            <p>Üretim ekranında "Şablon olarak sakla" ile şablonlarınızı kaydedebilirsiniz.</p>
+                            <button id="go-to-home-btn" class="btn btn-primary">🏠 Ana Sayfaya Dön</button>
+                        </div>
+                        
+                        <!-- Kategori Boş Durumu -->
+                        <div id="categories-empty-state" class="empty-state hidden">
+                            <div class="empty-state-icon">📂</div>
+                            <h2>Kategori bulunamadı</h2>
+                            <p>Üretim ekranında şablon kaydederken kategori oluşturabilirsiniz.</p>
+                            <button id="go-to-home-btn-categories" class="btn btn-primary">🏠 Ana Sayfaya Dön</button>
+                        </div>
+                        
+                        <!-- Templates List -->
+                        <div id="templates-list" class="templates-list hidden">
+                            <!-- Template kartları buraya gelecek -->
+                        </div>
+                    </div>
                 </div>
-
-                <!-- Templates List (gelecekte doldurulacak) -->
-                <div id="templates-list" class="templates-list hidden">
-                    <!-- Template kartları buraya gelecek -->
+            </div>
+            
+            <!-- Kullan Modal -->
+            <div id="use-template-modal" class="modal hidden">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h3>📋 Şablonu Kullan</h3>
+                        <button id="close-use-modal" class="modal-close">&times;</button>
+                    </div>
+                    <div class="modal-body">
+                        <p>Şablonu nereye eklemek istiyorsunuz?</p>
+                        <div class="use-options">
+                            <button id="use-to-request" class="btn btn-primary">📝 Gelen İstek/Öneri alanına koy</button>
+                            <button id="use-to-response" class="btn btn-primary">✍️ Hazırladığınız Cevap alanına koy</button>
+                            <button id="use-to-clipboard" class="btn btn-secondary">📋 Sadece panoya kopyala</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Silme Onay Modal -->
+            <div id="delete-template-modal" class="modal hidden">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h3>🗑️ Şablonu Sil</h3>
+                        <button id="close-delete-modal" class="modal-close">&times;</button>
+                    </div>
+                    <div class="modal-body">
+                        <p>Bu şablonu silmek istediğinizden emin misiniz?</p>
+                        <p class="delete-warning">Bu işlem geri alınamaz.</p>
+                        <div class="modal-actions">
+                            <button id="confirm-delete" class="btn btn-danger">🗑️ Sil</button>
+                            <button id="cancel-delete" class="btn btn-secondary">❌ İptal</button>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
     </div>
 
     <!-- Scripts -->
-    <script src="app.js?v=20251014-01"></script>
+    <script src="app.js?v=20251014-02"></script>
 </body>
 </html>
