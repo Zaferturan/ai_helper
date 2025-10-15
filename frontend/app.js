@@ -49,7 +49,7 @@ class TemplateSaveManager {
             return this.categories;
         } catch (error) {
             console.error('❌ Kategori yükleme hatası:', error);
-            this.showToast('Kategoriler yüklenirken hata oluştu', 'error');
+            this.showToast('❌ Kategoriler yüklenirken hata oluştu', 'error');
             return [];
         }
     }
@@ -158,10 +158,10 @@ class TemplateSaveManager {
 
             if (!response.ok) {
                 if (response.status === 403) {
-                    this.showToast('Bu işlem için yetkiniz yok', 'error');
+                    this.showToast('⚠️ Bu işlem için yetkiniz yok', 'warning');
                     return null;
                 } else if (response.status === 401) {
-                    this.showToast('Oturum süreniz dolmuş, lütfen tekrar giriş yapın', 'error');
+                    this.showToast('ℹ️ Oturum süreniz dolmuş, lütfen tekrar giriş yapın', 'info');
                     return null;
                 } else {
                     const errorData = await response.json();
@@ -181,7 +181,12 @@ class TemplateSaveManager {
             }
             
             this.hideNewCategoryInput();
-            this.showToast('Kategori başarıyla oluşturuldu', 'success');
+            this.showToast('✅ Kategori eklendi', 'success');
+            
+            // Analitik tracking
+            if (templatesManager) {
+                templatesManager.trackEvent('category_created');
+            }
             
             return newCategory;
         } catch (error) {
@@ -208,10 +213,10 @@ class TemplateSaveManager {
 
             if (!response.ok) {
                 if (response.status === 403) {
-                    this.showToast('Bu işlem için yetkiniz yok', 'error');
+                    this.showToast('⚠️ Bu işlem için yetkiniz yok', 'warning');
                     return null;
                 } else if (response.status === 401) {
-                    this.showToast('Oturum süreniz dolmuş, lütfen tekrar giriş yapın', 'error');
+                    this.showToast('ℹ️ Oturum süreniz dolmuş, lütfen tekrar giriş yapın', 'info');
                     return null;
                 } else {
                     const errorData = await response.json();
@@ -220,7 +225,12 @@ class TemplateSaveManager {
             }
 
             const newTemplate = await response.json();
-            this.showToast('Şablon başarıyla kaydedildi', 'success');
+            this.showToast('✅ Şablon kaydedildi', 'success');
+            
+            // Analitik tracking
+            if (templatesManager) {
+                templatesManager.trackEvent('template_saved');
+            }
             
             return newTemplate;
         } catch (error) {
@@ -395,7 +405,75 @@ class TemplatesManager {
         this.isLoading = false;
         this.hasMore = true;
         this.currentPage = 0;
-        this.pageSize = 20; // Daha küçük sayfa boyutu
+        this.pageSize = 20; // Sayfa boyutu
+        
+        // Basit analitik sistemi
+        this.analytics = {
+            template_saved: 0,
+            template_used: 0,
+            template_deleted: 0,
+            category_created: 0,
+            load_more_count: 0
+        };
+        
+        this.loadAnalytics();
+    }
+
+    // Analitik yönetimi
+    loadAnalytics() {
+        const saved = localStorage.getItem('template_analytics');
+        if (saved) {
+            try {
+                const data = JSON.parse(saved);
+                const today = new Date().toDateString();
+                
+                // Günlük reset kontrolü
+                if (data.date !== today) {
+                    this.analytics = {
+                        template_saved: 0,
+                        template_used: 0,
+                        template_deleted: 0,
+                        category_created: 0,
+                        load_more_count: 0
+                    };
+                    this.saveAnalytics();
+                } else {
+                    this.analytics = data.analytics || this.analytics;
+                }
+            } catch (e) {
+                console.error('Analytics load error:', e);
+            }
+        }
+    }
+
+    saveAnalytics() {
+        const data = {
+            date: new Date().toDateString(),
+            analytics: this.analytics
+        };
+        localStorage.setItem('template_analytics', JSON.stringify(data));
+    }
+
+    trackEvent(event, data = {}) {
+        switch(event) {
+            case 'template_saved':
+                this.analytics.template_saved++;
+                break;
+            case 'template_used':
+                this.analytics.template_used++;
+                break;
+            case 'template_deleted':
+                this.analytics.template_deleted++;
+                break;
+            case 'category_created':
+                this.analytics.category_created++;
+                break;
+            case 'load_more':
+                this.analytics.load_more_count++;
+                break;
+        }
+        this.saveAnalytics();
+        console.log(`📊 Analytics: ${event}`, data);
     }
 
     async loadCategories() {
@@ -417,10 +495,10 @@ class TemplatesManager {
 
             if (!response.ok) {
                 if (response.status === 403) {
-                    this.showToast('Bu işlem için yetkiniz yok', 'error');
+                    this.showToast('⚠️ Bu işlem için yetkiniz yok', 'warning');
                     return [];
                 } else if (response.status === 401) {
-                    this.showToast('Oturum süreniz dolmuş, lütfen tekrar giriş yapın', 'error');
+                    this.showToast('ℹ️ Oturum süreniz dolmuş, lütfen tekrar giriş yapın', 'info');
                     return [];
                 } else {
                     throw new Error(`HTTP ${response.status}: ${response.statusText}`);
@@ -436,7 +514,7 @@ class TemplatesManager {
             return this.categories;
         } catch (error) {
             console.error('❌ Kategori yükleme hatası:', error);
-            this.showToast('Kategoriler yüklenirken hata oluştu', 'error');
+            this.showToast('❌ Kategoriler yüklenirken hata oluştu', 'error');
             return [];
         }
     }
@@ -476,10 +554,10 @@ class TemplatesManager {
 
             if (!response.ok) {
                 if (response.status === 403) {
-                    this.showToast('Bu işlem için yetkiniz yok', 'error');
+                    this.showToast('⚠️ Bu işlem için yetkiniz yok', 'warning');
                     return [];
                 } else if (response.status === 401) {
-                    this.showToast('Oturum süreniz dolmuş, lütfen tekrar giriş yapın', 'error');
+                    this.showToast('ℹ️ Oturum süreniz dolmuş, lütfen tekrar giriş yapın', 'info');
                     return [];
                 } else {
                     throw new Error(`HTTP ${response.status}: ${response.statusText}`);
@@ -499,6 +577,11 @@ class TemplatesManager {
             this.hasMore = newTemplates.length === this.pageSize;
             this.currentPage++;
             
+            // Load more analitik
+            if (isLoadMore) {
+                this.trackEvent('load_more');
+            }
+            
             console.log('✅ Şablonlar yüklendi:', this.templates.length, 'hasMore:', this.hasMore);
             this.updateTemplatesList();
             this.updateTemplatesCount();
@@ -507,9 +590,11 @@ class TemplatesManager {
             return this.templates;
         } catch (error) {
             console.error('❌ Şablon yükleme hatası:', error);
-            this.showToast('Şablonlar yüklenirken hata oluştu', 'error');
+            
             if (!isLoadMore) {
-                this.showEmptyState();
+                this.showErrorState('Şablonlar yüklenirken hata oluştu');
+            } else {
+                this.showToast('❌ Şablonlar yüklenirken hata oluştu', 'error');
             }
             return [];
         } finally {
@@ -586,14 +671,14 @@ class TemplatesManager {
                     ${this.shouldShowDepartmentBadge(template) ? `<span class="department-badge">${this.escapeHtml(template.department)}</span>` : ''}
                 </div>
                 <div class="template-actions">
-                    <button class="btn btn-primary btn-sm use-template-btn" data-template-id="${template.id}">
+                    <button class="btn btn-primary btn-sm use-template-btn" data-template-id="${template.id}" aria-label="Şablonu kullan">
                         📋 Kullan
                     </button>
-                    <button class="btn btn-secondary btn-sm copy-template-btn" data-template-id="${template.id}">
+                    <button class="btn btn-secondary btn-sm copy-template-btn" data-template-id="${template.id}" aria-label="Şablonu panoya kopyala">
                         📄 Kopyala
                     </button>
                     ${(isOwner || isAdmin) ? `
-                        <button class="btn btn-danger btn-sm delete-template-btn" data-template-id="${template.id}">
+                        <button class="btn btn-danger btn-sm delete-template-btn" data-template-id="${template.id}" aria-label="Şablonu sil">
                             🗑️ Sil
                         </button>
                     ` : ''}
@@ -673,8 +758,59 @@ class TemplatesManager {
         
         if (loading) loading.classList.add('hidden');
         if (list) list.classList.add('hidden');
-        if (emptyState) emptyState.classList.remove('hidden');
+        if (emptyState) {
+            emptyState.classList.remove('hidden');
+            
+            // Boş durum mesajını güncelle
+            const emptyTitle = emptyState.querySelector('h2');
+            const emptyMessage = emptyState.querySelector('p');
+            
+            if (emptyTitle && emptyMessage) {
+                // Filtre var mı kontrol et
+                const hasFilters = this.currentFilters.q || 
+                                 this.currentFilters.category_id || 
+                                 this.currentFilters.only_mine || 
+                                 this.currentFilters.department;
+                
+                if (hasFilters) {
+                    emptyTitle.textContent = 'Sonuç bulunamadı';
+                    emptyMessage.textContent = 'Bu filtrelerle eşleşen şablon bulunamadı. Filtreleri temizleyip tekrar deneyin.';
+                } else {
+                    emptyTitle.textContent = 'Henüz şablon yok';
+                    emptyMessage.textContent = 'Üretim ekranında "Şablon olarak sakla" seçeneğiyle bir şablon ekleyebilirsiniz.';
+                }
+            }
+        }
         if (loadMoreBtn) loadMoreBtn.classList.add('hidden');
+    }
+
+    showErrorState(message) {
+        const loading = document.getElementById('templates-loading');
+        const list = document.getElementById('templates-list');
+        const emptyState = document.getElementById('templates-empty-state');
+        const loadMoreBtn = document.getElementById('load-more-btn');
+        
+        if (loading) loading.classList.add('hidden');
+        if (list) {
+            list.classList.remove('hidden');
+            list.innerHTML = `
+                <div class="error-state">
+                    <div class="error-icon">⚠️</div>
+                    <h3>Bağlantı sorunu</h3>
+                    <p>${message}</p>
+                    <button class="btn btn-primary retry-btn" onclick="templatesManager.retryLastRequest()">
+                        🔄 Tekrar Dene
+                    </button>
+                </div>
+            `;
+        }
+        if (emptyState) emptyState.classList.add('hidden');
+        if (loadMoreBtn) loadMoreBtn.classList.add('hidden');
+    }
+
+    retryLastRequest() {
+        // Son isteği tekrarla
+        this.loadTemplates(this.currentFilters);
     }
 
     showLoadMoreLoading() {
@@ -723,13 +859,28 @@ class TemplatesManager {
         this.showToast(message, 'error');
     }
 
-    // Toast notification system
+    // Toast notification system with deduplication
     showToast(message, type = 'success') {
         const container = document.getElementById('toast-container');
         if (!container) return;
 
+        // Deduplication: Check if same message exists in last 3 seconds
+        const existingToasts = container.querySelectorAll('.toast');
+        const now = Date.now();
+        
+        for (let toast of existingToasts) {
+            const toastMessage = toast.querySelector('.toast-message')?.textContent;
+            const toastTime = parseInt(toast.dataset.timestamp || '0');
+            
+            if (toastMessage === message && (now - toastTime) < 3000) {
+                // Same message within 3 seconds, don't show duplicate
+                return;
+            }
+        }
+
         const toast = document.createElement('div');
         toast.className = `toast ${type}`;
+        toast.dataset.timestamp = now.toString();
         
         const icons = {
             success: '✅',
@@ -836,10 +987,10 @@ class TemplatesManager {
 
             if (!response.ok) {
                 if (response.status === 403) {
-                    this.showToast('Bu işlem için yetkiniz yok', 'error');
+                    this.showToast('⚠️ Bu işlem için yetkiniz yok', 'warning');
                     return [];
                 } else if (response.status === 401) {
-                    this.showToast('Oturum süreniz dolmuş, lütfen tekrar giriş yapın', 'error');
+                    this.showToast('ℹ️ Oturum süreniz dolmuş, lütfen tekrar giriş yapın', 'info');
                     return [];
                 } else {
                     throw new Error(`HTTP ${response.status}: ${response.statusText}`);
@@ -855,7 +1006,7 @@ class TemplatesManager {
             return this.departments;
         } catch (error) {
             console.error('❌ Departman yükleme hatası:', error);
-            this.showToast('Departmanlar yüklenirken hata oluştu', 'error');
+            this.showToast('❌ Departmanlar yüklenirken hata oluştu', 'error');
             return [];
         }
     }
@@ -968,6 +1119,9 @@ class TemplatesManager {
     async useTemplate(templateId, action) {
         const template = this.templates.find(t => t.id == templateId);
         if (!template) return;
+        
+        // Analitik tracking
+        this.trackEvent('template_used', { action: action });
 
         switch (action) {
             case 'request':
@@ -999,10 +1153,40 @@ class TemplatesManager {
         }
     }
 
-    async deleteTemplate(templateId) {
+    showDeleteModal(templateId) {
+        this.selectedTemplateId = templateId;
+        const modal = document.getElementById('delete-template-modal');
+        if (modal) {
+            modal.classList.remove('hidden');
+            // Focus trap
+            const confirmBtn = document.getElementById('confirm-delete');
+            if (confirmBtn) confirmBtn.focus();
+        }
+    }
+
+    hideDeleteModal() {
+        const modal = document.getElementById('delete-template-modal');
+        if (modal) {
+            modal.classList.add('hidden');
+        }
+        this.selectedTemplateId = null;
+    }
+
+    async confirmDelete() {
+        if (!this.selectedTemplateId) return;
+        
+        const confirmBtn = document.getElementById('confirm-delete');
+        const btnText = confirmBtn.querySelector('.btn-text');
+        const btnSpinner = confirmBtn.querySelector('.btn-spinner');
+        
+        // Loading state
+        confirmBtn.disabled = true;
+        btnText.classList.add('hidden');
+        btnSpinner.classList.remove('hidden');
+        
         try {
             const token = localStorage.getItem(CONFIG.STORAGE_KEYS.AUTH_TOKEN);
-            const response = await fetch(`${CONFIG.BACKEND_URL}/templates/${templateId}`, {
+            const response = await fetch(`${CONFIG.BACKEND_URL}/templates/${this.selectedTemplateId}`, {
                 method: 'DELETE',
                 headers: {
                     'Authorization': `Bearer ${token}`
@@ -1011,10 +1195,10 @@ class TemplatesManager {
 
             if (!response.ok) {
                 if (response.status === 403) {
-                    this.showToast('Bu işlem için yetkiniz yok', 'error');
+                    this.showToast('⚠️ Bu işlem için yetkiniz yok', 'warning');
                     return;
                 } else if (response.status === 404) {
-                    this.showToast('Şablon bulunamadı', 'error');
+                    this.showToast('❌ Şablon bulunamadı', 'error');
                     return;
                 } else {
                     throw new Error(`HTTP ${response.status}: ${response.statusText}`);
@@ -1022,12 +1206,23 @@ class TemplatesManager {
             }
 
             console.log('✅ Şablon silindi');
-            this.showToast('Şablon başarıyla silindi', 'success');
+            this.showToast('✅ Şablon silindi', 'success');
+            this.trackEvent('template_deleted');
+            this.hideDeleteModal();
             this.loadTemplates(this.currentFilters);
         } catch (error) {
             console.error('❌ Şablon silme hatası:', error);
-            this.showToast('Şablon silinirken hata oluştu', 'error');
+            this.showToast('❌ Şablon silinirken hata oluştu', 'error');
+        } finally {
+            // Reset button state
+            confirmBtn.disabled = false;
+            btnText.classList.remove('hidden');
+            btnSpinner.classList.add('hidden');
         }
+    }
+
+    async deleteTemplate(templateId) {
+        this.showDeleteModal(templateId);
     }
 
     // Initialize templates screen
@@ -1075,6 +1270,14 @@ class TemplatesManager {
                     this.applyFilters();
                 }, 300); // 300ms debounce
             });
+            
+            // Enter tuşu ile anında arama
+            searchFilter.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter') {
+                    clearTimeout(this.searchTimeout);
+                    this.applyFilters();
+                }
+            });
         }
 
         if (clearFiltersBtn) {
@@ -1114,7 +1317,53 @@ class TemplatesManager {
         const modal = document.getElementById('use-template-modal');
         if (modal) {
             modal.classList.remove('hidden');
+            
+            // Klavye kısayolları için event listener ekle
+            this.setupUseModalKeyboard();
         }
+    }
+
+    setupUseModalKeyboard() {
+        const modal = document.getElementById('use-template-modal');
+        if (!modal) return;
+
+        const handleKeydown = (e) => {
+            if (modal.classList.contains('hidden')) return;
+            
+            switch(e.key) {
+                case '1':
+                    e.preventDefault();
+                    this.useTemplate(this.selectedTemplate, 'request');
+                    break;
+                case '2':
+                    e.preventDefault();
+                    this.useTemplate(this.selectedTemplate, 'response');
+                    break;
+                case '3':
+                    e.preventDefault();
+                    this.useTemplate(this.selectedTemplate, 'clipboard');
+                    break;
+                case 'Enter':
+                    e.preventDefault();
+                    // Varsayılan olarak ilk seçeneği kullan
+                    this.useTemplate(this.selectedTemplate, 'request');
+                    break;
+                case 'Escape':
+                    e.preventDefault();
+                    this.hideUseModal();
+                    break;
+            }
+        };
+
+        // Event listener'ı ekle
+        document.addEventListener('keydown', handleKeydown);
+        
+        // Modal kapanınca event listener'ı kaldır
+        const originalHide = this.hideUseModal;
+        this.hideUseModal = () => {
+            document.removeEventListener('keydown', handleKeydown);
+            originalHide.call(this);
+        };
     }
 
     hideUseModal() {
@@ -2929,13 +3178,27 @@ class EventManager {
         
         if (confirmDelete) {
             confirmDelete.addEventListener('click', () => {
-                templatesManager.deleteTemplate(templatesManager.selectedTemplate);
-                templatesManager.hideDeleteModal();
+                templatesManager.confirmDelete();
             });
         }
         
         if (cancelDelete) {
             cancelDelete.addEventListener('click', () => templatesManager.hideDeleteModal());
+        }
+
+        // Modal kapatma: ESC tuşu ve dışarı tıklama
+        if (deleteModal) {
+            deleteModal.addEventListener('click', (e) => {
+                if (e.target === deleteModal) {
+                    templatesManager.hideDeleteModal();
+                }
+            });
+            
+            document.addEventListener('keydown', (e) => {
+                if (e.key === 'Escape' && !deleteModal.classList.contains('hidden')) {
+                    templatesManager.hideDeleteModal();
+                }
+            });
         }
         
         // Go to home from categories empty state

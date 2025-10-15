@@ -474,15 +474,17 @@
             <div id="delete-template-modal" class="modal hidden">
                 <div class="modal-content">
                     <div class="modal-header">
-                        <h3>🗑️ Şablonu Sil</h3>
+                        <h3>Şablonu sil</h3>
                         <button id="close-delete-modal" class="modal-close">&times;</button>
                     </div>
                     <div class="modal-body">
-                        <p>Bu şablonu silmek istediğinizden emin misiniz?</p>
-                        <p class="delete-warning">Bu işlem geri alınamaz.</p>
+                        <p>Bu şablonu silmek istediğinize emin misiniz? Bu işlem geri alınamaz.</p>
                         <div class="modal-actions">
-                            <button id="confirm-delete" class="btn btn-danger">🗑️ Sil</button>
-                            <button id="cancel-delete" class="btn btn-secondary">❌ İptal</button>
+                            <button id="confirm-delete" class="btn btn-danger">
+                                <span class="btn-text">Evet, sil</span>
+                                <span class="btn-spinner hidden">⏳</span>
+                            </button>
+                            <button id="cancel-delete" class="btn btn-secondary">İptal</button>
                         </div>
                     </div>
                 </div>
