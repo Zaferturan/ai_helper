@@ -122,4 +122,52 @@ class UserStats(BaseModel):
 
 class AdminUsersResponse(BaseModel):
     users: List[UserStats]
+    total_count: int
+
+# Template Models
+class TemplateCreate(BaseModel):
+    title: Optional[str] = None  # Boşsa otomatik üretilecek
+    content: str
+    category_id: Optional[int] = None
+
+class TemplateUpdate(BaseModel):
+    title: Optional[str] = None
+    content: Optional[str] = None
+    category_id: Optional[int] = None
+
+class TemplateResponse(BaseModel):
+    id: int
+    title: str
+    content: str
+    department: str
+    owner_user_id: int
+    owner_name: str  # Owner'ın full_name'i
+    category_id: Optional[int] = None
+    category_name: Optional[str] = None  # Kategori adı
+    created_at: datetime
+    updated_at: datetime
+    is_active: bool
+
+class TemplateListResponse(BaseModel):
+    templates: List[TemplateResponse]
+    total_count: int
+    page: int
+    limit: int
+
+# Category Models
+class CategoryCreate(BaseModel):
+    name: str
+
+class CategoryResponse(BaseModel):
+    id: int
+    name: str
+    department: str
+    owner_user_id: int
+    owner_name: str  # Owner'ın full_name'i
+    is_owner: bool  # Mevcut kullanıcı owner mı?
+    created_at: datetime
+    template_count: int  # Bu kategorideki şablon sayısı
+
+class CategoryListResponse(BaseModel):
+    categories: List[CategoryResponse]
     total_count: int 

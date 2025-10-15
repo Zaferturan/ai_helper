@@ -1,13 +1,14 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
-from typing import List
+from sqlalchemy import or_, func
+from typing import List, Optional
 import models
 import api_models
 from connection import get_db
 from ollama_client import OllamaClient
 from gemini_client import GeminiClient
 from auth_endpoints import get_current_user
-from models import User
+from models import User, Template, TemplateCategory
 
 router = APIRouter()
 ollama_client = OllamaClient()
@@ -308,4 +309,332 @@ async def get_user_response_history(
             'total': len(responses)
         }
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Error getting response history: {str(e)}") 
+        raise HTTPException(status_code=500, detail=f"Error getting response history: {str(e)}")
+
+# ============================================================================
+# TEMPLATE ENDPOINTS
+# ============================================================================
+
+@router.get("/templates", response_model=api_models.TemplateListResponse)
+async def get_templates(
+    q: Optional[str] = Query(None, description="Arama terimi (başlık ve içerikte)"),
+    category_id: Optional[int] = Query(None, description="Kategori ID'si"),
+    only_mine: Optional[bool] = Query(False, description="Sadece kendi şablonlarım"),
+    limit: int = Query(50, ge=1, le=100, description="Sayfa başına kayıt sayısı"),
+    offset: int = Query(0, ge=0, description="Başlangıç kaydı"),
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """Şablonları listele - departman bazlı filtreleme"""
+    try:
+        # Base query - departman filtresi zorunlu
+        query = db.query(Template).filter(Template.is_active == True)
+        
+        # Admin değilse sadece kendi departmanını görebilir
+        if not current_user.is_admin:
+            query = query.filter(Template.department == current_user.department)
+        
+        # Arama filtresi (başlık ve içerikte)
+        if q:
+            search_term = f"%{q}%"
+            query = query.filter(
+                or_(
+                    Template.title.ilike(search_term),
+                    Template.content.ilike(search_term)
+                )
+            )
+        
+        # Kategori filtresi
+        if category_id:
+            query = query.filter(Template.category_id == category_id)
+        
+        # Sadece kendi şablonlarım
+        if only_mine:
+            query = query.filter(Template.owner_user_id == current_user.id)
+        
+        # Toplam sayı
+        total_count = query.count()
+        
+        # Sayfalama
+        templates = query.order_by(Template.created_at.desc()).offset(offset).limit(limit).all()
+        
+        # Response formatına çevir
+        template_responses = []
+        for template in templates:
+            # Owner bilgisi
+            owner = db.query(User).filter(User.id == template.owner_user_id).first()
+            owner_name = owner.full_name if owner else "Bilinmeyen"
+            
+            # Kategori bilgisi
+            category_name = None
+            if template.category_id:
+                category = db.query(TemplateCategory).filter(TemplateCategory.id == template.category_id).first()
+                category_name = category.name if category else None
+            
+            template_responses.append(api_models.TemplateResponse(
+                id=template.id,
+                title=template.title,
+                content=template.content,
+                department=template.department,
+                owner_user_id=template.owner_user_id,
+                owner_name=owner_name,
+                category_id=template.category_id,
+                category_name=category_name,
+                created_at=template.created_at,
+                updated_at=template.updated_at,
+                is_active=template.is_active
+            ))
+        
+        return api_models.TemplateListResponse(
+            templates=template_responses,
+            total_count=total_count,
+            page=offset // limit + 1,
+            limit=limit
+        )
+        
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error getting templates: {str(e)}")
+
+@router.post("/templates", response_model=api_models.TemplateResponse)
+async def create_template(
+    template_data: api_models.TemplateCreate,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """Yeni şablon oluştur"""
+    try:
+        # Title boşsa ilk 80 karakterden üret
+        title = template_data.title
+        if not title:
+            title = template_data.content[:80] + "..." if len(template_data.content) > 80 else template_data.content
+        
+        # Kategori kontrolü (varsa)
+        if template_data.category_id:
+            category = db.query(TemplateCategory).filter(
+                TemplateCategory.id == template_data.category_id,
+                TemplateCategory.department == current_user.department
+            ).first()
+            
+            if not category:
+                raise HTTPException(status_code=404, detail="Kategori bulunamadı veya erişim yetkiniz yok")
+        
+        # Yeni şablon oluştur
+        new_template = Template(
+            title=title,
+            content=template_data.content,
+            department=current_user.department,
+            owner_user_id=current_user.id,
+            category_id=template_data.category_id
+        )
+        
+        db.add(new_template)
+        db.commit()
+        db.refresh(new_template)
+        
+        # Response formatına çevir
+        category_name = None
+        if new_template.category_id:
+            category = db.query(TemplateCategory).filter(TemplateCategory.id == new_template.category_id).first()
+            category_name = category.name if category else None
+        
+        return api_models.TemplateResponse(
+            id=new_template.id,
+            title=new_template.title,
+            content=new_template.content,
+            department=new_template.department,
+            owner_user_id=new_template.owner_user_id,
+            owner_name=current_user.full_name,
+            category_id=new_template.category_id,
+            category_name=category_name,
+            created_at=new_template.created_at,
+            updated_at=new_template.updated_at,
+            is_active=new_template.is_active
+        )
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(status_code=500, detail=f"Error creating template: {str(e)}")
+
+@router.delete("/templates/{template_id}")
+async def delete_template(
+    template_id: int,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """Şablon sil (soft delete) - sadece owner veya admin"""
+    try:
+        # Şablonu bul
+        template = db.query(Template).filter(Template.id == template_id).first()
+        if not template:
+            raise HTTPException(status_code=404, detail="Şablon bulunamadı")
+        
+        # Departman kontrolü
+        if not current_user.is_admin and template.department != current_user.department:
+            raise HTTPException(status_code=403, detail="Bu şablona erişim yetkiniz yok")
+        
+        # Sahiplik kontrolü
+        if not current_user.is_admin and template.owner_user_id != current_user.id:
+            raise HTTPException(status_code=403, detail="Sadece şablon sahibi silebilir")
+        
+        # Soft delete
+        template.is_active = False
+        db.commit()
+        
+        return {"success": True, "message": "Şablon başarıyla silindi"}
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(status_code=500, detail=f"Error deleting template: {str(e)}")
+
+# ============================================================================
+# CATEGORY ENDPOINTS
+# ============================================================================
+
+@router.get("/categories", response_model=api_models.CategoryListResponse)
+async def get_categories(
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """Kategorileri listele - departman bazlı filtreleme"""
+    try:
+        # Base query - departman filtresi zorunlu
+        query = db.query(TemplateCategory)
+        
+        # Admin değilse sadece kendi departmanını görebilir
+        if not current_user.is_admin:
+            query = query.filter(TemplateCategory.department == current_user.department)
+        
+        categories = query.order_by(TemplateCategory.name).all()
+        
+        # Response formatına çevir
+        category_responses = []
+        for category in categories:
+            # Owner bilgisi
+            owner = db.query(User).filter(User.id == category.owner_user_id).first()
+            owner_name = owner.full_name if owner else "Bilinmeyen"
+            
+            # Bu kategorideki şablon sayısı
+            template_count = db.query(Template).filter(
+                Template.category_id == category.id,
+                Template.is_active == True
+            ).count()
+            
+            # Mevcut kullanıcı owner mı?
+            is_owner = category.owner_user_id == current_user.id
+            
+            category_responses.append(api_models.CategoryResponse(
+                id=category.id,
+                name=category.name,
+                department=category.department,
+                owner_user_id=category.owner_user_id,
+                owner_name=owner_name,
+                is_owner=is_owner,
+                created_at=category.created_at,
+                template_count=template_count
+            ))
+        
+        return api_models.CategoryListResponse(
+            categories=category_responses,
+            total_count=len(category_responses)
+        )
+        
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error getting categories: {str(e)}")
+
+@router.post("/categories", response_model=api_models.CategoryResponse)
+async def create_category(
+    category_data: api_models.CategoryCreate,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """Yeni kategori oluştur - departman bazlı unique constraint"""
+    try:
+        # Aynı departmanda aynı isimde kategori var mı kontrol et
+        existing_category = db.query(TemplateCategory).filter(
+            TemplateCategory.name == category_data.name,
+            TemplateCategory.department == current_user.department
+        ).first()
+        
+        if existing_category:
+            raise HTTPException(
+                status_code=400, 
+                detail=f"'{category_data.name}' isimli kategori zaten mevcut"
+            )
+        
+        # Yeni kategori oluştur
+        new_category = TemplateCategory(
+            name=category_data.name,
+            department=current_user.department,
+            owner_user_id=current_user.id
+        )
+        
+        db.add(new_category)
+        db.commit()
+        db.refresh(new_category)
+        
+        # Response formatına çevir
+        return api_models.CategoryResponse(
+            id=new_category.id,
+            name=new_category.name,
+            department=new_category.department,
+            owner_user_id=new_category.owner_user_id,
+            owner_name=current_user.full_name,
+            is_owner=True,
+            created_at=new_category.created_at,
+            template_count=0  # Yeni kategori, henüz şablon yok
+        )
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(status_code=500, detail=f"Error creating category: {str(e)}")
+
+@router.delete("/categories/{category_id}")
+async def delete_category(
+    category_id: int,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """Kategori sil - sadece owner veya admin, içinde şablon varsa engelle"""
+    try:
+        # Kategoriyi bul
+        category = db.query(TemplateCategory).filter(TemplateCategory.id == category_id).first()
+        if not category:
+            raise HTTPException(status_code=404, detail="Kategori bulunamadı")
+        
+        # Departman kontrolü
+        if not current_user.is_admin and category.department != current_user.department:
+            raise HTTPException(status_code=403, detail="Bu kategoriye erişim yetkiniz yok")
+        
+        # Sahiplik kontrolü
+        if not current_user.is_admin and category.owner_user_id != current_user.id:
+            raise HTTPException(status_code=403, detail="Sadece kategori sahibi silebilir")
+        
+        # İçinde aktif şablon var mı kontrol et
+        active_templates_count = db.query(Template).filter(
+            Template.category_id == category_id,
+            Template.is_active == True
+        ).count()
+        
+        if active_templates_count > 0:
+            raise HTTPException(
+                status_code=400,
+                detail=f"Bu kategoride {active_templates_count} adet şablon bulunuyor. Önce şablonları silin veya başka kategoriye taşıyın."
+            )
+        
+        # Kategoriyi sil
+        db.delete(category)
+        db.commit()
+        
+        return {"success": True, "message": "Kategori başarıyla silindi"}
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(status_code=500, detail=f"Error deleting category: {str(e)}") 
