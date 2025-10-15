@@ -374,6 +374,10 @@ class TemplatesManager {
         };
         this.selectedTemplate = null;
         this.searchTimeout = null;
+        this.isLoading = false;
+        this.hasMore = true;
+        this.currentPage = 0;
+        this.pageSize = 20; // Daha küçük sayfa boyutu
     }
 
     async loadCategories() {
@@ -404,10 +408,21 @@ class TemplatesManager {
         }
     }
 
-    async loadTemplates(filters = {}) {
+    async loadTemplates(filters = {}, isLoadMore = false) {
         try {
-            console.log('📋 Şablonlar yükleniyor...', filters);
-            this.showLoading();
+            if (this.isLoading) return; // Prevent multiple simultaneous requests
+            
+            console.log('📋 Şablonlar yükleniyor...', filters, 'loadMore:', isLoadMore);
+            
+            if (!isLoadMore) {
+                this.showLoading();
+                this.currentPage = 0;
+                this.templates = [];
+            } else {
+                this.showLoadMoreLoading();
+            }
+            
+            this.isLoading = true;
             
             const token = localStorage.getItem(CONFIG.STORAGE_KEYS.AUTH_TOKEN);
             const params = new URLSearchParams();
@@ -416,8 +431,8 @@ class TemplatesManager {
             if (filters.q) params.append('q', filters.q);
             if (filters.category_id) params.append('category_id', filters.category_id);
             if (filters.only_mine) params.append('only_mine', 'true');
-            params.append('limit', '50');
-            params.append('offset', '0');
+            params.append('limit', this.pageSize.toString());
+            params.append('offset', (this.currentPage * this.pageSize).toString());
 
             const response = await fetch(`${CONFIG.BACKEND_URL}/templates?${params}`, {
                 headers: {
@@ -430,18 +445,33 @@ class TemplatesManager {
             }
 
             const data = await response.json();
-            this.templates = data.templates || [];
+            const newTemplates = data.templates || [];
             
-            console.log('✅ Şablonlar yüklendi:', this.templates.length);
+            if (isLoadMore) {
+                this.templates = [...this.templates, ...newTemplates];
+            } else {
+                this.templates = newTemplates;
+            }
+            
+            // Has more kontrolü
+            this.hasMore = newTemplates.length === this.pageSize;
+            this.currentPage++;
+            
+            console.log('✅ Şablonlar yüklendi:', this.templates.length, 'hasMore:', this.hasMore);
             this.updateTemplatesList();
             this.updateTemplatesCount();
+            this.updateLoadMoreButton();
             
             return this.templates;
         } catch (error) {
             console.error('❌ Şablon yükleme hatası:', error);
             this.showError('Şablonlar yüklenirken hata oluştu');
-            this.showEmptyState();
+            if (!isLoadMore) {
+                this.showEmptyState();
+            }
             return [];
+        } finally {
+            this.isLoading = false;
         }
     }
 
@@ -486,13 +516,15 @@ class TemplatesManager {
             return;
         }
 
-        // Şablon kartlarını oluştur
-        templatesList.innerHTML = '';
+        // Performans optimizasyonu: DocumentFragment kullan
+        const fragment = document.createDocumentFragment();
         this.templates.forEach(template => {
             const card = this.createTemplateCard(template);
-            templatesList.appendChild(card);
+            fragment.appendChild(card);
         });
 
+        templatesList.innerHTML = '';
+        templatesList.appendChild(fragment);
         templatesList.classList.remove('hidden');
     }
 
@@ -545,20 +577,102 @@ class TemplatesManager {
         const loading = document.getElementById('templates-loading');
         const list = document.getElementById('templates-list');
         const emptyState = document.getElementById('templates-empty-state');
+        const loadMoreBtn = document.getElementById('load-more-btn');
         
         if (loading) loading.classList.remove('hidden');
         if (list) list.classList.add('hidden');
         if (emptyState) emptyState.classList.add('hidden');
+        if (loadMoreBtn) loadMoreBtn.classList.add('hidden');
+    }
+
+    showSkeletonLoading() {
+        const list = document.getElementById('templates-list');
+        if (!list) return;
+
+        // Skeleton kartları oluştur
+        const skeletonCards = Array.from({ length: 3 }, () => this.createSkeletonCard());
+        
+        list.innerHTML = '';
+        skeletonCards.forEach(card => list.appendChild(card));
+        list.classList.remove('hidden');
+    }
+
+    createSkeletonCard() {
+        const card = document.createElement('div');
+        card.className = 'skeleton-card';
+        
+        card.innerHTML = `
+            <div class="skeleton-header">
+                <div>
+                    <div class="skeleton-title"></div>
+                    <div class="skeleton-category"></div>
+                </div>
+                <div class="template-actions">
+                    <div class="skeleton-title" style="width: 80px; height: 32px;"></div>
+                    <div class="skeleton-title" style="width: 80px; height: 32px;"></div>
+                </div>
+            </div>
+            <div class="skeleton-content"></div>
+            <div class="skeleton-meta">
+                <div class="skeleton-owner"></div>
+                <div class="skeleton-date"></div>
+            </div>
+        `;
+        
+        return card;
     }
 
     showEmptyState() {
         const loading = document.getElementById('templates-loading');
         const list = document.getElementById('templates-list');
         const emptyState = document.getElementById('templates-empty-state');
+        const loadMoreBtn = document.getElementById('load-more-btn');
         
         if (loading) loading.classList.add('hidden');
         if (list) list.classList.add('hidden');
         if (emptyState) emptyState.classList.remove('hidden');
+        if (loadMoreBtn) loadMoreBtn.classList.add('hidden');
+    }
+
+    showLoadMoreLoading() {
+        const loadMoreBtn = document.getElementById('load-more-btn');
+        const loadMoreSpinner = document.getElementById('load-more-spinner');
+        
+        if (loadMoreBtn) {
+            loadMoreBtn.disabled = true;
+            loadMoreBtn.innerHTML = '⏳ Yükleniyor...';
+        }
+        
+        if (loadMoreSpinner) {
+            loadMoreSpinner.classList.remove('hidden');
+        }
+    }
+
+    hideLoadMoreLoading() {
+        const loadMoreBtn = document.getElementById('load-more-btn');
+        const loadMoreSpinner = document.getElementById('load-more-spinner');
+        
+        if (loadMoreBtn) {
+            loadMoreBtn.disabled = false;
+            loadMoreBtn.innerHTML = '📄 Daha Fazla Yükle';
+        }
+        
+        if (loadMoreSpinner) {
+            loadMoreSpinner.classList.add('hidden');
+        }
+    }
+
+    updateLoadMoreButton() {
+        const loadMoreBtn = document.getElementById('load-more-btn');
+        if (!loadMoreBtn) return;
+
+        if (this.hasMore && this.templates.length > 0) {
+            loadMoreBtn.classList.remove('hidden');
+        } else {
+            loadMoreBtn.classList.add('hidden');
+        }
+        
+        this.hideLoadMoreLoading();
     }
 
     showError(message) {
@@ -720,7 +834,9 @@ class TemplatesManager {
         if (searchFilter) {
             searchFilter.addEventListener('input', () => {
                 clearTimeout(this.searchTimeout);
-                this.searchTimeout = setTimeout(() => this.applyFilters(), 300);
+                this.searchTimeout = setTimeout(() => {
+                    this.applyFilters();
+                }, 300); // 300ms debounce
             });
         }
 
@@ -730,6 +846,14 @@ class TemplatesManager {
 
         if (refreshBtn) {
             refreshBtn.addEventListener('click', () => this.loadTemplates(this.currentFilters));
+        }
+
+        // Load More button
+        const loadMoreBtn = document.getElementById('load-more-btn');
+        if (loadMoreBtn) {
+            loadMoreBtn.addEventListener('click', () => {
+                this.loadTemplates(this.currentFilters, true);
+            });
         }
 
         // Template action event listener'ları
