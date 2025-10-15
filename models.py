@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, Text, DateTime, Boolean, Float, ForeignKey, Index
+from sqlalchemy import Column, Integer, String, Text, DateTime, Boolean, Float, ForeignKey, Index, UniqueConstraint
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 from connection import Base
@@ -20,6 +20,8 @@ class User(Base):
     login_attempts = relationship("LoginAttempt", back_populates="user")
     login_tokens = relationship("LoginToken", back_populates="user")
     requests = relationship("Request", back_populates="user")  # Kullanıcının istekleri
+    template_categories = relationship("TemplateCategory", back_populates="owner")  # Kullanıcının kategorileri
+    templates = relationship("Template", back_populates="owner")  # Kullanıcının şablonları
 
 class LoginAttempt(Base):
     __tablename__ = "login_attempts"
@@ -113,4 +115,50 @@ class Model(Base):
     supports_chat = Column(Boolean, default=False)
     
     # Relationship with Response table
-    responses = relationship("Response", back_populates="model") 
+    responses = relationship("Response", back_populates="model")
+
+class TemplateCategory(Base):
+    __tablename__ = "template_categories"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    name = Column(String(255), nullable=False)
+    department = Column(String(255), nullable=False, index=True)  # Departman bilgisi
+    owner_user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    
+    # Relationships
+    owner = relationship("User", back_populates="template_categories")
+    templates = relationship("Template", back_populates="category")
+    
+    # Constraints and indexes
+    __table_args__ = (
+        UniqueConstraint('name', 'department', name='uq_category_name_department'),
+        Index('idx_template_categories_department', 'department'),
+        Index('idx_template_categories_owner', 'owner_user_id'),
+    )
+
+class Template(Base):
+    __tablename__ = "templates"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    title = Column(String(255), nullable=False)
+    content = Column(Text, nullable=False)
+    department = Column(String(255), nullable=False, index=True)  # Departman bilgisi
+    owner_user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+    category_id = Column(Integer, ForeignKey("template_categories.id"), nullable=True)  # Kategori (opsiyonel)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
+    is_active = Column(Boolean, default=True)  # Soft delete için
+    
+    # Relationships
+    owner = relationship("User", back_populates="templates")
+    category = relationship("TemplateCategory", back_populates="templates")
+    
+    # Indexes for performance
+    __table_args__ = (
+        Index('idx_templates_department', 'department'),
+        Index('idx_templates_category', 'category_id'),
+        Index('idx_templates_owner', 'owner_user_id'),
+        Index('idx_templates_active', 'is_active'),
+        Index('idx_templates_created', 'created_at'),
+    ) 
