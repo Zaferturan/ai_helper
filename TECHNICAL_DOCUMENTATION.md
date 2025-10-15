@@ -7,16 +7,17 @@
 4. [Authentication Flow](#authentication-flow)
 5. [Database Yapısı](#database-yapısı)
 6. [API Endpoints](#api-endpoints)
-7. [Frontend İşleyişi](#frontend-işleyişi)
-8. [Docker Deployment](#docker-deployment)
-9. [Önemli Fonksiyonlar](#önemli-fonksiyonlar)
-10. [Troubleshooting](#troubleshooting)
+7. [Template Sistemi](#template-sistemi) ⭐ **YENİ**
+8. [Frontend İşleyişi](#frontend-işleyişi)
+9. [Docker Deployment](#docker-deployment)
+10. [Önemli Fonksiyonlar](#önemli-fonksiyonlar)
+11. [Troubleshooting](#troubleshooting)
 
 ---
 
 ## Sistem Genel Bakış
 
-AI Helper, Bursa Nilüfer Belediyesi için geliştirilmiş bir yapay zeka destekli yanıt üretim sistemidir. Kullanıcılar, gelen istek/önerilere cevap taslakları hazırlayabilir ve AI destekli yanıtlar üretebilir.
+AI Helper, Bursa Nilüfer Belediyesi için geliştirilmiş bir yapay zeka destekli yanıt üretim sistemidir. Kullanıcılar, gelen istek/önerilere cevap taslakları hazırlayabilir, AI destekli yanıtlar üretebilir ve **şablon sistemi** ile sık kullanılan yanıtları kaydedip tekrar kullanabilir.
 
 ### Teknoloji Stack
 - **Backend:** FastAPI (Python 3.11)
@@ -87,13 +88,15 @@ docker run -d \
 ├── main.py                  # FastAPI ana uygulama
 ├── auth_endpoints.py        # Authentication endpoints
 ├── auth_system.py           # Auth logic, JWT, email
-├── endpoints.py             # Business logic endpoints
-├── models.py                # SQLAlchemy database models
-├── api_models.py            # Pydantic request/response models
+├── endpoints.py             # Business logic endpoints + Template API
+├── models.py                # SQLAlchemy database models + Template models
+├── api_models.py            # Pydantic request/response models + Template models
 ├── connection.py            # Database connection
 ├── config.py                # Configuration management
 ├── ollama_client.py         # Ollama AI client
 ├── gemini_client.py         # Gemini AI client
+├── migrate_templates.py     # Template tabloları migration script'i
+├── test_templates_api.py    # Template API test script'i
 ├── requirements.txt         # Python dependencies
 ├── Dockerfile               # Container build file
 ├── nginx.conf               # Nginx configuration
@@ -1030,6 +1033,194 @@ sequenceDiagram
 | POST | `/api/v1/profile/complete` | Profil tamamla | ✅ |
 | GET | `/api/v1/session` | Session kontrolü | ✅ |
 
+### Template Endpoints (YENİ) ⭐
+
+| Method | Endpoint | Açıklama | Auth Required |
+|--------|----------|----------|---------------|
+| GET | `/api/v1/templates` | Şablonları listele (filtreleme, arama) | ✅ |
+| POST | `/api/v1/templates` | Yeni şablon oluştur | ✅ |
+| DELETE | `/api/v1/templates/{id}` | Şablon sil (soft delete) | ✅ (Owner/Admin) |
+| GET | `/api/v1/categories` | Kategorileri listele | ✅ |
+| POST | `/api/v1/categories` | Yeni kategori oluştur | ✅ |
+| DELETE | `/api/v1/categories/{id}` | Kategori sil | ✅ (Owner/Admin) |
+
+---
+
+## Template Sistemi ⭐ **YENİ ÖZELLİK**
+
+### Genel Bakış
+
+Template sistemi, kullanıcıların sık kullanılan yanıt metinlerini **kaydedip yeniden kullanabilmelerini** sağlar. Sistem departman bazlı çalışır ve güvenlik odaklıdır.
+
+### Özellikler
+
+- **Departman Bazlı Paylaşım:** Aynı müdürlükteki herkes şablonları görebilir
+- **Kategori Sistemi:** Şablonlar kategorilere ayrılabilir
+- **Sahiplik Kontrolü:** Sadece oluşturan (ve admin) silebilir
+- **Soft Delete:** Şablonlar silinmez, `is_active=false` yapılır
+- **Arama ve Filtreleme:** Başlık ve içerikte arama, kategori filtreleme
+- **Otomatik Başlık:** Boş title ilk 80 karakterden üretilir
+
+### Veritabanı Yapısı
+
+#### TemplateCategory Tablosu
+```sql
+CREATE TABLE template_categories (
+    id INTEGER PRIMARY KEY,
+    name VARCHAR(255) NOT NULL,
+    department VARCHAR(255) NOT NULL,
+    owner_user_id INTEGER NOT NULL,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    
+    UNIQUE(name, department),  -- Aynı departmanda aynı isim
+    FOREIGN KEY(owner_user_id) REFERENCES users(id)
+);
+```
+
+#### Template Tablosu
+```sql
+CREATE TABLE templates (
+    id INTEGER PRIMARY KEY,
+    title VARCHAR(255) NOT NULL,
+    content TEXT NOT NULL,
+    department VARCHAR(255) NOT NULL,
+    owner_user_id INTEGER NOT NULL,
+    category_id INTEGER,  -- Opsiyonel
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    is_active BOOLEAN DEFAULT TRUE,  -- Soft delete
+    
+    FOREIGN KEY(owner_user_id) REFERENCES users(id),
+    FOREIGN KEY(category_id) REFERENCES template_categories(id)
+);
+```
+
+### Güvenlik Kuralları
+
+#### Departman İzolasyonu
+```python
+# Kullanıcı sadece kendi departmanını görebilir
+if not current_user.is_admin:
+    query = query.filter(Template.department == current_user.department)
+```
+
+#### Sahiplik Kontrolü
+```python
+# Sadece owner veya admin silebilir
+if not current_user.is_admin and template.owner_user_id != current_user.id:
+    raise HTTPException(status_code=403, detail="Sadece şablon sahibi silebilir")
+```
+
+#### Kategori Koruması
+```python
+# İçinde şablon olan kategori silinemez
+if active_templates_count > 0:
+    raise HTTPException(status_code=400, detail="Bu kategoride şablonlar bulunuyor")
+```
+
+### API Kullanımı
+
+#### Şablon Listeleme
+```bash
+# Tüm şablonlar
+GET /api/v1/templates
+
+# Arama
+GET /api/v1/templates?q=belediye
+
+# Kategori filtresi
+GET /api/v1/templates?category_id=1
+
+# Sadece kendi şablonlarım
+GET /api/v1/templates?only_mine=true
+
+# Sayfalama
+GET /api/v1/templates?limit=20&offset=40
+```
+
+#### Şablon Oluşturma
+```bash
+POST /api/v1/templates
+Content-Type: application/json
+Authorization: Bearer <jwt_token>
+
+{
+    "title": "Belediye Yanıtı",  # Opsiyonel, boşsa otomatik üretilir
+    "content": "Sayın vatandaşımız...",
+    "category_id": 1  # Opsiyonel
+}
+```
+
+#### Kategori Yönetimi
+```bash
+# Kategorileri listele
+GET /api/v1/categories
+
+# Yeni kategori oluştur
+POST /api/v1/categories
+{
+    "name": "Genel Yanıtlar"
+}
+
+# Kategori sil (sadece owner/admin)
+DELETE /api/v1/categories/1
+```
+
+### Frontend Entegrasyonu
+
+#### Şablon Kaydetme
+```javascript
+// Yanıt üretim ekranında
+const saveAsTemplate = async (content, categoryId) => {
+    const response = await fetch('/api/v1/templates', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({
+            content: content,
+            category_id: categoryId
+        })
+    });
+    return response.json();
+};
+```
+
+#### Şablon Kullanma
+```javascript
+// Şablonları listele
+const getTemplates = async (filters = {}) => {
+    const params = new URLSearchParams(filters);
+    const response = await fetch(`/api/v1/templates?${params}`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+    });
+    return response.json();
+};
+```
+
+### Migration ve Kurulum
+
+#### Tabloları Oluşturma
+```bash
+# Migration script'ini çalıştır
+python migrate_templates.py
+```
+
+#### Test Etme
+```bash
+# API test script'ini çalıştır
+python test_templates_api.py
+```
+
+### Gelecek Geliştirmeler
+
+- **Favori Şablonlar:** Kullanıcılar şablonları favorilere ekleyebilir
+- **Etiketleme:** Şablonlara etiket ekleme sistemi
+- **Paylaşımsız Şablonlar:** Sadece sahibinin görebileceği özel şablonlar
+- **FTS5 Arama:** Daha gelişmiş arama özellikleri
+- **Şablon İstatistikleri:** En çok kullanılan şablonlar
+
 ---
 
 ## Docker Deployment
@@ -1706,14 +1897,22 @@ LOG_LEVEL=INFO
 3. **Docker:** Port 8500 (host) → 80 (container)
 4. **Authentication:** JWT + Magic Link (5h, reusable) + 6-digit Code (5h, single-use)
 5. **AI Models:** Ollama (lokal) + Gemini (cloud), max 4000 tokens
-6. **Database:** SQLite (User, LoginToken, LoginAttempt, Request, Response, Model)
-7. **Admin Features:** İstatistikler, kullanıcı listesi, yanıt ayarları
-8. **User Flow:** 
+6. **Database:** SQLite (User, LoginToken, LoginAttempt, Request, Response, Model, **Template, TemplateCategory**)
+7. **Template Sistemi:** ⭐ Departman bazlı şablon paylaşımı, kategori yönetimi, güvenlik kontrolleri
+8. **Admin Features:** İstatistikler, kullanıcı listesi, yanıt ayarları
+9. **User Flow:** 
    - Email → Magic link/kod → Profil tamamlama (ilk giriş) → Ana uygulama
-   - Gelen istek/öneri + Cevap taslağı → AI yanıt üret → Kopyala → Yeni istek
+   - Gelen istek/öneri + Cevap taslağı → AI yanıt üret → **Şablon olarak kaydet** → Kopyala → Yeni istek
+   - **Şablonlarım** → Arama/filtreleme → Şablon kullan → Yanıt alanına ekle
 
 ---
 
 **Son Güncelleme:** 14 Ekim 2025
-**Versiyon:** 1.0.0
+**Versiyon:** 1.1.0 (Template Sistemi Eklendi)
+**Yeni Özellikler:** 
+- Template ve TemplateCategory tabloları
+- Template CRUD API endpoint'leri
+- Departman bazlı güvenlik sistemi
+- Kategori yönetimi
+- Soft delete ve unique constraint'ler
 
