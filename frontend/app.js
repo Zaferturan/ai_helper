@@ -157,8 +157,16 @@ class TemplateSaveManager {
             });
 
             if (!response.ok) {
-                const errorData = await response.json();
-                throw new Error(errorData.detail || `HTTP ${response.status}: ${response.statusText}`);
+                if (response.status === 403) {
+                    this.showToast('Bu işlem için yetkiniz yok', 'error');
+                    return null;
+                } else if (response.status === 401) {
+                    this.showToast('Oturum süreniz dolmuş, lütfen tekrar giriş yapın', 'error');
+                    return null;
+                } else {
+                    const errorData = await response.json();
+                    throw new Error(errorData.detail || `HTTP ${response.status}: ${response.statusText}`);
+                }
             }
 
             const newCategory = await response.json();
@@ -199,8 +207,16 @@ class TemplateSaveManager {
             });
 
             if (!response.ok) {
-                const errorData = await response.json();
-                throw new Error(errorData.detail || `HTTP ${response.status}: ${response.statusText}`);
+                if (response.status === 403) {
+                    this.showToast('Bu işlem için yetkiniz yok', 'error');
+                    return null;
+                } else if (response.status === 401) {
+                    this.showToast('Oturum süreniz dolmuş, lütfen tekrar giriş yapın', 'error');
+                    return null;
+                } else {
+                    const errorData = await response.json();
+                    throw new Error(errorData.detail || `HTTP ${response.status}: ${response.statusText}`);
+                }
             }
 
             const newTemplate = await response.json();
@@ -391,7 +407,15 @@ class TemplatesManager {
             });
 
             if (!response.ok) {
-                throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                if (response.status === 403) {
+                    this.showToast('Bu işlem için yetkiniz yok', 'error');
+                    return [];
+                } else if (response.status === 401) {
+                    this.showToast('Oturum süreniz dolmuş, lütfen tekrar giriş yapın', 'error');
+                    return [];
+                } else {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
             }
 
             const data = await response.json();
@@ -403,7 +427,7 @@ class TemplatesManager {
             return this.categories;
         } catch (error) {
             console.error('❌ Kategori yükleme hatası:', error);
-            this.showError('Kategoriler yüklenirken hata oluştu');
+            this.showToast('Kategoriler yüklenirken hata oluştu', 'error');
             return [];
         }
     }
@@ -441,7 +465,15 @@ class TemplatesManager {
             });
 
             if (!response.ok) {
-                throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                if (response.status === 403) {
+                    this.showToast('Bu işlem için yetkiniz yok', 'error');
+                    return [];
+                } else if (response.status === 401) {
+                    this.showToast('Oturum süreniz dolmuş, lütfen tekrar giriş yapın', 'error');
+                    return [];
+                } else {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
             }
 
             const data = await response.json();
@@ -465,7 +497,7 @@ class TemplatesManager {
             return this.templates;
         } catch (error) {
             console.error('❌ Şablon yükleme hatası:', error);
-            this.showError('Şablonlar yüklenirken hata oluştu');
+            this.showToast('Şablonlar yüklenirken hata oluştu', 'error');
             if (!isLoadMore) {
                 this.showEmptyState();
             }
@@ -677,7 +709,45 @@ class TemplatesManager {
 
     showError(message) {
         console.error('Templates Error:', message);
-        // TODO: Toast notification ekle
+        this.showToast(message, 'error');
+    }
+
+    // Toast notification system
+    showToast(message, type = 'success') {
+        const container = document.getElementById('toast-container');
+        if (!container) return;
+
+        const toast = document.createElement('div');
+        toast.className = `toast ${type}`;
+        
+        const icons = {
+            success: '✅',
+            error: '❌',
+            warning: '⚠️',
+            info: 'ℹ️'
+        };
+
+        toast.innerHTML = `
+            <div class="toast-content">
+                <span class="toast-icon">${icons[type] || icons.success}</span>
+                <span class="toast-message">${this.escapeHtml(message)}</span>
+                <button class="toast-close" onclick="this.parentElement.parentElement.remove()">&times;</button>
+            </div>
+        `;
+
+        container.appendChild(toast);
+
+        // Auto remove after 5 seconds
+        setTimeout(() => {
+            if (toast.parentElement) {
+                toast.classList.add('hiding');
+                setTimeout(() => {
+                    if (toast.parentElement) {
+                        toast.remove();
+                    }
+                }, 300);
+            }
+        }, 5000);
     }
 
     // Utility functions
@@ -792,14 +862,23 @@ class TemplatesManager {
             });
 
             if (!response.ok) {
-                throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                if (response.status === 403) {
+                    this.showToast('Bu işlem için yetkiniz yok', 'error');
+                    return;
+                } else if (response.status === 404) {
+                    this.showToast('Şablon bulunamadı', 'error');
+                    return;
+                } else {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
             }
 
             console.log('✅ Şablon silindi');
+            this.showToast('Şablon başarıyla silindi', 'success');
             this.loadTemplates(this.currentFilters);
         } catch (error) {
             console.error('❌ Şablon silme hatası:', error);
-            this.showError('Şablon silinirken hata oluştu');
+            this.showToast('Şablon silinirken hata oluştu', 'error');
         }
     }
 
@@ -1011,7 +1090,16 @@ class APIClient {
         const response = await fetch(url, { ...defaultOptions, ...options });
         
         if (!response.ok) {
-            throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+            // Güvenlik hataları için özel mesajlar
+            if (response.status === 403) {
+                throw new Error('Bu işlem için yetkiniz yok');
+            } else if (response.status === 401) {
+                throw new Error('Oturum süreniz dolmuş, lütfen tekrar giriş yapın');
+            } else if (response.status === 404) {
+                throw new Error('İstenen kaynak bulunamadı');
+            } else {
+                throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+            }
         }
         
         return response.json();
@@ -2035,7 +2123,7 @@ class AIResponseManager {
 
             const response = await api.generateResponse(generateData);
             
-            if (response.response_text) {
+            if (response && response.response_text) {
                 // Yeni yanıtı oluştur (Gradio app.py formatında)
                 const newResponse = {
                     id: response.id,
