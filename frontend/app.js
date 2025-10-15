@@ -22,6 +22,94 @@ const CONFIG = {
     }
 };
 
+// Navigation Manager for screen switching
+class NavigationManager {
+    constructor() {
+        this.currentScreen = 'home'; // 'home' or 'templates'
+    }
+
+    showHomeScreen() {
+        console.log('🏠 Ana Sayfa gösteriliyor...');
+        
+        // Screens
+        const mainScreen = document.getElementById('main-screen');
+        const templatesScreen = document.getElementById('templates-screen');
+        
+        // Buttons
+        const homeBtn = document.getElementById('home-btn');
+        const templatesBtn = document.getElementById('templates-btn');
+        const homeBtnTemplates = document.getElementById('home-btn-templates');
+        const templatesBtnTemplates = document.getElementById('templates-btn-templates');
+        
+        // Show/hide screens
+        if (mainScreen) mainScreen.classList.remove('hidden');
+        if (templatesScreen) templatesScreen.classList.add('hidden');
+        
+        // Update button states
+        if (homeBtn) homeBtn.classList.add('active');
+        if (templatesBtn) templatesBtn.classList.remove('active');
+        if (homeBtnTemplates) homeBtnTemplates.classList.add('active');
+        if (templatesBtnTemplates) templatesBtnTemplates.classList.remove('active');
+        
+        this.currentScreen = 'home';
+        
+        // Update user profile in both screens
+        this.updateUserProfile();
+    }
+
+    showTemplatesScreen() {
+        console.log('📂 Şablonlarım ekranı gösteriliyor...');
+        
+        // Screens
+        const mainScreen = document.getElementById('main-screen');
+        const templatesScreen = document.getElementById('templates-screen');
+        
+        // Buttons
+        const homeBtn = document.getElementById('home-btn');
+        const templatesBtn = document.getElementById('templates-btn');
+        const homeBtnTemplates = document.getElementById('home-btn-templates');
+        const templatesBtnTemplates = document.getElementById('templates-btn-templates');
+        
+        // Show/hide screens
+        if (mainScreen) mainScreen.classList.add('hidden');
+        if (templatesScreen) templatesScreen.classList.remove('hidden');
+        
+        // Update button states
+        if (homeBtn) homeBtn.classList.remove('active');
+        if (templatesBtn) templatesBtn.classList.add('active');
+        if (homeBtnTemplates) homeBtnTemplates.classList.remove('active');
+        if (templatesBtnTemplates) templatesBtnTemplates.classList.add('active');
+        
+        this.currentScreen = 'templates';
+        
+        // Update user profile in both screens
+        this.updateUserProfile();
+    }
+
+    updateUserProfile() {
+        const userProfile = localStorage.getItem(CONFIG.STORAGE_KEYS.USER_PROFILE);
+        if (userProfile) {
+            try {
+                const profile = JSON.parse(userProfile);
+                const profileText = `👤 ${profile.full_name || 'Kullanıcı'}`;
+                
+                // Update both screens
+                const userProfileMain = document.getElementById('user-profile');
+                const userProfileTemplates = document.getElementById('user-profile-templates');
+                
+                if (userProfileMain) userProfileMain.textContent = profileText;
+                if (userProfileTemplates) userProfileTemplates.textContent = profileText;
+            } catch (e) {
+                console.error('Profile update error:', e);
+            }
+        }
+    }
+
+    getCurrentScreen() {
+        return this.currentScreen;
+    }
+}
+
 // API Client for backend communication
 class APIClient {
     constructor() {
@@ -848,7 +936,8 @@ class UIManager {
         this.hideLoadingScreen();
         console.log('After hideLoadingScreen');
         
-        this.elements.mainScreen.classList.remove('hidden');
+        // Ana sayfayı göster ve navigation state'i ayarla
+        navigationManager.showHomeScreen();
         console.log('After removing hidden - mainScreen classes:', this.elements.mainScreen.classList.toString());
         
         // Update user info
@@ -886,6 +975,12 @@ class UIManager {
         this.elements.loginScreen.classList.add('hidden');
         this.elements.profileScreen.classList.add('hidden');
         this.elements.mainScreen.classList.add('hidden');
+        
+        // Templates screen'i de gizle
+        const templatesScreen = document.getElementById('templates-screen');
+        if (templatesScreen) {
+            templatesScreen.classList.add('hidden');
+        }
     }
 
     hideLoadingScreen() {
@@ -1606,6 +1701,38 @@ class EventManager {
             ui.elements.logoutBtn.addEventListener('click', async () => await authManager.logout());
         }
         
+        // Navigation events
+        const homeBtn = document.getElementById('home-btn');
+        const templatesBtn = document.getElementById('templates-btn');
+        const homeBtnTemplates = document.getElementById('home-btn-templates');
+        const templatesBtnTemplates = document.getElementById('templates-btn-templates');
+        const goToHomeBtn = document.getElementById('go-to-home-btn');
+        const logoutBtnTemplates = document.getElementById('logout-btn-templates');
+        
+        if (homeBtn) {
+            homeBtn.addEventListener('click', () => navigationManager.showHomeScreen());
+        }
+        
+        if (templatesBtn) {
+            templatesBtn.addEventListener('click', () => navigationManager.showTemplatesScreen());
+        }
+        
+        if (homeBtnTemplates) {
+            homeBtnTemplates.addEventListener('click', () => navigationManager.showHomeScreen());
+        }
+        
+        if (templatesBtnTemplates) {
+            templatesBtnTemplates.addEventListener('click', () => navigationManager.showTemplatesScreen());
+        }
+        
+        if (goToHomeBtn) {
+            goToHomeBtn.addEventListener('click', () => navigationManager.showHomeScreen());
+        }
+        
+        if (logoutBtnTemplates) {
+            logoutBtnTemplates.addEventListener('click', async () => await authManager.logout());
+        }
+        
         // AI Response events
         if (ui.elements.generateBtn) {
             ui.elements.generateBtn.addEventListener('click', () => responseManager.generateResponse());
@@ -1727,6 +1854,7 @@ const authManager = new AuthManager();
 const responseManager = new AIResponseManager();
 const ui = new UIManager();
 const eventManager = new EventManager();
+const navigationManager = new NavigationManager();
 
 
 // Start application when DOM is loaded

@@ -145,6 +145,10 @@
                 <div class="user-info">
                     <span id="user-profile">👤 Kullanıcı</span>
                 </div>
+                <div class="navigation-buttons">
+                    <button id="home-btn" class="btn btn-nav active">🏠 Ana Sayfa</button>
+                    <button id="templates-btn" class="btn btn-nav">📂 Şablonlarım</button>
+                </div>
                 <button id="logout-btn" class="btn btn-secondary">🚪 Çıkış Yap</button>
             </div>
 
@@ -290,7 +294,53 @@
         </div>
     </div>
 
+    <!-- Templates Screen -->
+    <div id="templates-screen" class="screen hidden">
+        <div class="main-wrapper">
+            <!-- Ana Banner -->
+            <div class="main-banner">
+                <div class="banner-content">
+                    <div class="logo-container">
+                        <img src="logo.png" alt="Nilüfer Belediyesi" class="logo">
+                    </div>
+                    <div class="banner-text">
+                        <h1>📂 Şablonlarım</h1>
+                        <p>Kaydettiğiniz şablonları yönetin ve kullanın</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Kullanıcı Bilgi Çubuğu -->
+            <div class="user-info-bar">
+                <div class="user-info">
+                    <span id="user-profile-templates">👤 Kullanıcı</span>
+                </div>
+                <div class="navigation-buttons">
+                    <button id="home-btn-templates" class="btn btn-nav">🏠 Ana Sayfa</button>
+                    <button id="templates-btn-templates" class="btn btn-nav active">📂 Şablonlarım</button>
+                </div>
+                <button id="logout-btn-templates" class="btn btn-secondary">🚪 Çıkış Yap</button>
+            </div>
+
+            <!-- Templates Content -->
+            <div class="templates-content">
+                <!-- Boş Durum (Empty State) -->
+                <div id="templates-empty-state" class="empty-state">
+                    <div class="empty-state-icon">📝</div>
+                    <h2>Henüz şablon yok</h2>
+                    <p>Üretim ekranında "Şablon olarak sakla" ile şablonlarınızı kaydedebilirsiniz.</p>
+                    <button id="go-to-home-btn" class="btn btn-primary">🏠 Ana Sayfaya Dön</button>
+                </div>
+
+                <!-- Templates List (gelecekte doldurulacak) -->
+                <div id="templates-list" class="templates-list hidden">
+                    <!-- Template kartları buraya gelecek -->
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- Scripts -->
-    <script src="app.js?v=20250916-05"></script>
+    <script src="app.js?v=20251014-01"></script>
 </body>
 </html>
