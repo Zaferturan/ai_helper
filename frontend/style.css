@@ -1287,6 +1287,227 @@ div[id*="prev-text-"]::after {
     background: #b91c1c;
 }
 
+/* ============================================================================
+   TEMPLATE SAVE SECTION STYLES
+   ============================================================================ */
+
+/* Template Save Section */
+.save-template-section {
+    background: #f8f9fa;
+    border: 1px solid #e5e7eb;
+    border-radius: 8px;
+    padding: 1rem;
+    margin: 1rem 0;
+}
+
+.template-save-header {
+    margin-bottom: 1rem;
+}
+
+.template-checkbox {
+    margin-right: 0.5rem;
+    width: 18px;
+    height: 18px;
+    accent-color: #3b82f6;
+}
+
+/* Category Selection */
+.template-category-section {
+    border-top: 1px solid #e5e7eb;
+    padding-top: 1rem;
+}
+
+.category-selection {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+.category-dropdown-group {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.category-dropdown-group label {
+    font-weight: 500;
+    color: #374151;
+    font-size: 0.9rem;
+}
+
+.category-select {
+    padding: 0.5rem;
+    border: 2px solid #e5e7eb;
+    border-radius: 6px;
+    font-size: 0.9rem;
+    background: white;
+    transition: border-color 0.3s ease;
+}
+
+.category-select:focus {
+    outline: none;
+    border-color: #3b82f6;
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+.new-category-group {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.new-category-input {
+    display: flex;
+    gap: 0.5rem;
+    align-items: center;
+    flex-wrap: wrap;
+}
+
+.category-input {
+    flex: 1;
+    min-width: 200px;
+    padding: 0.5rem;
+    border: 2px solid #e5e7eb;
+    border-radius: 6px;
+    font-size: 0.9rem;
+    transition: border-color 0.3s ease;
+}
+
+.category-input:focus {
+    outline: none;
+    border-color: #3b82f6;
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+/* Toast Notification Styles */
+.toast-container {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    z-index: 2000;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.toast {
+    background: white;
+    border-radius: 8px;
+    padding: 1rem 1.5rem;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    border-left: 4px solid #10b981;
+    min-width: 300px;
+    max-width: 400px;
+    animation: slideInRight 0.3s ease-out;
+    position: relative;
+    overflow: hidden;
+}
+
+.toast.error {
+    border-left-color: #ef4444;
+}
+
+.toast.warning {
+    border-left-color: #f59e0b;
+}
+
+.toast.info {
+    border-left-color: #3b82f6;
+}
+
+.toast-content {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+}
+
+.toast-icon {
+    font-size: 1.2rem;
+    flex-shrink: 0;
+}
+
+.toast-message {
+    flex: 1;
+    font-size: 0.9rem;
+    line-height: 1.4;
+    color: #374151;
+}
+
+.toast-close {
+    background: none;
+    border: none;
+    font-size: 1.2rem;
+    cursor: pointer;
+    color: #6b7280;
+    padding: 0;
+    width: 24px;
+    height: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    transition: all 0.3s ease;
+    flex-shrink: 0;
+}
+
+.toast-close:hover {
+    background: #f3f4f6;
+    color: #374151;
+}
+
+@keyframes slideInRight {
+    from {
+        transform: translateX(100%);
+        opacity: 0;
+    }
+    to {
+        transform: translateX(0);
+        opacity: 1;
+    }
+}
+
+@keyframes slideOutRight {
+    from {
+        transform: translateX(0);
+        opacity: 1;
+    }
+    to {
+        transform: translateX(100%);
+        opacity: 0;
+    }
+}
+
+.toast.hiding {
+    animation: slideOutRight 0.3s ease-in forwards;
+}
+
+/* Responsive Design for Template Save */
+@media (max-width: 768px) {
+    .category-selection {
+        gap: 0.75rem;
+    }
+    
+    .new-category-input {
+        flex-direction: column;
+        align-items: stretch;
+    }
+    
+    .category-input {
+        min-width: auto;
+    }
+    
+    .toast-container {
+        left: 20px;
+        right: 20px;
+        top: 10px;
+    }
+    
+    .toast {
+        min-width: auto;
+        max-width: none;
+    }
+}
+
 /* Template Card (gelecekte kullanılacak) */
 .template-card {
     background: white;

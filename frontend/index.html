@@ -229,6 +229,37 @@
                             <div id="response-area" class="response-area">
                                 <div id="main-response" class="response-content">Henüz yanıt üretilmedi...</div>
                             </div>
+                            <!-- Şablon Kaydetme Alanı -->
+                            <div id="save-template-section" class="save-template-section hidden">
+                                <div class="template-save-header">
+                                    <label class="checkbox-label">
+                                        <input type="checkbox" id="save-as-template" class="template-checkbox">
+                                        <span class="checkmark"></span>
+                                        ☑ Şablon olarak sakla
+                                    </label>
+                                </div>
+                                
+                                <div id="template-category-section" class="template-category-section hidden">
+                                    <div class="category-selection">
+                                        <div class="category-dropdown-group">
+                                            <label for="template-category-select">Kategori</label>
+                                            <select id="template-category-select" class="category-select">
+                                                <option value="">Kategori seçiniz</option>
+                                            </select>
+                                        </div>
+                                        
+                                        <div class="new-category-group">
+                                            <button id="new-category-btn" class="btn btn-secondary btn-sm">➕ Yeni Kategori</button>
+                                            <div id="new-category-input-group" class="new-category-input hidden">
+                                                <input type="text" id="new-category-name" class="category-input" placeholder="Kategori adı">
+                                                <button id="create-category-btn" class="btn btn-primary btn-sm">✅ Oluştur</button>
+                                                <button id="cancel-category-btn" class="btn btn-secondary btn-sm">❌ İptal</button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            
                             <div class="response-actions">
                                 <button id="main-copy-btn" class="btn btn-success">📋 Seç ve Kopyala</button>
                                 <button id="new-request-btn" class="btn btn-secondary">🆕 Yeni İstek Öneri Cevapla</button>
@@ -437,7 +468,12 @@
         </div>
     </div>
 
+    <!-- Toast Notification -->
+    <div id="toast-container" class="toast-container">
+        <!-- Toast notifications will be dynamically added here -->
+    </div>
+
     <!-- Scripts -->
-    <script src="app.js?v=20251014-02"></script>
+    <script src="app.js?v=20251014-03"></script>
 </body>
 </html>

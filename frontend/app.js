@@ -22,6 +22,346 @@ const CONFIG = {
     }
 };
 
+// Template Save Manager for saving templates from response
+class TemplateSaveManager {
+    constructor() {
+        this.categories = [];
+        this.isNewCategoryMode = false;
+    }
+
+    async loadCategories() {
+        try {
+            const token = localStorage.getItem(CONFIG.STORAGE_KEYS.AUTH_TOKEN);
+            const response = await fetch(`${CONFIG.BACKEND_URL}/categories`, {
+                headers: {
+                    'Authorization': `Bearer ${token}`
+                }
+            });
+
+            if (!response.ok) {
+                throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+            }
+
+            const data = await response.json();
+            this.categories = data.categories || [];
+            this.updateCategoryDropdown();
+            
+            return this.categories;
+        } catch (error) {
+            console.error('❌ Kategori yükleme hatası:', error);
+            this.showToast('Kategoriler yüklenirken hata oluştu', 'error');
+            return [];
+        }
+    }
+
+    updateCategoryDropdown() {
+        const categorySelect = document.getElementById('template-category-select');
+        if (!categorySelect) return;
+
+        // Mevcut seçimi sakla
+        const currentValue = categorySelect.value;
+        
+        // Seçenekleri temizle (ilk seçenek hariç)
+        while (categorySelect.children.length > 1) {
+            categorySelect.removeChild(categorySelect.lastChild);
+        }
+
+        // Kategorileri ekle
+        this.categories.forEach(category => {
+            const option = document.createElement('option');
+            option.value = category.id;
+            option.textContent = category.name;
+            categorySelect.appendChild(option);
+        });
+
+        // Önceki seçimi geri yükle
+        categorySelect.value = currentValue;
+    }
+
+    showTemplateSaveSection() {
+        const saveSection = document.getElementById('save-template-section');
+        if (saveSection) {
+            saveSection.classList.remove('hidden');
+        }
+    }
+
+    hideTemplateSaveSection() {
+        const saveSection = document.getElementById('save-template-section');
+        if (saveSection) {
+            saveSection.classList.add('hidden');
+        }
+    }
+
+    showCategorySection() {
+        const categorySection = document.getElementById('template-category-section');
+        if (categorySection) {
+            categorySection.classList.remove('hidden');
+        }
+    }
+
+    hideCategorySection() {
+        const categorySection = document.getElementById('template-category-section');
+        if (categorySection) {
+            categorySection.classList.add('hidden');
+        }
+    }
+
+    showNewCategoryInput() {
+        const inputGroup = document.getElementById('new-category-input-group');
+        const newCategoryBtn = document.getElementById('new-category-btn');
+        const categoryInput = document.getElementById('new-category-name');
+        
+        if (inputGroup) {
+            inputGroup.classList.remove('hidden');
+            this.isNewCategoryMode = true;
+        }
+        
+        if (newCategoryBtn) {
+            newCategoryBtn.classList.add('hidden');
+        }
+        
+        if (categoryInput) {
+            categoryInput.focus();
+        }
+    }
+
+    hideNewCategoryInput() {
+        const inputGroup = document.getElementById('new-category-input-group');
+        const newCategoryBtn = document.getElementById('new-category-btn');
+        const categoryInput = document.getElementById('new-category-name');
+        
+        if (inputGroup) {
+            inputGroup.classList.add('hidden');
+            this.isNewCategoryMode = false;
+        }
+        
+        if (newCategoryBtn) {
+            newCategoryBtn.classList.remove('hidden');
+        }
+        
+        if (categoryInput) {
+            categoryInput.value = '';
+        }
+    }
+
+    async createCategory(categoryName) {
+        try {
+            const token = localStorage.getItem(CONFIG.STORAGE_KEYS.AUTH_TOKEN);
+            const response = await fetch(`${CONFIG.BACKEND_URL}/categories`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify({ name: categoryName })
+            });
+
+            if (!response.ok) {
+                const errorData = await response.json();
+                throw new Error(errorData.detail || `HTTP ${response.status}: ${response.statusText}`);
+            }
+
+            const newCategory = await response.json();
+            
+            // Kategorileri yeniden yükle
+            await this.loadCategories();
+            
+            // Yeni kategoriyi seç
+            const categorySelect = document.getElementById('template-category-select');
+            if (categorySelect) {
+                categorySelect.value = newCategory.id;
+            }
+            
+            this.hideNewCategoryInput();
+            this.showToast('Kategori başarıyla oluşturuldu', 'success');
+            
+            return newCategory;
+        } catch (error) {
+            console.error('❌ Kategori oluşturma hatası:', error);
+            this.showToast(error.message || 'Kategori oluşturulurken hata oluştu', 'error');
+            return null;
+        }
+    }
+
+    async saveTemplate(content, categoryId) {
+        try {
+            const token = localStorage.getItem(CONFIG.STORAGE_KEYS.AUTH_TOKEN);
+            const response = await fetch(`${CONFIG.BACKEND_URL}/templates`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify({
+                    content: content,
+                    category_id: categoryId || null
+                })
+            });
+
+            if (!response.ok) {
+                const errorData = await response.json();
+                throw new Error(errorData.detail || `HTTP ${response.status}: ${response.statusText}`);
+            }
+
+            const newTemplate = await response.json();
+            this.showToast('Şablon başarıyla kaydedildi', 'success');
+            
+            return newTemplate;
+        } catch (error) {
+            console.error('❌ Şablon kaydetme hatası:', error);
+            this.showToast(error.message || 'Şablon kaydedilirken hata oluştu', 'error');
+            return null;
+        }
+    }
+
+    validateTemplateSave() {
+        const saveCheckbox = document.getElementById('save-as-template');
+        const categorySelect = document.getElementById('template-category-select');
+        const responseContent = document.getElementById('main-response');
+        
+        if (!saveCheckbox || !saveCheckbox.checked) {
+            return { valid: true }; // Şablon kaydetme istenmiyor
+        }
+        
+        // Yanıt içeriği kontrolü
+        if (!responseContent || !responseContent.textContent.trim() || 
+            responseContent.textContent.trim() === 'Henüz yanıt üretilmedi...') {
+            return { 
+                valid: false, 
+                message: 'Önce yanıt üretin' 
+            };
+        }
+        
+        // Kategori seçimi kontrolü
+        if (!categorySelect || !categorySelect.value) {
+            return { 
+                valid: false, 
+                message: 'Lütfen bir kategori seçin' 
+            };
+        }
+        
+        return { 
+            valid: true, 
+            content: responseContent.textContent.trim(),
+            categoryId: parseInt(categorySelect.value)
+        };
+    }
+
+    resetTemplateSaveForm() {
+        const saveCheckbox = document.getElementById('save-as-template');
+        const categorySelect = document.getElementById('template-category-select');
+        
+        if (saveCheckbox) {
+            saveCheckbox.checked = false;
+        }
+        
+        if (categorySelect) {
+            categorySelect.value = '';
+        }
+        
+        this.hideCategorySection();
+        this.hideNewCategoryInput();
+    }
+
+    // Toast notification system
+    showToast(message, type = 'success') {
+        const container = document.getElementById('toast-container');
+        if (!container) return;
+
+        const toast = document.createElement('div');
+        toast.className = `toast ${type}`;
+        
+        const icons = {
+            success: '✅',
+            error: '❌',
+            warning: '⚠️',
+            info: 'ℹ️'
+        };
+
+        toast.innerHTML = `
+            <div class="toast-content">
+                <span class="toast-icon">${icons[type] || icons.success}</span>
+                <span class="toast-message">${this.escapeHtml(message)}</span>
+                <button class="toast-close" onclick="this.parentElement.parentElement.remove()">&times;</button>
+            </div>
+        `;
+
+        container.appendChild(toast);
+
+        // Auto remove after 5 seconds
+        setTimeout(() => {
+            if (toast.parentElement) {
+                toast.classList.add('hiding');
+                setTimeout(() => {
+                    if (toast.parentElement) {
+                        toast.remove();
+                    }
+                }, 300);
+            }
+        }, 5000);
+    }
+
+    escapeHtml(text) {
+        const div = document.createElement('div');
+        div.textContent = text;
+        return div.innerHTML;
+    }
+
+    // Setup event listeners
+    setupEventListeners() {
+        const saveCheckbox = document.getElementById('save-as-template');
+        const newCategoryBtn = document.getElementById('new-category-btn');
+        const createCategoryBtn = document.getElementById('create-category-btn');
+        const cancelCategoryBtn = document.getElementById('cancel-category-btn');
+        const categoryInput = document.getElementById('new-category-name');
+
+        // Checkbox change event
+        if (saveCheckbox) {
+            saveCheckbox.addEventListener('change', () => {
+                if (saveCheckbox.checked) {
+                    this.showCategorySection();
+                    this.loadCategories();
+                } else {
+                    this.hideCategorySection();
+                    this.hideNewCategoryInput();
+                }
+            });
+        }
+
+        // New category button
+        if (newCategoryBtn) {
+            newCategoryBtn.addEventListener('click', () => {
+                this.showNewCategoryInput();
+            });
+        }
+
+        // Create category button
+        if (createCategoryBtn) {
+            createCategoryBtn.addEventListener('click', async () => {
+                if (categoryInput && categoryInput.value.trim()) {
+                    await this.createCategory(categoryInput.value.trim());
+                }
+            });
+        }
+
+        // Cancel category button
+        if (cancelCategoryBtn) {
+            cancelCategoryBtn.addEventListener('click', () => {
+                this.hideNewCategoryInput();
+            });
+        }
+
+        // Enter key in category input
+        if (categoryInput) {
+            categoryInput.addEventListener('keypress', async (e) => {
+                if (e.key === 'Enter' && categoryInput.value.trim()) {
+                    await this.createCategory(categoryInput.value.trim());
+                }
+            });
+        }
+    }
+}
+
 // Templates Manager for template operations
 class TemplatesManager {
     constructor() {
@@ -1673,6 +2013,18 @@ class AIResponseManager {
                 return;
             }
             
+            // Şablon kaydetme kontrolü
+            const templateValidation = templateSaveManager.validateTemplateSave();
+            if (!templateValidation.valid) {
+                templateSaveManager.showToast(templateValidation.message, 'warning');
+                return;
+            }
+            
+            // Şablon kaydetme işlemi
+            if (templateValidation.content && templateValidation.categoryId) {
+                await templateSaveManager.saveTemplate(templateValidation.content, templateValidation.categoryId);
+            }
+            
             // Durum makinesini güncelle (Gradio app.py mantığı)
             this.state = 'finalized';
             this.yanitSayisi += 1; // Yanıt sayısını artır
@@ -1826,6 +2178,9 @@ class AIResponseManager {
         // Input alanlarını temizle
         this.clearTextboxValues();
         
+        // Şablon kaydetme formunu temizle
+        templateSaveManager.resetTemplateSaveForm();
+        
         // Ana yanıt alanını temizle
         const mainResponse = document.getElementById('main-response');
         if (mainResponse) {
@@ -1952,6 +2307,13 @@ class AIResponseManager {
             // new_request_visible = user_state['state'] == 'finalized' or user_state['yanit_sayisi'] >= 5
             
             const generateVisible = this.state === 'draft' && this.yanitSayisi < 5;
+            
+            // Şablon kaydetme alanını göster/gizle
+            if (this.state === 'finalized' && this.yanitSayisi > 0) {
+                templateSaveManager.showTemplateSaveSection();
+            } else {
+                templateSaveManager.hideTemplateSaveSection();
+            }
             const newRequestVisible = this.state === 'finalized' || this.yanitSayisi >= 5;
             
             generateBtn.style.display = generateVisible ? 'block' : 'none';
@@ -2351,6 +2713,7 @@ const ui = new UIManager();
 const eventManager = new EventManager();
 const navigationManager = new NavigationManager();
 const templatesManager = new TemplatesManager();
+const templateSaveManager = new TemplateSaveManager();
 
 
 // Start application when DOM is loaded
@@ -2372,6 +2735,9 @@ document.addEventListener('DOMContentLoaded', async () => {
         
         // Textbox'ları temizle
         responseManager.clearTextboxValues();
+        
+        // Template save manager event listener'larını başlat
+        templateSaveManager.setupEventListeners();
         
         // Ana "Seç ve Kopyala" düğmesini göster
         if (ui.elements.mainCopyBtn) {
