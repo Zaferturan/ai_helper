@@ -383,10 +383,12 @@ class TemplatesManager {
     constructor() {
         this.categories = [];
         this.templates = [];
+        this.departments = [];
         this.currentFilters = {
             category_id: '',
             only_mine: false,
-            q: ''
+            q: '',
+            department: '' // Admin için departman filtresi
         };
         this.selectedTemplate = null;
         this.searchTimeout = null;
@@ -400,7 +402,14 @@ class TemplatesManager {
         try {
             console.log('📂 Kategoriler yükleniyor...');
             const token = localStorage.getItem(CONFIG.STORAGE_KEYS.AUTH_TOKEN);
-            const response = await fetch(`${CONFIG.BACKEND_URL}/categories`, {
+            const params = new URLSearchParams();
+            
+            // Admin ise departman filtresi ekle
+            if (this.getCurrentUserAdminStatus() && this.currentFilters.department) {
+                params.append('department', this.currentFilters.department);
+            }
+            
+            const response = await fetch(`${CONFIG.BACKEND_URL}/categories?${params}`, {
                 headers: {
                     'Authorization': `Bearer ${token}`
                 }
@@ -455,6 +464,7 @@ class TemplatesManager {
             if (filters.q) params.append('q', filters.q);
             if (filters.category_id) params.append('category_id', filters.category_id);
             if (filters.only_mine) params.append('only_mine', 'true');
+            if (filters.department) params.append('department', filters.department);
             params.append('limit', this.pageSize.toString());
             params.append('offset', (this.currentPage * this.pageSize).toString());
 
@@ -573,6 +583,7 @@ class TemplatesManager {
                 <div>
                     <div class="template-title">${this.escapeHtml(template.title)}</div>
                     ${template.category_name ? `<span class="template-category">${this.escapeHtml(template.category_name)}</span>` : ''}
+                    ${this.shouldShowDepartmentBadge(template) ? `<span class="department-badge">${this.escapeHtml(template.department)}</span>` : ''}
                 </div>
                 <div class="template-actions">
                     <button class="btn btn-primary btn-sm use-template-btn" data-template-id="${template.id}">
@@ -783,37 +794,174 @@ class TemplatesManager {
         return localStorage.getItem(CONFIG.STORAGE_KEYS.IS_ADMIN) === 'true';
     }
 
+    shouldShowDepartmentBadge(template) {
+        const isAdmin = this.getCurrentUserAdminStatus();
+        const userDept = this.getCurrentUserDepartment();
+        
+        // Admin ise ve şablon farklı departmandaysa göster
+        if (isAdmin && template.department && template.department !== userDept) {
+            return true;
+        }
+        
+        // Admin seçili departman filtresi varsa ve şablon o departmandaysa göster
+        if (isAdmin && this.currentFilters.department && template.department === this.currentFilters.department) {
+            return true;
+        }
+        
+        return false;
+    }
+
+    getCurrentUserDepartment() {
+        const userProfile = localStorage.getItem(CONFIG.STORAGE_KEYS.USER_PROFILE);
+        if (userProfile) {
+            try {
+                const profile = JSON.parse(userProfile);
+                return profile.department;
+            } catch (e) {
+                console.error('Profile parse error:', e);
+            }
+        }
+        return null;
+    }
+
+    async loadDepartments() {
+        try {
+            console.log('🏢 Departmanlar yükleniyor...');
+            const token = localStorage.getItem(CONFIG.STORAGE_KEYS.AUTH_TOKEN);
+            const response = await fetch(`${CONFIG.BACKEND_URL}/admin/departments`, {
+                headers: {
+                    'Authorization': `Bearer ${token}`
+                }
+            });
+
+            if (!response.ok) {
+                if (response.status === 403) {
+                    this.showToast('Bu işlem için yetkiniz yok', 'error');
+                    return [];
+                } else if (response.status === 401) {
+                    this.showToast('Oturum süreniz dolmuş, lütfen tekrar giriş yapın', 'error');
+                    return [];
+                } else {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+            }
+
+            const data = await response.json();
+            this.departments = data.departments || [];
+            
+            console.log('✅ Departmanlar yüklendi:', this.departments.length);
+            this.updateDepartmentFilter();
+            
+            return this.departments;
+        } catch (error) {
+            console.error('❌ Departman yükleme hatası:', error);
+            this.showToast('Departmanlar yüklenirken hata oluştu', 'error');
+            return [];
+        }
+    }
+
+    updateDepartmentFilter() {
+        const departmentSelect = document.getElementById('department-filter');
+        const adminGroup = document.getElementById('admin-department-group');
+        const departmentInfo = document.getElementById('department-info');
+        const currentDepartmentSpan = document.getElementById('current-department');
+        
+        if (!departmentSelect || !adminGroup) return;
+
+        // Admin kontrolü
+        const isAdmin = this.getCurrentUserAdminStatus();
+        if (isAdmin) {
+            adminGroup.classList.remove('hidden');
+        } else {
+            adminGroup.classList.add('hidden');
+            return;
+        }
+
+        // Mevcut seçimi sakla
+        const currentValue = departmentSelect.value;
+        
+        // Seçenekleri temizle (ilk seçenek hariç)
+        while (departmentSelect.children.length > 1) {
+            departmentSelect.removeChild(departmentSelect.lastChild);
+        }
+
+        // Departmanları ekle
+        this.departments.forEach(dept => {
+            const option = document.createElement('option');
+            option.value = dept;
+            option.textContent = dept;
+            departmentSelect.appendChild(option);
+        });
+
+        // Önceki seçimi geri yükle
+        departmentSelect.value = currentValue;
+        
+        // Departman bilgisi güncelle
+        this.updateDepartmentInfo();
+    }
+
+    updateDepartmentInfo() {
+        const departmentSelect = document.getElementById('department-filter');
+        const departmentInfo = document.getElementById('department-info');
+        const currentDepartmentSpan = document.getElementById('current-department');
+        
+        if (!departmentSelect || !departmentInfo || !currentDepartmentSpan) return;
+
+        const selectedDept = departmentSelect.value;
+        const userDept = this.getCurrentUserDepartment();
+        
+        if (selectedDept) {
+            currentDepartmentSpan.textContent = selectedDept;
+            departmentInfo.classList.remove('hidden');
+        } else {
+            currentDepartmentSpan.textContent = userDept || 'Bilinmeyen';
+            departmentInfo.classList.remove('hidden');
+        }
+    }
+
     // Filter functions
     applyFilters() {
         const categoryFilter = document.getElementById('category-filter');
         const onlyMineFilter = document.getElementById('only-mine-filter');
         const searchFilter = document.getElementById('search-filter');
+        const departmentFilter = document.getElementById('department-filter');
 
         this.currentFilters = {
             category_id: categoryFilter ? categoryFilter.value : '',
             only_mine: onlyMineFilter ? onlyMineFilter.checked : false,
-            q: searchFilter ? searchFilter.value.trim() : ''
+            q: searchFilter ? searchFilter.value.trim() : '',
+            department: departmentFilter ? departmentFilter.value : ''
         };
 
+        // Departman değiştiğinde kategorileri de yeniden yükle
+        if (departmentFilter && departmentFilter.value !== this.currentFilters.department) {
+            this.loadCategories();
+        }
+
         this.loadTemplates(this.currentFilters);
+        this.updateDepartmentInfo();
     }
 
     clearFilters() {
         const categoryFilter = document.getElementById('category-filter');
         const onlyMineFilter = document.getElementById('only-mine-filter');
         const searchFilter = document.getElementById('search-filter');
+        const departmentFilter = document.getElementById('department-filter');
 
         if (categoryFilter) categoryFilter.value = '';
         if (onlyMineFilter) onlyMineFilter.checked = false;
         if (searchFilter) searchFilter.value = '';
+        if (departmentFilter) departmentFilter.value = '';
 
         this.currentFilters = {
             category_id: '',
             only_mine: false,
-            q: ''
+            q: '',
+            department: ''
         };
 
         this.loadTemplates(this.currentFilters);
+        this.updateDepartmentInfo();
     }
 
     // Template actions
@@ -886,6 +1034,11 @@ class TemplatesManager {
     async initializeTemplatesScreen() {
         console.log('📂 Templates screen başlatılıyor...');
         
+        // Admin ise departmanları yükle
+        if (this.getCurrentUserAdminStatus()) {
+            await this.loadDepartments();
+        }
+        
         // Kategorileri ve şablonları yükle
         await this.loadCategories();
         await this.loadTemplates();
@@ -899,6 +1052,7 @@ class TemplatesManager {
         const categoryFilter = document.getElementById('category-filter');
         const onlyMineFilter = document.getElementById('only-mine-filter');
         const searchFilter = document.getElementById('search-filter');
+        const departmentFilter = document.getElementById('department-filter');
         const clearFiltersBtn = document.getElementById('clear-filters-btn');
         const refreshBtn = document.getElementById('refresh-templates-btn');
 
@@ -908,6 +1062,10 @@ class TemplatesManager {
 
         if (onlyMineFilter) {
             onlyMineFilter.addEventListener('change', () => this.applyFilters());
+        }
+
+        if (departmentFilter) {
+            departmentFilter.addEventListener('change', () => this.applyFilters());
         }
 
         if (searchFilter) {
