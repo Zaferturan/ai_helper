@@ -320,6 +320,7 @@ async def get_templates(
     q: Optional[str] = Query(None, description="Arama terimi (başlık ve içerikte)"),
     category_id: Optional[int] = Query(None, description="Kategori ID'si"),
     only_mine: Optional[bool] = Query(False, description="Sadece kendi şablonlarım"),
+    department: Optional[str] = Query(None, description="Departman filtresi (sadece admin)"),
     limit: int = Query(50, ge=1, le=100, description="Sayfa başına kayıt sayısı"),
     offset: int = Query(0, ge=0, description="Başlangıç kaydı"),
     current_user: User = Depends(get_current_user),
@@ -330,9 +331,14 @@ async def get_templates(
         # Base query - departman filtresi zorunlu
         query = db.query(Template).filter(Template.is_active == True)
         
-        # Admin değilse sadece kendi departmanını görebilir
-        if not current_user.is_admin:
+        # Departman filtresi
+        if current_user.is_admin and department:
+            # Admin belirli bir departman seçmişse
+            query = query.filter(Template.department == department)
+        elif not current_user.is_admin:
+            # Admin değilse sadece kendi departmanını görebilir
             query = query.filter(Template.department == current_user.department)
+        # Admin ama department parametresi yoksa tüm departmanları görebilir (mevcut davranış)
         
         # Arama filtresi (başlık ve içerikte)
         if q:
@@ -496,6 +502,7 @@ async def delete_template(
 
 @router.get("/categories", response_model=api_models.CategoryListResponse)
 async def get_categories(
+    department: Optional[str] = Query(None, description="Departman filtresi (sadece admin)"),
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
@@ -504,9 +511,14 @@ async def get_categories(
         # Base query - departman filtresi zorunlu
         query = db.query(TemplateCategory)
         
-        # Admin değilse sadece kendi departmanını görebilir
-        if not current_user.is_admin:
+        # Departman filtresi
+        if current_user.is_admin and department:
+            # Admin belirli bir departman seçmişse
+            query = query.filter(TemplateCategory.department == department)
+        elif not current_user.is_admin:
+            # Admin değilse sadece kendi departmanını görebilir
             query = query.filter(TemplateCategory.department == current_user.department)
+        # Admin ama department parametresi yoksa tüm departmanları görebilir (mevcut davranış)
         
         categories = query.order_by(TemplateCategory.name).all()
         
@@ -637,4 +649,36 @@ async def delete_category(
         raise
     except Exception as e:
         db.rollback()
-        raise HTTPException(status_code=500, detail=f"Error deleting category: {str(e)}") 
+        raise HTTPException(status_code=500, detail=f"Error deleting category: {str(e)}")
+
+# ============================================================================
+# ADMIN ENDPOINTS
+# ============================================================================
+
+@router.get("/admin/departments")
+async def get_departments(
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """Departman listesi - sadece admin"""
+    try:
+        if not current_user.is_admin:
+            raise HTTPException(status_code=403, detail="Bu işlem için yetkiniz yok")
+        
+        # Distinct departman listesi
+        departments = db.query(User.department).distinct().filter(
+            User.department.isnot(None),
+            User.department != ""
+        ).order_by(User.department).all()
+        
+        department_list = [dept[0] for dept in departments]
+        
+        return {
+            "departments": department_list,
+            "total_count": len(department_list)
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error getting departments: {str(e)}") 
