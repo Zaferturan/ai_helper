@@ -1196,6 +1196,7 @@ class TemplatesManager {
         this.selectedTemplateId = idNum;
         const modal = document.getElementById('delete-template-modal');
         if (modal) {
+            modal.classList.add('show');
             modal.classList.remove('hidden');
             // Focus trap
             const confirmBtn = document.getElementById('confirm-delete');
@@ -1206,6 +1207,7 @@ class TemplatesManager {
     hideDeleteModal() {
         const modal = document.getElementById('delete-template-modal');
         if (modal) {
+            modal.classList.remove('show');
             modal.classList.add('hidden');
         }
         this.selectedTemplateId = null;
