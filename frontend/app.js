@@ -692,28 +692,13 @@ class TemplatesManager {
         const isOwner = template.owner_user_id === this.getCurrentUserId();
         const isAdmin = this.getCurrentUserAdminStatus();
 
+        const snippet = template.content ? this.escapeHtml(template.content).slice(0, 100) : '';
         card.innerHTML = `
-            <div class="template-header">
-                <div>
-                    <div class="template-title">${this.escapeHtml(template.title)}</div>
-                    ${template.category_name ? `<span class="template-category">${this.escapeHtml(template.category_name)}</span>` : ''}
-                    ${this.shouldShowDepartmentBadge(template) ? `<span class="department-badge">${this.escapeHtml(template.department)}</span>` : ''}
-                </div>
+            <div class="template-title-row" title="${this.escapeHtml(template.title)}">${this.escapeHtml(template.title)}</div>
+            <div class="template-snippet" title="${this.escapeHtml(template.content || '')}">${snippet}</div>
             <div class="template-actions">
-                <button class="btn btn-primary btn-sm use-template-btn" data-template-id="${template.id}" aria-label="Şablonu kullan">
-                    📋 Kullan
-                </button>
-                ${(isOwner || isAdmin) ? `
-                    <button class="btn btn-danger btn-sm delete-template-btn" data-template-id="${template.id}" aria-label="Şablonu sil">
-                        🗑️ Sil
-                    </button>
-                ` : ''}
-            </div>
-            </div>
-            <div class="template-content">${this.escapeHtml(template.content)}</div>
-            <div class="template-meta">
-                <span class="template-owner">👤 ${this.escapeHtml(template.owner_name)}</span>
-                <span class="template-date">📅 ${this.formatDate(template.created_at)}</span>
+                <button class="btn btn-primary btn-sm use-template-btn" data-template-id="${template.id}" aria-label="Şablonu kullan">📋 Kullan</button>
+                ${(isOwner || isAdmin) ? `<button class="btn btn-danger btn-sm delete-template-btn" data-template-id="${template.id}" aria-label="Şablonu sil">🗑️ Sil</button>` : ''}
             </div>
         `;
 
