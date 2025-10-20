@@ -640,17 +640,22 @@ class TemplatesManager {
     }
 
     updateTemplatesList() {
+        console.log('updateTemplatesList called, templates.length:', this.templates.length);
         const templatesList = document.getElementById('templates-list');
         const emptyState = document.getElementById('templates-empty-state');
         const categoriesEmptyState = document.getElementById('categories-empty-state');
         
-        if (!templatesList) return;
+        if (!templatesList) {
+            console.log('templatesList element not found');
+            return;
+        }
 
         // Boş durumları gizle
         emptyState.classList.add('hidden');
         categoriesEmptyState.classList.add('hidden');
 
         if (this.templates.length === 0) {
+            console.log('No templates, showing empty state');
             templatesList.classList.add('hidden');
             emptyState.classList.remove('hidden');
             return;
