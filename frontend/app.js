@@ -546,6 +546,7 @@ class TemplatesManager {
             this.isLoading = true;
             
             const token = localStorage.getItem(CONFIG.STORAGE_KEYS.AUTH_TOKEN);
+            console.log('Loading templates with token:', token ? 'present' : 'missing');
             const params = new URLSearchParams();
             
             // Filtreleri ekle
