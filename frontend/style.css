@@ -275,19 +275,19 @@ textarea {
 .banner-content {
     display: flex;
     align-items: center;
-    padding: 2rem;
+    padding: 0.66rem; /* %33'e düşürüldü */
 }
 
 .logo-container {
     background: white;
     border-radius: 12px;
-    padding: 15px;
-    margin-right: 20px;
+    padding: 5px; /* %33'e düşürüldü */
+    margin-right: 7px; /* orantılı azaltıldı */
     box-shadow: 0 2px 4px rgba(0,0,0,0.1);
 }
 
 .logo {
-    height: 150px;
+    height: 50px; /* yaklaşık %33'e düşürüldü */
     filter: brightness(1.1);
 }
 
@@ -533,7 +533,7 @@ textarea {
 /* Request Sections */
 .request-section {
     background: #f8f9fa;
-    padding: 1.5rem;
+    padding: 0.1rem;
     border-radius: 8px;
     border: 1px solid #dee2e6;
 }
@@ -650,7 +650,7 @@ textarea {
 /* Response Section */
 .response-section {
     background: #f8f9fa;
-    padding: 1.5rem;
+    padding: 0.1rem;
     border-radius: 8px;
     border: 1px solid #dee2e6;
 }
@@ -690,7 +690,7 @@ textarea {
 /* Previous Responses */
 .previous-responses {
     background: #f8f9fa;
-    padding: 1.5rem;
+    padding: 0.1rem;
     border-radius: 8px;
     border: 1px solid #dee2e6;
 }
@@ -775,11 +775,11 @@ textarea {
     
     .logo-container {
         margin-right: 0;
-        margin-bottom: 1rem;
+        margin-bottom: 0.33rem; /* %33'e düşürüldü */
     }
     
     .logo {
-        height: 100px;
+        height: 33px; /* mobilde %33 */
     }
     
     .banner-text h1 {
@@ -975,7 +975,7 @@ div[id*="prev-text-"]::after {
 .templates-filters {
     background: white;
     border-radius: 12px;
-    padding: 1.5rem;
+    padding: 0.1rem;
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
     height: fit-content;
     position: sticky;
@@ -1050,7 +1050,7 @@ div[id*="prev-text-"]::after {
 .templates-main {
     background: white;
     border-radius: 12px;
-    padding: 1.5rem;
+    padding: 0.1rem;
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
@@ -1227,7 +1227,7 @@ div[id*="prev-text-"]::after {
 .modal-content {
     background: white;
     border-radius: 12px;
-    padding: 0;
+    padding: 0; /* geri alındı */
     max-width: 500px;
     width: 90%;
     max-height: 80vh;
@@ -1239,7 +1239,7 @@ div[id*="prev-text-"]::after {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: 1.5rem;
+    padding: 0.1rem;
     border-bottom: 1px solid #e5e7eb;
 }
 
@@ -1271,7 +1271,7 @@ div[id*="prev-text-"]::after {
 }
 
 .modal-body {
-    padding: 1.5rem;
+    padding: 0.1rem;
 }
 
 .use-options {
@@ -1592,7 +1592,7 @@ div[id*="prev-text-"]::after {
 .template-card {
     background: white;
     border-radius: 12px;
-    padding: 1.5rem;
+    padding: 0.1rem;
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
     border: 1px solid #e5e7eb;
     transition: all 0.3s ease;
@@ -1767,7 +1767,7 @@ div[id*="prev-text-"]::after {
 .skeleton-card {
     background: white;
     border-radius: 12px;
-    padding: 1.5rem;
+    padding: 0.1rem;
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
     border: 1px solid #e5e7eb;
     margin-bottom: 1.5rem;

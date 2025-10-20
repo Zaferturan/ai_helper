@@ -2697,6 +2697,9 @@ class AIResponseManager {
                 }
             }
             
+            // Kopyalama öncesi tüm mini "şablon kaydet" alanlarını gizle
+            this.hideAllTemplateSaveUIs();
+
             navigator.clipboard.writeText(text).then(() => {
                 console.log('✅ Ana yanıt panoya kopyalandı!');
                 
@@ -2729,6 +2732,22 @@ class AIResponseManager {
         }
     }
 
+    hideAllTemplateSaveUIs() {
+        try {
+            const nodes = document.querySelectorAll('.prev-template-save');
+            nodes.forEach(n => n.style.display = 'none');
+            // Ana bölümdeki şablon kaydetme alanını da kapat
+            if (typeof templateSaveManager?.hideTemplateSaveSection === 'function') {
+                templateSaveManager.hideTemplateSaveSection();
+            } else {
+                const mainSave = document.getElementById('save-template-section');
+                if (mainSave) mainSave.classList.add('hidden');
+            }
+        } catch (e) {
+            console.warn('template save UI gizleme uyarısı:', e);
+        }
+    }
+
     hidePreviousResponsesSection() {
         // Önceki yanıtlar bölümünü gizle
         const previousResponsesSection = document.querySelector('.previous-responses');
@@ -2751,6 +2770,9 @@ class AIResponseManager {
             console.log('Already copied, ignoring');
             return;
         }
+
+        // Kopyalama öncesi tüm "şablon olarak sakla" alanlarını gizle
+        this.hideAllTemplateSaveUIs();
 
         // Durum makinesini güncelle (Gradio app.py mantığı)
         this.state = 'finalized';
@@ -2898,15 +2920,96 @@ class AIResponseManager {
                 if (accordionContent) {
                     accordionContent.innerHTML = `
                         <textarea class="response-textarea" readonly style="width: 100%; height: 300px; padding: 12px; border: 2px solid #e5e7eb; border-radius: 8px; background: #ffffff; font-size: 14px; line-height: 1.5; white-space: pre-wrap; word-wrap: break-word; overflow-y: auto; resize: vertical; margin: 0; display: block;">${response.response_text}</textarea>
-                        <button id="prev-copy-btn-${responseNumber}" class="prev-copy-btn" style="margin-top: 10px; padding: 8px 16px; background: #4b9ac7; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 14px; transition: background-color 0.3s ease;" onmouseover="this.style.background='#e25b6b'" onmouseout="this.style.background='#4b9ac7'">📋 Seç ve Kopyala #${responseNumber}</button>
+                        <div class="prev-template-save" style="display:flex; align-items:center; gap:8px; margin-top:8px;">
+                            <label style="display:flex; align-items:center; gap:6px; font-size:13px; color:#374151;">
+                                <input type="checkbox" id="prev-save-${responseNumber}" /> Şablon olarak sakla
+                            </label>
+                            <select id="prev-category-${responseNumber}" class="category-select" style="display:none; padding:6px 8px; border:1px solid #e5e7eb; border-radius:6px;">
+                                <option value="">Kategori seçiniz</option>
+                            </select>
+                            <button id="prev-newcat-btn-${responseNumber}" class="btn btn-secondary btn-sm" style="display:none;">+ Yeni</button>
+                            <div id="prev-newcat-group-${responseNumber}" style="display:none; gap:6px; align-items:center;">
+                                <input id="prev-newcat-${responseNumber}" type="text" class="category-input" placeholder="Kategori adı" style="padding:6px 8px; border:1px solid #e5e7eb; border-radius:6px;"/>
+                                <button id="prev-createcat-${responseNumber}" class="btn btn-primary btn-sm">Oluştur</button>
+                                <button id="prev-cancelcat-${responseNumber}" class="btn btn-secondary btn-sm">İptal</button>
+                            </div>
+                            <button id="prev-copy-btn-${responseNumber}" class="prev-copy-btn" style="margin-left:auto; padding: 8px 16px; background: #4b9ac7; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 14px; transition: background-color 0.3s ease;" onmouseover="this.style.background='#e25b6b'" onmouseout="this.style.background='#4b9ac7'">📋 Seç ve Kopyala #${responseNumber}</button>
+                        </div>
                     `;
                     
                     // Copy butonunu güncelle
                     const copyBtn = document.getElementById(`prev-copy-btn-${responseNumber}`);
                     if (copyBtn) {
                         copyBtn.onclick = async () => {
+                            // Şablon olarak kaydetme işaretliyse önce kaydet
+                            const saveChk = document.getElementById(`prev-save-${responseNumber}`);
+                            const catSel = document.getElementById(`prev-category-${responseNumber}`);
+                            if (saveChk && saveChk.checked) {
+                                if (!catSel || !catSel.value) {
+                                    templateSaveManager.showToast('❌ Lütfen kategori seçin', 'error');
+                                    return;
+                                }
+                                await templateSaveManager.saveTemplate(response.response_text, parseInt(catSel.value));
+                            }
+                            // Tüm mini şablon alanlarını gizle
+                            const prevSaves = document.querySelectorAll('.prev-template-save');
+                            prevSaves.forEach(n => n.style.display = 'none');
                             await responseManager.copyPreviousResponse(response.id);
                         };
+                    }
+
+                    // Checkbox değişimi: kategori alanlarını aç/kapa ve kategorileri yükle
+                    const saveChk = document.getElementById(`prev-save-${responseNumber}`);
+                    const catSel = document.getElementById(`prev-category-${responseNumber}`);
+                    const newBtn = document.getElementById(`prev-newcat-btn-${responseNumber}`);
+                    const newGrp = document.getElementById(`prev-newcat-group-${responseNumber}`);
+                    const newInp = document.getElementById(`prev-newcat-${responseNumber}`);
+                    const createBtn = document.getElementById(`prev-createcat-${responseNumber}`);
+                    const cancelBtn = document.getElementById(`prev-cancelcat-${responseNumber}`);
+
+                    if (saveChk) {
+                        saveChk.addEventListener('change', async () => {
+                            if (saveChk.checked) {
+                                if (catSel) catSel.style.display = 'inline-block';
+                                if (newBtn) newBtn.style.display = 'inline-block';
+                                // Kategorileri doldur
+                                const cats = await templateSaveManager.loadCategories();
+                                if (catSel) {
+                                    catSel.innerHTML = '<option value="">Kategori seçiniz</option>';
+                                    (cats || []).forEach(c => {
+                                        const opt = document.createElement('option');
+                                        opt.value = c.id; opt.textContent = c.name; catSel.appendChild(opt);
+                                    });
+                                }
+                            } else {
+                                if (catSel) catSel.style.display = 'none';
+                                if (newBtn) newBtn.style.display = 'none';
+                                if (newGrp) newGrp.style.display = 'none';
+                            }
+                        });
+                    }
+
+                    if (newBtn && newGrp && newInp && createBtn && cancelBtn) {
+                        newBtn.addEventListener('click', () => {
+                            newGrp.style.display = 'flex';
+                            newBtn.style.display = 'none';
+                        });
+                        cancelBtn.addEventListener('click', () => {
+                            newGrp.style.display = 'none';
+                            newBtn.style.display = 'inline-block';
+                        });
+                        createBtn.addEventListener('click', async () => {
+                            if (newInp.value.trim()) {
+                                const cat = await templateSaveManager.createCategory(newInp.value.trim());
+                                if (cat && catSel) {
+                                    const opt = document.createElement('option');
+                                    opt.value = cat.id; opt.textContent = cat.name; catSel.appendChild(opt);
+                                    catSel.value = cat.id;
+                                }
+                                newGrp.style.display = 'none';
+                                newBtn.style.display = 'inline-block';
+                            }
+                        });
                     }
                 }
             }
@@ -2966,8 +3069,11 @@ class AIResponseManager {
             
             const generateVisible = this.state === 'draft' && this.yanitSayisi < 5;
             
-            // Şablon kaydetme alanını göster/gizle - yanıt varsa göster
-            if (this.previousResponses.length > 0) {
+            // Şablon kaydetme alanı: sadece ana yanıtta gerçek içerik varsa ve kopyalama yapılmadan önce görünür
+            const mainRespEl = document.getElementById('main-response');
+            const text = (mainRespEl?.textContent || '').trim();
+            const hasContent = text !== '' && text !== 'Henüz yanıt üretilmedi...';
+            if (hasContent && this.state === 'draft') {
                 templateSaveManager.showTemplateSaveSection();
             } else {
                 templateSaveManager.hideTemplateSaveSection();
