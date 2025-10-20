@@ -1162,13 +1162,26 @@ class TemplatesManager {
                 }
                 break;
             case 'clipboard':
-                // Panoya kopyala
+                // Panoya kopyala ve sayacı artır
                 try {
                     await navigator.clipboard.writeText(template.content);
                     console.log('✅ Şablon panoya kopyalandı');
-                    // TODO: Toast notification
+                    
+                    // Tıpkı "Seç ve Kopyala" düğmesine basmışız gibi sayacı artır
+                    if (aiResponseManager) {
+                        aiResponseManager.yanitSayisi += 1;
+                        console.log('✅ Şablon kullanımı sayacı artırıldı');
+                    }
+                    
+                    // Toast notification
+                    if (templateSaveManager) {
+                        templateSaveManager.showToast('✅ Şablon panoya kopyalandı', 'success');
+                    }
                 } catch (error) {
                     console.error('❌ Pano kopyalama hatası:', error);
+                    if (templateSaveManager) {
+                        templateSaveManager.showToast('❌ Pano kopyalama hatası', 'error');
+                    }
                 }
                 break;
         }
