@@ -2939,8 +2939,8 @@ class AIResponseManager {
             
             const generateVisible = this.state === 'draft' && this.yanitSayisi < 5;
             
-            // Şablon kaydetme alanını göster/gizle - sadece yanıt varsa
-            if (this.state === 'finalized' && this.yanitSayisi > 0) {
+            // Şablon kaydetme alanını göster/gizle - yanıt varsa göster
+            if (this.previousResponses.length > 0) {
                 templateSaveManager.showTemplateSaveSection();
             } else {
                 templateSaveManager.hideTemplateSaveSection();
