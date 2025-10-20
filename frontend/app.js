@@ -737,6 +737,16 @@ class TemplatesManager {
         if (loadMoreBtn) loadMoreBtn.classList.add('hidden');
     }
 
+    hideLoading() {
+        const loading = document.getElementById('templates-loading');
+        const list = document.getElementById('templates-list');
+        const loadMoreBtn = document.getElementById('load-more-btn');
+        
+        if (loading) loading.classList.add('hidden');
+        if (list) list.classList.remove('hidden');
+        if (loadMoreBtn) loadMoreBtn.classList.remove('hidden');
+    }
+
     showSkeletonLoading() {
         const list = document.getElementById('templates-list');
         if (!list) return;
