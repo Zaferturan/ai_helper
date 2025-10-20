@@ -673,6 +673,10 @@ class TemplatesManager {
         });
 
         templatesList.appendChild(fragment);
+        
+        // Loading state'i gizle
+        this.hideLoading();
+        this.hideLoadMoreLoading();
     }
 
     createTemplateCard(template) {
