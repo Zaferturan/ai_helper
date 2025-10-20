@@ -1261,6 +1261,8 @@ class TemplatesManager {
     }
 
     async deleteTemplate(templateId) {
+        // Sadece kullanıcı karttaki Sil'e tıklarsa çağrılacak. Otomatik tetiklenmemesi için ek koruma.
+        if (!templateId) return;
         this.showDeleteModal(templateId);
     }
 
@@ -1352,7 +1354,10 @@ class TemplatesManager {
             } else if (e.target.classList.contains('delete-template-btn')) {
                 const templateId = e.target.dataset.templateId;
                 this.selectedTemplate = templateId;
-                this.showDeleteModal(templateId);
+                // Koruma: geçersiz id varsa açma
+                if (templateId) {
+                    this.showDeleteModal(templateId);
+                }
             }
         });
     }
