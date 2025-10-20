@@ -2809,6 +2809,9 @@ class AIResponseManager {
         // Şablon kaydetme formunu temizle
         templateSaveManager.resetTemplateSaveForm();
         
+        // Şablon kaydetme bölümünü gizle
+        templateSaveManager.hideTemplateSaveSection();
+        
         // Ana yanıt alanını temizle
         const mainResponse = document.getElementById('main-response');
         if (mainResponse) {
@@ -2936,7 +2939,7 @@ class AIResponseManager {
             
             const generateVisible = this.state === 'draft' && this.yanitSayisi < 5;
             
-            // Şablon kaydetme alanını göster/gizle
+            // Şablon kaydetme alanını göster/gizle - sadece yanıt varsa
             if (this.state === 'finalized' && this.yanitSayisi > 0) {
                 templateSaveManager.showTemplateSaveSection();
             } else {
@@ -3380,6 +3383,9 @@ document.addEventListener('DOMContentLoaded', async () => {
         
         // Template save manager event listener'larını başlat
         templateSaveManager.setupEventListeners();
+        
+        // Şablon kaydetme bölümünü başlangıçta gizle
+        templateSaveManager.hideTemplateSaveSection();
         
         // Ana "Seç ve Kopyala" düğmesini göster
         if (ui.elements.mainCopyBtn) {
