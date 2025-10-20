@@ -1188,7 +1188,12 @@ class TemplatesManager {
     }
 
     showDeleteModal(templateId) {
-        this.selectedTemplateId = templateId;
+        // Güvenlik: Geçersiz çağrılarda açma
+        const idNum = Number(templateId);
+        if (!idNum || Number.isNaN(idNum)) {
+            return;
+        }
+        this.selectedTemplateId = idNum;
         const modal = document.getElementById('delete-template-modal');
         if (modal) {
             modal.classList.remove('hidden');
@@ -1478,8 +1483,8 @@ class NavigationManager {
         // Update user profile in both screens
         this.updateUserProfile();
         
-        // Initialize templates screen
-        templatesManager.initializeTemplatesScreen();
+        // Initialize templates screen (modallar reset ile birlikte)
+        await templatesManager.initializeTemplatesScreen();
     }
 
     updateUserProfile() {
