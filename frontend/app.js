@@ -156,6 +156,7 @@ class TemplateSaveManager {
     async createCategory(categoryName) {
         try {
             const token = localStorage.getItem(CONFIG.STORAGE_KEYS.AUTH_TOKEN);
+            console.log('Creating category with token:', token ? 'present' : 'missing');
             const response = await fetch(`${CONFIG.BACKEND_URL}/categories`, {
                 method: 'POST',
                 headers: {
