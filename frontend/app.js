@@ -413,9 +413,9 @@ class TemplatesManager {
         this.selectedTemplate = null;
         this.searchTimeout = null;
         this.isLoading = false;
-        this.hasMore = true;
+        this.hasMore = false; // Tüm liste tek sayfa
         this.currentPage = 0;
-        this.pageSize = 20; // Sayfa boyutu
+        this.pageSize = 10000; // Tümünü getir
         
         // Basit analitik sistemi
         this.analytics = {
@@ -665,6 +665,11 @@ class TemplatesManager {
             return;
         }
 
+        // Liste var: boş kartları gizle
+        if (emptyState) emptyState.classList.add('hidden');
+        const categoriesEmptyState = document.getElementById('categories-empty-state');
+        if (categoriesEmptyState) categoriesEmptyState.classList.add('hidden');
+
         // Performans optimizasyonu: DocumentFragment kullan
         const fragment = document.createDocumentFragment();
         this.templates.forEach(template => {
@@ -694,19 +699,16 @@ class TemplatesManager {
                     ${template.category_name ? `<span class="template-category">${this.escapeHtml(template.category_name)}</span>` : ''}
                     ${this.shouldShowDepartmentBadge(template) ? `<span class="department-badge">${this.escapeHtml(template.department)}</span>` : ''}
                 </div>
-                <div class="template-actions">
-                    <button class="btn btn-primary btn-sm use-template-btn" data-template-id="${template.id}" aria-label="Şablonu kullan">
-                        📋 Kullan
+            <div class="template-actions">
+                <button class="btn btn-primary btn-sm use-template-btn" data-template-id="${template.id}" aria-label="Şablonu kullan">
+                    📋 Kullan
+                </button>
+                ${(isOwner || isAdmin) ? `
+                    <button class="btn btn-danger btn-sm delete-template-btn" data-template-id="${template.id}" aria-label="Şablonu sil">
+                        🗑️ Sil
                     </button>
-                    <button class="btn btn-secondary btn-sm copy-template-btn" data-template-id="${template.id}" aria-label="Şablonu panoya kopyala">
-                        📄 Kopyala
-                    </button>
-                    ${(isOwner || isAdmin) ? `
-                        <button class="btn btn-danger btn-sm delete-template-btn" data-template-id="${template.id}" aria-label="Şablonu sil">
-                            🗑️ Sil
-                        </button>
-                    ` : ''}
-                </div>
+                ` : ''}
+            </div>
             </div>
             <div class="template-content">${this.escapeHtml(template.content)}</div>
             <div class="template-meta">
@@ -1280,6 +1282,10 @@ class TemplatesManager {
         // Admin ise departmanları yükle
         if (this.getCurrentUserAdminStatus()) {
             await this.loadDepartments();
+        } else {
+            // Admin değilse departman filtresi grubunu gizle
+            const deptGroup = document.getElementById('admin-department-group');
+            if (deptGroup) deptGroup.classList.add('hidden');
         }
         
         // Kategorileri ve şablonları yükle
@@ -1338,11 +1344,7 @@ class TemplatesManager {
 
         // Load More button
         const loadMoreBtn = document.getElementById('load-more-btn');
-        if (loadMoreBtn) {
-            loadMoreBtn.addEventListener('click', () => {
-                this.loadTemplates(this.currentFilters, true);
-            });
-        }
+        // Load More kaldırıldı: buton event'i bağlama
 
         // Template action event listener'ları
         document.addEventListener('click', (e) => {
