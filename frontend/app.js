@@ -80,16 +80,25 @@ class TemplateSaveManager {
 
     showTemplateSaveSection() {
         const saveSection = document.getElementById('save-template-section');
+        const checkbox = document.getElementById('save-as-template');
         if (saveSection) {
             saveSection.classList.remove('hidden');
+        }
+        if (checkbox) {
+            checkbox.style.display = 'block';
         }
     }
 
     hideTemplateSaveSection() {
         const saveSection = document.getElementById('save-template-section');
+        const checkbox = document.getElementById('save-as-template');
         if (saveSection) {
             saveSection.classList.add('hidden');
         }
+        if (checkbox) {
+            checkbox.style.display = 'none';
+        }
+        this.hideCategorySection();
     }
 
     showCategorySection() {
