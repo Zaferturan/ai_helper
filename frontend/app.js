@@ -654,6 +654,10 @@ class TemplatesManager {
         emptyState.classList.add('hidden');
         categoriesEmptyState.classList.add('hidden');
 
+        // Önceki şablonları temizle
+        templatesList.innerHTML = '';
+        templatesList.classList.remove('hidden');
+
         if (this.templates.length === 0) {
             console.log('No templates, showing empty state');
             templatesList.classList.add('hidden');
@@ -668,9 +672,7 @@ class TemplatesManager {
             fragment.appendChild(card);
         });
 
-        templatesList.innerHTML = '';
         templatesList.appendChild(fragment);
-        templatesList.classList.remove('hidden');
     }
 
     createTemplateCard(template) {
