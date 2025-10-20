@@ -82,7 +82,7 @@ class TemplateSaveManager {
         const saveSection = document.getElementById('save-template-section');
         const checkbox = document.getElementById('save-as-template');
         if (saveSection) {
-            saveSection.classList.remove('hidden');
+            saveSection.style.display = 'block';
         }
         if (checkbox) {
             checkbox.style.display = 'block';
@@ -93,7 +93,7 @@ class TemplateSaveManager {
         const saveSection = document.getElementById('save-template-section');
         const checkbox = document.getElementById('save-as-template');
         if (saveSection) {
-            saveSection.classList.add('hidden');
+            saveSection.style.display = 'none';
         }
         if (checkbox) {
             checkbox.style.display = 'none';
