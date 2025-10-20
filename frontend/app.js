@@ -1455,7 +1455,7 @@ class NavigationManager {
         this.updateUserProfile();
     }
 
-    showTemplatesScreen() {
+    async showTemplatesScreen() {
         console.log('📂 Şablonlarım ekranı gösteriliyor...');
         
         // Screens
@@ -3159,7 +3159,7 @@ class EventManager {
         }
         
         if (templatesBtn) {
-            templatesBtn.addEventListener('click', () => navigationManager.showTemplatesScreen());
+            templatesBtn.addEventListener('click', async () => await navigationManager.showTemplatesScreen());
         }
         
         if (homeBtnTemplates) {
@@ -3167,7 +3167,7 @@ class EventManager {
         }
         
         if (templatesBtnTemplates) {
-            templatesBtnTemplates.addEventListener('click', () => navigationManager.showTemplatesScreen());
+            templatesBtnTemplates.addEventListener('click', async () => await navigationManager.showTemplatesScreen());
         }
         
         if (goToHomeBtn) {
