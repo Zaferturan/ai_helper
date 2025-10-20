@@ -1262,6 +1262,11 @@ class TemplatesManager {
     // Initialize templates screen
     async initializeTemplatesScreen() {
         console.log('📂 Templates screen başlatılıyor...');
+        // Güvenlik: ekrana girerken tüm modalları kapalı tut
+        this.hideUseModal();
+        this.hideDeleteModal();
+        this.selectedTemplate = null;
+        this.selectedTemplateId = null;
         
         // Admin ise departmanları yükle
         if (this.getCurrentUserAdminStatus()) {
