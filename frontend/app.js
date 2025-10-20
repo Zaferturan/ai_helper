@@ -1752,9 +1752,19 @@ class AuthManager {
                 return false;
             }
             
-            // Magic link değilse ve session varsa bile login göster (normal flow için)
+            // Magic link değilse: aktif session veya geçerli token varsa kullanıcıyı otomatik içeri al
             if (!isMagicLink) {
-                console.log('Not a magic link, showing login screen');
+                // localStorage'da auth token var mı?
+                const hasToken = !!localStorage.getItem(CONFIG.STORAGE_KEYS.AUTH_TOKEN);
+                if (hasActiveSession || hasToken) {
+                    console.log('Existing session/token found, resuming session');
+                    // Kullanıcı profilini yükle ve ana uygulamayı göster
+                    await this.updateUserProfile();
+                    ui.hideLoadingScreen();
+                    ui.showMainApp();
+                    return true;
+                }
+                console.log('No active session, showing login screen');
                 ui.hideLoadingScreen();
                 ui.showLogin();
                 return false;
