@@ -576,7 +576,9 @@ class TemplatesManager {
             }
 
             const data = await response.json();
+            console.log('Backend response:', data);
             const newTemplates = data.templates || [];
+            console.log('New templates:', newTemplates);
             
             if (isLoadMore) {
                 this.templates = [...this.templates, ...newTemplates];
