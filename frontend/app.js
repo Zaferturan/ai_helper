@@ -415,7 +415,7 @@ class TemplatesManager {
         this.isLoading = false;
         this.hasMore = false; // Tüm liste tek sayfa
         this.currentPage = 0;
-        this.pageSize = 10000; // Tümünü getir
+        this.pageSize = 100; // Backend limitine uygun
         
         // Basit analitik sistemi
         this.analytics = {
@@ -665,10 +665,10 @@ class TemplatesManager {
             return;
         }
 
-        // Liste var: boş kartları gizle
+        // Liste var: boş kartları gizle (değişken yeniden tanımlama yok)
         if (emptyState) emptyState.classList.add('hidden');
-        const categoriesEmptyState = document.getElementById('categories-empty-state');
-        if (categoriesEmptyState) categoriesEmptyState.classList.add('hidden');
+        const categoriesEmpty = document.getElementById('categories-empty-state');
+        if (categoriesEmpty) categoriesEmpty.classList.add('hidden');
 
         // Performans optimizasyonu: DocumentFragment kullan
         const fragment = document.createDocumentFragment();
