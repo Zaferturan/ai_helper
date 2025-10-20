@@ -1342,7 +1342,7 @@ class TemplatesManager {
             } else if (e.target.classList.contains('delete-template-btn')) {
                 const templateId = e.target.dataset.templateId;
                 this.selectedTemplate = templateId;
-                this.showDeleteModal();
+                this.showDeleteModal(templateId);
             }
         });
     }
@@ -1407,19 +1407,7 @@ class TemplatesManager {
         }
     }
 
-    showDeleteModal() {
-        const modal = document.getElementById('delete-template-modal');
-        if (modal) {
-            modal.classList.remove('hidden');
-        }
-    }
-
-    hideDeleteModal() {
-        const modal = document.getElementById('delete-template-modal');
-        if (modal) {
-            modal.classList.add('hidden');
-        }
-    }
+    // Remove duplicate definitions (use the earlier implementations with templateId)
 }
 
 // Navigation Manager for screen switching
