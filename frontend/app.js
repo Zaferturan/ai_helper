@@ -1171,6 +1171,13 @@ class TemplatesManager {
                 aiResponseManager.updateButtonVisibility();
             }
             
+            // 7. "Yeni İstek Öneri Cevapla" düğmesini doğrudan göster
+            const newRequestBtn = document.getElementById('new-request-btn');
+            if (newRequestBtn) {
+                newRequestBtn.style.display = 'block';
+                console.log('✅ Yeni İstek Öneri Cevapla düğmesi gösterildi');
+            }
+            
             // 6. Toast bildirimi
             if (templateSaveManager) {
                 templateSaveManager.showToast('✅ Şablon kopyalandı ve ana sayfaya eklendi', 'success');
