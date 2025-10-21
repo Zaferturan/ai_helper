@@ -697,7 +697,7 @@ class TemplatesManager {
             <div class="template-title-row" title="${this.escapeHtml(template.title)}">${this.escapeHtml(template.title)}</div>
             <div class="template-snippet" title="${this.escapeHtml(template.content || '')}">${snippet}</div>
             <div class="template-actions">
-                <button class="btn btn-primary btn-sm use-template-btn" data-template-id="${template.id}" aria-label="Şablonu kullan">📋 Kullan</button>
+                <button class="btn btn-primary btn-sm copy-template-btn" data-template-id="${template.id}" aria-label="Şablonu kopyala">📄 Seç ve Kopyala</button>
                 ${(isOwner || isAdmin) ? `<button class="btn btn-danger btn-sm delete-template-btn" data-template-id="${template.id}" aria-label="Şablonu sil">🗑️ Sil</button>` : ''}
             </div>
         `;
@@ -1137,53 +1137,50 @@ class TemplatesManager {
     }
 
     // Template actions
-    async useTemplate(templateId, action) {
+    }
+
+    async copyTemplateAsResponse(templateId) {
         const template = this.templates.find(t => t.id == templateId);
         if (!template) return;
         
-        // Analitik tracking
-        this.trackEvent('template_used', { action: action });
-
-        switch (action) {
-            case 'request':
-                // Gelen İstek/Öneri alanına koy
-                const originalText = document.getElementById('original-text');
-                if (originalText) {
-                    originalText.value = template.content;
-                    navigationManager.showHomeScreen();
-                }
-                break;
-            case 'response':
-                // Hazırladığınız Cevap alanına koy
-                const customInput = document.getElementById('custom-input');
-                if (customInput) {
-                    customInput.value = template.content;
-                    navigationManager.showHomeScreen();
-                }
-                break;
-            case 'clipboard':
-                // Panoya kopyala ve sayacı artır
-                try {
-                    await navigator.clipboard.writeText(template.content);
-                    console.log('✅ Şablon panoya kopyalandı');
-                    
-                    // Tıpkı "Seç ve Kopyala" düğmesine basmışız gibi sayacı artır
-                    if (aiResponseManager) {
-                        aiResponseManager.yanitSayisi += 1;
-                        console.log('✅ Şablon kullanımı sayacı artırıldı');
-                    }
-                    
-                    // Toast notification
-                    if (templateSaveManager) {
-                        templateSaveManager.showToast('✅ Şablon panoya kopyalandı', 'success');
-                    }
-                } catch (error) {
-                    console.error('❌ Pano kopyalama hatası:', error);
-                    if (templateSaveManager) {
-                        templateSaveManager.showToast('❌ Pano kopyalama hatası', 'error');
-                    }
-                }
-                break;
+        try {
+            // 1. Şablon içeriğini panoya kopyala
+            await navigator.clipboard.writeText(template.content);
+            console.log('✅ Şablon panoya kopyalandı');
+            
+            // 2. Ana sayfaya dön
+            navigationManager.showHomeScreen();
+            
+            // 3. Şablon içeriğini "Son Üretilen Yanıt" alanına sabitle
+            const mainResponse = document.getElementById('main-response');
+            if (mainResponse) {
+                mainResponse.innerHTML = `<div class="response-content">${this.escapeHtml(template.content)}</div>`;
+            }
+            
+            // 4. Sayacı artır (tıpkı "Seç ve Kopyala" düğmesi gibi)
+            if (aiResponseManager) {
+                aiResponseManager.yanitSayisi += 1;
+                console.log('✅ Şablon kullanımı sayacı artırıldı');
+            }
+            
+            // 5. Tüm "Şablon olarak sakla" UI'larını gizle
+            if (aiResponseManager && aiResponseManager.hideAllTemplateSaveUIs) {
+                aiResponseManager.hideAllTemplateSaveUIs();
+            }
+            
+            // 6. Toast bildirimi
+            if (templateSaveManager) {
+                templateSaveManager.showToast('✅ Şablon kopyalandı ve ana sayfaya eklendi', 'success');
+            }
+            
+            // 7. Analitik tracking
+            this.trackEvent('template_used', { action: 'copy_as_response' });
+            
+        } catch (error) {
+            console.error('❌ Şablon kopyalama hatası:', error);
+            if (templateSaveManager) {
+                templateSaveManager.showToast('❌ Şablon kopyalama hatası', 'error');
+            }
         }
     }
 
@@ -1346,13 +1343,9 @@ class TemplatesManager {
 
         // Template action event listener'ları
         document.addEventListener('click', (e) => {
-            if (e.target.classList.contains('use-template-btn')) {
+            if (e.target.classList.contains('copy-template-btn')) {
                 const templateId = e.target.dataset.templateId;
-                this.selectedTemplate = templateId;
-                this.showUseModal();
-            } else if (e.target.classList.contains('copy-template-btn')) {
-                const templateId = e.target.dataset.templateId;
-                this.useTemplate(templateId, 'clipboard');
+                this.copyTemplateAsResponse(templateId);
             } else if (e.target.classList.contains('delete-template-btn')) {
                 const templateId = e.target.dataset.templateId;
                 this.selectedTemplate = templateId;
