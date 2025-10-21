@@ -1154,15 +1154,21 @@ class TemplatesManager {
                 mainResponse.innerHTML = `<div class="response-content">${this.escapeHtml(template.content)}</div>`;
             }
             
-            // 4. Sayacı artır (tıpkı "Seç ve Kopyala" düğmesi gibi)
+            // 4. Sayacı artır ve state'i güncelle (tıpkı "Seç ve Kopyala" düğmesi gibi)
             if (aiResponseManager) {
                 aiResponseManager.yanitSayisi += 1;
-                console.log('✅ Şablon kullanımı sayacı artırıldı');
+                aiResponseManager.state = 'finalized'; // State'i finalized yap
+                console.log('✅ Şablon kullanımı sayacı artırıldı ve state finalized yapıldı');
             }
             
             // 5. Tüm "Şablon olarak sakla" UI'larını gizle
             if (aiResponseManager && aiResponseManager.hideAllTemplateSaveUIs) {
                 aiResponseManager.hideAllTemplateSaveUIs();
+            }
+            
+            // 6. Button visibility'yi güncelle
+            if (aiResponseManager && aiResponseManager.updateButtonVisibility) {
+                aiResponseManager.updateButtonVisibility();
             }
             
             // 6. Toast bildirimi
