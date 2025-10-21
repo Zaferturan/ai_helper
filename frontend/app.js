@@ -1136,9 +1136,6 @@ class TemplatesManager {
         this.updateDepartmentInfo();
     }
 
-    // Template actions
-    }
-
     async copyTemplateAsResponse(templateId) {
         const template = this.templates.find(t => t.id == templateId);
         if (!template) return;
