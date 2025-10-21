@@ -1137,8 +1137,14 @@ class TemplatesManager {
     }
 
     async copyTemplateAsResponse(templateId) {
+        console.log('🔄 copyTemplateAsResponse başlatıldı:', templateId);
         const template = this.templates.find(t => t.id == templateId);
-        if (!template) return;
+        if (!template) {
+            console.log('❌ Template bulunamadı:', templateId);
+            return;
+        }
+        
+        console.log('✅ Template bulundu:', template.title);
         
         try {
             // 1. Şablon içeriğini panoya kopyala
