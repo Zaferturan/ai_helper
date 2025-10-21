@@ -1160,36 +1160,55 @@ class TemplatesManager {
                 mainResponse.innerHTML = `<div class="response-content">${this.escapeHtml(template.content)}</div>`;
             }
             
-            // 4. Sayacı artır ve state'i güncelle (tıpkı "Seç ve Kopyala" düğmesi gibi)
+            // 4. Backend'e şablon kullanımını kaydet
+            try {
+                const useResponse = await fetch(`${CONFIG.BACKEND_URL}/templates/${templateId}/use`, {
+                    method: 'PUT',
+                    headers: {
+                        'Authorization': `Bearer ${localStorage.getItem(CONFIG.STORAGE_KEYS.AUTH_TOKEN)}`,
+                        'Content-Type': 'application/json'
+                    }
+                });
+                
+                if (useResponse.ok) {
+                    console.log('✅ Şablon kullanımı backend\'e kaydedildi');
+                } else {
+                    console.log('⚠️ Şablon kullanımı backend\'e kaydedilemedi');
+                }
+            } catch (error) {
+                console.error('❌ Şablon kullanımı kaydetme hatası:', error);
+            }
+            
+            // 5. Sayacı artır ve state'i güncelle (tıpkı "Seç ve Kopyala" düğmesi gibi)
             if (responseManager) {
                 responseManager.yanitSayisi += 1;
                 responseManager.state = 'finalized'; // State'i finalized yap
                 console.log('✅ Şablon kullanımı sayacı artırıldı ve state finalized yapıldı');
             }
             
-            // 5. Tüm "Şablon olarak sakla" UI'larını gizle
+            // 6. Tüm "Şablon olarak sakla" UI'larını gizle
             if (responseManager && responseManager.hideAllTemplateSaveUIs) {
                 responseManager.hideAllTemplateSaveUIs();
             }
             
-            // 6. Button visibility'yi güncelle
+            // 7. Button visibility'yi güncelle
             if (responseManager && responseManager.updateButtonVisibility) {
                 responseManager.updateButtonVisibility();
             }
             
-            // 7. "Yeni İstek Öneri Cevapla" düğmesini doğrudan göster
+            // 8. "Yeni İstek Öneri Cevapla" düğmesini doğrudan göster
             const newRequestBtn = document.getElementById('new-request-btn');
             if (newRequestBtn) {
                 newRequestBtn.style.display = 'block';
                 console.log('✅ Yeni İstek Öneri Cevapla düğmesi gösterildi');
             }
             
-            // 6. Toast bildirimi
+            // 9. Toast bildirimi
             if (templateSaveManager) {
                 templateSaveManager.showToast('✅ Şablon kopyalandı ve ana sayfaya eklendi', 'success');
             }
             
-            // 7. Analitik tracking
+            // 10. Analitik tracking
             this.trackEvent('template_used', { action: 'copy_as_response' });
             
         } catch (error) {

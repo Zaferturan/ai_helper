@@ -496,6 +496,39 @@ async def delete_template(
         db.rollback()
         raise HTTPException(status_code=500, detail=f"Error deleting template: {str(e)}")
 
+@router.put("/templates/{template_id}/use")
+async def use_template(
+    template_id: int,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """Şablon kullanımını kaydet ve kullanıcının answered_requests sayısını artır"""
+    try:
+        # Şablonu bul
+        template = db.query(Template).filter(
+            Template.id == template_id,
+            Template.is_active == True
+        ).first()
+        
+        if not template:
+            raise HTTPException(status_code=404, detail="Şablon bulunamadı")
+        
+        # Departman kontrolü
+        if not current_user.is_admin and template.department != current_user.department:
+            raise HTTPException(status_code=403, detail="Bu şablona erişim yetkiniz yok")
+        
+        # Kullanıcının answered_requests sayısını artır
+        current_user.answered_requests += 1
+        db.commit()
+        
+        return {"success": True, "message": "Şablon kullanımı kaydedildi"}
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(status_code=500, detail=f"Error using template: {str(e)}")
+
 # ============================================================================
 # CATEGORY ENDPOINTS
 # ============================================================================
