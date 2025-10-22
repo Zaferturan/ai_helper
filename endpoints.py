@@ -129,18 +129,19 @@ async def reset_copied_flags(db: Session = Depends(get_db)):
         raise HTTPException(status_code=500, detail=f"Error resetting copied flags: {str(e)}")
 
 @router.put("/responses/{response_id}/mark-copied")
-async def mark_response_as_copied(response_id: int, db: Session = Depends(get_db)):
-    """Mark response as copied (copied=True) - GELİŞTİRME MODU: auth bypass"""
+async def mark_response_as_copied(response_id: int, current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+    """Mark response as copied (copied=True) and increment answered_requests counter"""
     try:
         # Response'u bul
         response = db.query(models.Response).filter(models.Response.id == response_id).first()
         if not response:
             raise HTTPException(status_code=404, detail="Response not found")
 
-        # GELİŞTİRME MODU: auth bypass edildi
-        
         # copied flag'ini True yap
         response.copied = True
+        
+        # Kullanıcının answered_requests sayısını artır
+        current_user.answered_requests += 1
 
         db.commit()
         return {"message": "Response marked as copied successfully"}
