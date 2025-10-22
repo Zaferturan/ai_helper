@@ -15,6 +15,8 @@ class User(Base):
     last_login = Column(DateTime(timezone=True), nullable=True)
     profile_completed = Column(Boolean, default=False)  # Profil tamamlandı mı?
     is_admin = Column(Boolean, default=False)  # Admin yetkisi
+    total_requests = Column(Integer, default=0)  # Toplam üretilen yanıt sayısı
+    answered_requests = Column(Integer, default=0)  # Cevaplanan istek sayısı
     
     # Relationships
     login_attempts = relationship("LoginAttempt", back_populates="user")
