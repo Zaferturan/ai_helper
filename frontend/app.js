@@ -254,14 +254,15 @@ class TemplateSaveManager {
         const saveCheckbox = document.getElementById('save-as-template');
         const categorySelect = document.getElementById('template-category-select');
         const responseContent = document.getElementById('main-response');
+        const editor = document.getElementById('main-response-editor');
         
         if (!saveCheckbox || !saveCheckbox.checked) {
             return { valid: true }; // Şablon kaydetme istenmiyor
         }
         
-        // Yanıt içeriği kontrolü
-        if (!responseContent || !responseContent.textContent.trim() || 
-            responseContent.textContent.trim() === 'Henüz yanıt üretilmedi...') {
+        // Yanıt içeriği kontrolü (varsa textarea.value, yoksa container text)
+        const contentText = editor ? (editor.value || '').trim() : ((responseContent?.textContent || '').trim());
+        if (!contentText || contentText === 'Henüz yanıt üretilmedi...') {
             return { 
                 valid: false, 
                 message: 'Önce yanıt üretin' 
@@ -278,7 +279,7 @@ class TemplateSaveManager {
         
         return { 
             valid: true, 
-            content: responseContent.textContent.trim(),
+            content: contentText,
             categoryId: parseInt(categorySelect.value)
         };
     }
@@ -2012,7 +2013,7 @@ class AuthManager {
         }
     }
 
-    async copyPreviousResponse(responseId) {
+    async copyPreviousResponse(responseId, editedText = null) {
         // Gradio app.py mantığı: önceki yanıtı kopyala ve seç
         const response = this.previousResponses.find(r => r.id === responseId);
         if (!response) {
@@ -2051,11 +2052,12 @@ class AuthManager {
         this.currentResponseId = response.id;
 
         // Panoya kopyala
-        navigator.clipboard.writeText(response.response_text).then(() => {
+        const textToCopy = editedText !== null ? editedText : response.response_text;
+        navigator.clipboard.writeText(textToCopy).then(() => {
             console.log('✅ Önceki yanıt panoya kopyalandı!');
             
-            // Ana yanıtı göster (seçilen yanıt)
-            this.displayResponse(response.response_text);
+            // Ana yanıtı göster (seçilen yanıt) ve düzenlemeyi kilitle
+            this.displayResponse(textToCopy, true);
             
             // Tüm akordiyonları gizle (seçilen yanıt ana alana gittiği için) - Gradio app.py satır 1313
             this.hideAllAccordions();
@@ -2665,9 +2667,12 @@ class AIResponseManager {
         }
     }
 
-    displayResponse(text) {
+    displayResponse(text, readOnly = false) {
         if (ui.elements.mainResponse) {
-            ui.elements.mainResponse.textContent = text;
+            // Düzenlenebilir textarea render et
+            ui.elements.mainResponse.innerHTML = `
+                <textarea id=\"main-response-editor\" class=\"response-textarea\" ${readOnly ? 'readonly' : ''} style=\"width:100%; height:300px; padding:12px; border:2px solid #e5e7eb; border-radius:8px; background:${readOnly ? '#f5f5f5' : '#ffffff'}; font-size:14px; line-height:1.5; white-space:pre-wrap; word-wrap:break-word; overflow-y:auto; resize:vertical; margin:0; display:block;\">${this.escapeHtml ? this.escapeHtml(text) : text}</textarea>
+            `;
         }
     }
 
@@ -2714,7 +2719,8 @@ class AIResponseManager {
     async copyResponse() {
         // Gradio app.py mantığı: Ana yanıtı kopyala
         if (ui.elements.mainResponse) {
-            const text = ui.elements.mainResponse.textContent;
+            const editor = document.getElementById('main-response-editor');
+            const text = editor ? editor.value : ui.elements.mainResponse.textContent;
             
             // Durum makinesi kontrolü - eğer zaten kopyalanmışsa hiçbir şey yapma
             if (this.state === 'finalized') {
@@ -2756,6 +2762,11 @@ class AIResponseManager {
 
             navigator.clipboard.writeText(text).then(() => {
                 console.log('✅ Ana yanıt panoya kopyalandı!');
+                // Kopyalamadan sonra düzenlemeyi kilitle
+                if (editor) {
+                    editor.setAttribute('readonly', 'true');
+                    editor.style.background = '#f5f5f5';
+                }
                 
                 // Kullanıcı isteği: Ana seç ve kopyala ya basınca önceki yanıtların hepsi gizlenir
                 this.hideAllAccordions();
@@ -2811,7 +2822,7 @@ class AIResponseManager {
         }
     }
 
-    async copyPreviousResponse(responseId) {
+    async copyPreviousResponse(responseId, editedText = null) {
         // Gradio app.py mantığı: önceki yanıtı kopyala ve seç
         const response = this.previousResponses.find(r => r.id === responseId);
         if (!response) {
@@ -2847,12 +2858,15 @@ class AIResponseManager {
         const selectedIndex = this.previousResponses.findIndex(r => r.id === responseId);
         if (selectedIndex !== -1) {
             const selectedResponse = this.previousResponses.splice(selectedIndex, 1)[0];
+            if (editedText !== null) {
+                selectedResponse.response_text = editedText;
+            }
             
             // 2. Seçilen yanıtı history'nin başına ekle (ana yanıt olarak)
             this.previousResponses.unshift(selectedResponse);
             
-            // 3. Ana yanıt alanını güncelle
-            this.displayResponse(selectedResponse.response_text);
+            // 3. Ana yanıt alanını güncelle (readonly, düzenlenmiş metin dahil)
+            this.displayResponse(selectedResponse.response_text, true);
             
             // 4. Current response ID'yi güncelle
             this.currentResponseId = selectedResponse.id;
@@ -2973,7 +2987,7 @@ class AIResponseManager {
                 const accordionContent = accordion.querySelector('.accordion-content');
                 if (accordionContent) {
                     accordionContent.innerHTML = `
-                        <textarea class="response-textarea" readonly style="width: 100%; height: 300px; padding: 12px; border: 2px solid #e5e7eb; border-radius: 8px; background: #ffffff; font-size: 14px; line-height: 1.5; white-space: pre-wrap; word-wrap: break-word; overflow-y: auto; resize: vertical; margin: 0; display: block;">${response.response_text}</textarea>
+                        <textarea id="prev-editor-${responseNumber}" class="response-textarea" style="width: 100%; height: 300px; padding: 12px; border: 2px solid #e5e7eb; border-radius: 8px; background: #ffffff; font-size: 14px; line-height: 1.5; white-space: pre-wrap; word-wrap: break-word; overflow-y: auto; resize: vertical; margin: 0; display: block;">${response.response_text}</textarea>
                         <div class="prev-template-save" style="display:flex; align-items:center; gap:8px; margin-top:8px;">
                             <label style="display:flex; align-items:center; gap:6px; font-size:13px; color:#374151;">
                                 <input type="checkbox" id="prev-save-${responseNumber}" /> Şablon olarak sakla
@@ -2998,17 +3012,25 @@ class AIResponseManager {
                             // Şablon olarak kaydetme işaretliyse önce kaydet
                             const saveChk = document.getElementById(`prev-save-${responseNumber}`);
                             const catSel = document.getElementById(`prev-category-${responseNumber}`);
+                            const editor = document.getElementById(`prev-editor-${responseNumber}`);
+                            const editedText = editor ? editor.value : response.response_text;
                             if (saveChk && saveChk.checked) {
                                 if (!catSel || !catSel.value) {
                                     templateSaveManager.showToast('❌ Lütfen kategori seçin', 'error');
                                     return;
                                 }
-                                await templateSaveManager.saveTemplate(response.response_text, parseInt(catSel.value));
+                                console.log('[ŞABLON KAYDET]', { text: editedText, category: catSel.value });
+                                await templateSaveManager.saveTemplate(editedText, parseInt(catSel.value));
                             }
                             // Tüm mini şablon alanlarını gizle
                             const prevSaves = document.querySelectorAll('.prev-template-save');
                             prevSaves.forEach(n => n.style.display = 'none');
-                            await responseManager.copyPreviousResponse(response.id);
+                            // Kopyalama: düzenlenmiş metni ana alana gönder ve kilitle
+                            if (editor) {
+                                editor.setAttribute('readonly', 'true');
+                                editor.style.background = '#f5f5f5';
+                            }
+                            await responseManager.copyPreviousResponse(response.id, editedText);
                         };
                     }
 
