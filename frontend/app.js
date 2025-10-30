@@ -2053,7 +2053,7 @@ class AuthManager {
 
         // Panoya kopyala
         const textToCopy = editedText !== null ? editedText : response.response_text;
-        navigator.clipboard.writeText(textToCopy).then(() => {
+            navigator.clipboard.writeText(textToCopy).then(() => {
             console.log('✅ Önceki yanıt panoya kopyalandı!');
             
             // Ana yanıtı göster (seçilen yanıt) ve düzenlemeyi kilitle
@@ -2072,6 +2072,7 @@ class AuthManager {
             console.log('✅ Önceki yanıt response kopyalandı! Sayı arttı.');
         }).catch(err => {
             console.error('❌ Kopyalama hatası:', err);
+            templateSaveManager.showToast('❌ Kopyalama başarısız.', 'error');
         });
     }
 
@@ -2582,14 +2583,15 @@ class AIResponseManager {
             
             // Boş alan kontrolü - ikisinden biri boşsa uyarı ver
             if (!originalText || !customInput) {
-                ui.showError('response-error', '❌ Lütfen hem "Gelen İstek/Öneri" hem de "Hazırladığınız Cevap Taslağı" alanlarını doldurun.');
+                // Her durumda iki alanın adını birlikte belirt
+                templateSaveManager.showToast('❌ Lütfen "Gelen İstek/Öneri" ve "Hazırladığınız Cevap Taslağı" alanlarını doldurun.', 'error');
                 ui.hideLoading();
                 return;
             }
 
             // Maksimum 5 yanıt kontrolü (Gradio app.py'den)
             if (this.yanitSayisi >= 5) {
-                ui.showError('response-error', '⚠️ Maksimum 5 yanıt üretildi! Yeni istek öneri için "Yeni İstek" butonuna basın.');
+                templateSaveManager.showToast('⚠️ Maksimum 5 yanıt üretildi! Yeni istek için "Yeni İstek"e basın.', 'warning');
                 return;
             }
 
@@ -2661,7 +2663,7 @@ class AIResponseManager {
 
         } catch (error) {
             console.error('Yanıt üretme hatası:', error);
-            ui.showError('response-error', 'Yanıt üretilirken hata oluştu: ' + error.message);
+            templateSaveManager.showToast('❌ Yanıt üretilirken hata oluştu.', 'error');
         } finally {
             ui.hideLoading();
         }
@@ -2752,9 +2754,9 @@ class AIResponseManager {
                     // Feedback'i güncelle
                     await this.updateResponseFeedback(this.currentResponseId, true, true);
                     console.log('✅ Response kopyalandı olarak işaretlendi');
-                } else {
-                    console.log('⚠️ Response işaretlenemedi, sadece panoya kopyalandı');
-                }
+            } else {
+                console.log('⚠️ Response işaretlenemedi, sadece panoya kopyalandı');
+            }
             }
             
             // Kopyalama öncesi tüm mini "şablon kaydet" alanlarını gizle
@@ -2791,8 +2793,8 @@ class AIResponseManager {
                 
                 console.log('✅ Ana yanıt response kopyalandı! Sayı arttı.');
             }).catch(err => {
-                console.error('❌ Kopyalama hatası:', err);
-                ui.showError('response-error', 'Kopyalama başarısız.');
+            console.error('❌ Kopyalama hatası:', err);
+            templateSaveManager.showToast('❌ Kopyalama başarısız.', 'error');
             });
         }
     }
