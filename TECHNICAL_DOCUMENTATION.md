@@ -22,7 +22,7 @@ AI Helper, Bursa Nilüfer Belediyesi için geliştirilmiş bir yapay zeka destek
 ### Teknoloji Stack
 - **Backend:** FastAPI (Python 3.11)
 - **Frontend:** Vanilla JavaScript + HTML/CSS
-- **Database:** SQLite (varsayılan) veya MySQL
+- **Database:** PostgreSQL (zorunlu)
 - **AI Models:** Ollama (lokal) + Google Gemini (cloud)
 - **Web Server:** Nginx (reverse proxy)
 - **Containerization:** Docker
@@ -418,8 +418,12 @@ PRODUCTION_URL = "https://yardimci.niluferyapayzeka.tr"
 FRONTEND_URL = "http://localhost:8500"
 BACKEND_URL = "http://localhost:8000"
 
-# Database
-DATABASE_URL = "sqlite:///./data/ai_helper.db"  # veya MySQL
+# Database (yalnızca PostgreSQL)
+# Öncelik sırası:
+# 1) DATABASE_URL (postgresql şeması)
+# 2) POSTGRES_* değişkenlerinden otomatik DSN
+# Aksi halde çalışma durur (RuntimeError)
+DATABASE_URL = "postgresql+psycopg2://user:pass@host:5432/db"  # .env ile override edilir
 
 # AI Models
 OLLAMA_HOST = "http://localhost:11434"
@@ -1849,6 +1853,41 @@ alembic init migrations
 
 ---
 
+### 9. PostgreSQL'e Geçiş Sonrası Hatalar
+
+**Semptom A (422 Missing Field):** `POST /api/v1/generate` çağrısı `request_id / model_name / custom_input` eksik uyarısı veriyor.
+
+**Çözüm:** Frontend `generateResponse()` payload'unun bu alanları içerdiğini doğrulayın.
+
+**Semptom B (500 NOT NULL violation):** `responses.temperature` için NOT NULL ihlali.
+
+**Çözüm:** `endpoints.py` içinde response kaydederken `temperature`, `top_p`, `repetition_penalty` alanlarını da DB'ye yazıyoruz.
+
+**Semptom C (duplicate key violates unique constraint responses_pkey):** Sequence geride kalmış.
+
+**Çözüm (sequence düzeltme):**
+```bash
+python - << 'PY'
+from sqlalchemy import create_engine, text
+from config import DATABASE_URL
+engine = create_engine(DATABASE_URL)
+with engine.connect() as conn:
+    for t in ['users','requests','responses','templates','template_categories','login_tokens','login_attempts','models']:
+        seq = conn.execute(text("SELECT pg_get_serial_sequence(:t,'id')"), {'t': t}).scalar()
+        if seq:
+            max_id = conn.execute(text(f"SELECT COALESCE(MAX(id),0) FROM {t}")).scalar()
+            conn.execute(text("SELECT setval(:s,:v,true)"), {'s': seq, 'v': max_id})
+            print(t, '->', seq, '=', max_id)
+PY
+```
+
+**Sayaçları yeniden oluşturma:**
+```bash
+python recompute_user_counters.py
+```
+
+---
+
 ## .env Dosyası Örneği
 
 ```env
@@ -1907,12 +1946,12 @@ LOG_LEVEL=INFO
 
 ---
 
-**Son Güncelleme:** 14 Ekim 2025
-**Versiyon:** 1.1.0 (Template Sistemi Eklendi)
-**Yeni Özellikler:** 
-- Template ve TemplateCategory tabloları
-- Template CRUD API endpoint'leri
-- Departman bazlı güvenlik sistemi
-- Kategori yönetimi
-- Soft delete ve unique constraint'ler
+**Son Güncelleme:** 30 Ekim 2025
+**Versiyon:** 1.1.2
+**Değişiklikler:**
+- PostgreSQL zorunlu hale getirildi (SQLite fallback kaldırıldı)
+- `.env` önceliği ve `POSTGRES_*` ile otomatik DSN
+- `generate` kaydı: `temperature/top_p/repetition_penalty` DB'ye yazılıyor
+- PostgreSQL sequence düzeltme talimatı eklendi
+- Sayaç geri doldurma aracı: `recompute_user_counters.py`
 

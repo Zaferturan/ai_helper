@@ -63,9 +63,32 @@ LOG_LEVEL = os.getenv("LOG_LEVEL", "INFO")
 LOG_TO_FILE = os.getenv("LOG_TO_FILE", "false").lower() == "true"
 LOG_FILE_PATH = os.getenv("LOG_FILE_PATH", "logs/app.log")
 
-# Database URL for SQLAlchemy
-# Use environment variable or default to SQLite
-DATABASE_URL = os.getenv("DATABASE_URL", "sqlite:///./data/ai_helper.db")
+# Database URL for SQLAlchemy (PostgreSQL ONLY)
+# Priority:
+# 1) DATABASE_URL (must be postgresql scheme)
+# 2) Build from POSTGRES_* (or POSTGRESQL_*) env vars
+# If not found, raise a clear configuration error.
+_env_database_url = os.getenv("DATABASE_URL")
+
+# Accept both 'postgresql://' and 'postgresql+psycopg2://'
+if _env_database_url and _env_database_url.startswith("postgresql"):
+    DATABASE_URL = _env_database_url
+else:
+    _pg_host = os.getenv("POSTGRES_HOST") or os.getenv("POSTGRESQL_HOST")
+    _pg_port = os.getenv("POSTGRES_PORT") or os.getenv("POSTGRESQL_PORT") or "5432"
+    _pg_db = os.getenv("POSTGRES_DB") or os.getenv("POSTGRESQL_DB")
+    _pg_user = os.getenv("POSTGRES_USER") or os.getenv("POSTGRESQL_USER")
+    _pg_password = os.getenv("POSTGRES_PASSWORD") or os.getenv("POSTGRESQL_PASSWORD")
+
+    if _pg_host and _pg_db and _pg_user is not None:
+        if _pg_password is not None and _pg_password != "":
+            DATABASE_URL = f"postgresql+psycopg2://{_pg_user}:{_pg_password}@{_pg_host}:{_pg_port}/{_pg_db}"
+        else:
+            DATABASE_URL = f"postgresql+psycopg2://{_pg_user}@{_pg_host}:{_pg_port}/{_pg_db}"
+    else:
+        raise RuntimeError(
+            "PostgreSQL configuration missing. Set DATABASE_URL (postgresql) or POSTGRES_* env vars."
+        )
 
 # Settings class for easy access
 class Settings:

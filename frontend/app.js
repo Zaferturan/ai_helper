@@ -416,6 +416,7 @@ class TemplatesManager {
         this.hasMore = false; // Tüm liste tek sayfa
         this.currentPage = 0;
         this.pageSize = 100; // Backend limitine uygun
+        this.isProcessing = false; // Çift tıklama koruması
         
         // Basit analitik sistemi
         this.analytics = {
@@ -1138,9 +1139,18 @@ class TemplatesManager {
 
     async copyTemplateAsResponse(templateId) {
         console.log('🔄 copyTemplateAsResponse başlatıldı:', templateId);
+        
+        // Çift tıklama koruması
+        if (this.isProcessing) {
+            console.log('⚠️ İşlem zaten devam ediyor, çift tıklama engellendi');
+            return;
+        }
+        this.isProcessing = true;
+        
         const template = this.templates.find(t => t.id == templateId);
         if (!template) {
             console.log('❌ Template bulunamadı:', templateId);
+            this.isProcessing = false;
             return;
         }
         
@@ -1179,11 +1189,10 @@ class TemplatesManager {
                 console.error('❌ Şablon kullanımı kaydetme hatası:', error);
             }
             
-            // 5. Sayacı artır ve state'i güncelle (tıpkı "Seç ve Kopyala" düğmesi gibi)
+            // 5. State'i güncelle (sayac backend'de artırıldı)
             if (responseManager) {
-                responseManager.yanitSayisi += 1;
                 responseManager.state = 'finalized'; // State'i finalized yap
-                console.log('✅ Şablon kullanımı sayacı artırıldı ve state finalized yapıldı');
+                console.log('✅ State finalized yapıldı');
             }
             
             // 6. Tüm "Şablon olarak sakla" UI'larını gizle
@@ -1216,6 +1225,10 @@ class TemplatesManager {
             if (templateSaveManager) {
                 templateSaveManager.showToast('❌ Şablon kopyalama hatası', 'error');
             }
+        } finally {
+            // İşlem tamamlandı, çift tıklama korumasını kaldır
+            this.isProcessing = false;
+            console.log('✅ İşlem tamamlandı, çift tıklama koruması kaldırıldı');
         }
     }
 
