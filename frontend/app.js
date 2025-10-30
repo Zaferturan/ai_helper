@@ -2945,6 +2945,11 @@ class AIResponseManager {
 
     updatePreviousResponses() {
         const container = document.getElementById('previous-responses');
+        // Dış sarmalayıcı (section) görünür değilse aç
+        const outerSection = document.querySelector('.previous-responses');
+        if (outerSection) {
+            outerSection.style.display = 'block';
+        }
         if (!container) return;
 
         // "Önceki Yanıtlar" bölümünü tekrar göster (hideAllAccordions'dan sonra)
