@@ -607,6 +607,8 @@ textarea {
 
 .setting-item input[type="range"] {
     padding: 0;
+    border: none; /* Çift görünümü engelle */
+    background: transparent; /* İç/dış izlenimini kaldır */
 }
 
 .setting-item span {
@@ -889,18 +891,11 @@ textarea {
 
 #main-response {
     width: 100%;
-    height: 300px;
-    padding: 12px;
-    border: 2px solid #e5e7eb;
-    border-radius: 8px;
-    background: #ffffff;
-    font-family: inherit;
-    font-size: 14px;
-    line-height: 1.5;
-    white-space: pre-wrap;
-    word-wrap: break-word;
-    overflow-y: auto;
-    resize: vertical;
+    padding: 0; /* textarea kendi paddings */
+    border: none; /* container görünmez olsun */
+    background: transparent;
+    white-space: normal;
+    overflow: visible; /* çift kaydırmayı engelle */
 }
 
 /* Hide developer tools labels and clean up prev-text divs */
