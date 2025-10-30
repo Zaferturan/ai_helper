@@ -700,6 +700,7 @@ class TemplatesManager {
             <div class="template-snippet" title="${this.escapeHtml(template.content || '')}">${snippet}</div>
             <div class="template-actions">
                 <button class="btn btn-primary btn-sm copy-template-btn" data-template-id="${template.id}" aria-label="Şablonu kopyala">📄 Seç ve Kopyala</button>
+                <button class="btn btn-secondary btn-sm edit-template-btn" data-template-id="${template.id}" aria-label="Şablonu düzenle">✏️ Düzenle</button>
                 ${(isOwner || isAdmin) ? `<button class="btn btn-danger btn-sm delete-template-btn" data-template-id="${template.id}" aria-label="Şablonu sil">🗑️ Sil</button>` : ''}
             </div>
         `;
@@ -1165,10 +1166,14 @@ class TemplatesManager {
             // 2. Ana sayfaya dön
             navigationManager.showHomeScreen();
             
-            // 3. Şablon içeriğini "Son Üretilen Yanıt" alanına sabitle
-            const mainResponse = document.getElementById('main-response');
-            if (mainResponse) {
-                mainResponse.innerHTML = `<div class="response-content">${this.escapeHtml(template.content)}</div>`;
+            // 3. Şablon içeriğini "Son Üretilen Yanıt" alanına sabitle (readonly textarea)
+            if (responseManager && responseManager.displayResponse) {
+                responseManager.displayResponse(template.content, true);
+            } else {
+                const mainResponse = document.getElementById('main-response');
+                if (mainResponse) {
+                    mainResponse.innerHTML = `<textarea id=\"main-response-editor\" class=\"response-textarea\" readonly style=\"width:100%; height:300px; padding:12px; border:2px solid #e5e7eb; border-radius:8px; background:#f5f5f5; font-size:14px; line-height:1.5; white-space:pre-wrap; word-wrap:break-word; overflow-y:auto; resize:vertical; margin:0; display:block;\">${this.escapeHtml ? this.escapeHtml(template.content) : template.content}</textarea>`;
+                }
             }
             
             // 4. Backend'e şablon kullanımını kaydet
@@ -1230,6 +1235,128 @@ class TemplatesManager {
             // İşlem tamamlandı, çift tıklama korumasını kaldır
             this.isProcessing = false;
             console.log('✅ İşlem tamamlandı, çift tıklama koruması kaldırıldı');
+        }
+    }
+
+    openEditModal(templateId) {
+        const template = this.templates.find(t => t.id == templateId);
+        if (!template) return;
+        this.editingTemplateId = templateId;
+        const modal = document.getElementById('template-edit-modal');
+        const titleInput = document.getElementById('template-edit-title');
+        const textarea = document.getElementById('template-edit-text');
+        const saveCheckbox = document.getElementById('template-edit-save-checkbox');
+        const categorySection = document.getElementById('template-edit-category-section');
+        const categorySelect = document.getElementById('template-edit-category-select');
+        if (!modal || !titleInput || !textarea) return;
+        titleInput.value = template.title || '';
+        textarea.value = template.content || '';
+        if (saveCheckbox) saveCheckbox.checked = false;
+        if (categorySection) categorySection.classList.add('hidden');
+        if (categorySelect) categorySelect.value = '';
+        // Kategori listesini doldur
+        this.populateEditCategories();
+        modal.classList.remove('hidden');
+    }
+
+    populateEditCategories() {
+        const select = document.getElementById('template-edit-category-select');
+        if (!select || !templateSaveManager) return;
+        // temizle
+        while (select.children.length > 1) {
+            select.removeChild(select.lastChild);
+        }
+        const categories = templateSaveManager.categories || [];
+        categories.forEach(cat => {
+            const opt = document.createElement('option');
+            opt.value = cat.id;
+            opt.textContent = cat.name;
+            select.appendChild(opt);
+        });
+    }
+
+    closeEditModal() {
+        const modal = document.getElementById('template-edit-modal');
+        if (modal) modal.classList.add('hidden');
+        this.editingTemplateId = null;
+    }
+
+    async confirmEditAndCopy() {
+        if (this.isProcessing) return;
+        this.isProcessing = true;
+        try {
+            const titleInput = document.getElementById('template-edit-title');
+            const textarea = document.getElementById('template-edit-text');
+            const saveCheckbox = document.getElementById('template-edit-save-checkbox');
+            const categorySelect = document.getElementById('template-edit-category-select');
+            const editedTitle = titleInput ? titleInput.value.trim() : '';
+            const editedContent = textarea ? textarea.value : '';
+            if (!editedContent) {
+                templateSaveManager.showToast('⚠️ İçerik boş olamaz', 'warning');
+                return;
+            }
+
+            // 1) Panoya kopyala
+            await navigator.clipboard.writeText(editedContent);
+
+            // 2) Ana sayfaya dön ve sabitle (readonly)
+            navigationManager.showHomeScreen();
+            if (responseManager && responseManager.displayResponse) {
+                responseManager.displayResponse(editedContent, true);
+            }
+
+            // 3) Backend'e şablon kullanımını kaydet
+            if (this.editingTemplateId) {
+                try {
+                    const useResponse = await fetch(`${CONFIG.BACKEND_URL}/templates/${this.editingTemplateId}/use`, {
+                        method: 'PUT',
+                        headers: {
+                            'Authorization': `Bearer ${localStorage.getItem(CONFIG.STORAGE_KEYS.AUTH_TOKEN)}`,
+                            'Content-Type': 'application/json'
+                        }
+                    });
+                    if (!useResponse.ok) {
+                        console.log('⚠️ Şablon kullanımı backend\'e kaydedilemedi');
+                    }
+                } catch (err) {
+                    console.error('❌ Şablon kullanımı kaydetme hatası:', err);
+                }
+            }
+
+            // 4) İsteğe bağlı şablon olarak kaydet
+            if (saveCheckbox && saveCheckbox.checked && templateSaveManager) {
+                // Kategori gerekli
+                if (!categorySelect || !categorySelect.value) {
+                    templateSaveManager.showToast('Lütfen bir kategori seçin', 'warning');
+                } else {
+                    await templateSaveManager.saveTemplate(editedContent, parseInt(categorySelect.value));
+                }
+            }
+
+            // 5) UI state ve butonlar
+            if (responseManager) {
+                responseManager.state = 'finalized';
+                if (responseManager.hideAllTemplateSaveUIs) responseManager.hideAllTemplateSaveUIs();
+                if (responseManager.updateButtonVisibility) responseManager.updateButtonVisibility();
+            }
+            const newRequestBtn = document.getElementById('new-request-btn');
+            if (newRequestBtn) newRequestBtn.style.display = 'block';
+
+            // 6) Toast
+            if (templateSaveManager) {
+                templateSaveManager.showToast('✅ Düzenlenen şablon kopyalandı ve eklendi', 'success');
+            }
+
+            // 7) Modalı kapat
+            this.closeEditModal();
+
+            // 8) Analitik
+            this.trackEvent('template_used', { action: 'edit_and_copy' });
+        } catch (error) {
+            console.error('❌ Düzenle/kopyala hatası:', error);
+            if (templateSaveManager) templateSaveManager.showToast('❌ Düzenle/kopyala hatası', 'error');
+        } finally {
+            this.isProcessing = false;
         }
     }
 
@@ -1395,12 +1522,32 @@ class TemplatesManager {
             if (e.target.classList.contains('copy-template-btn')) {
                 const templateId = e.target.dataset.templateId;
                 this.copyTemplateAsResponse(templateId);
+            } else if (e.target.classList.contains('edit-template-btn')) {
+                const templateId = e.target.dataset.templateId;
+                this.openEditModal(templateId);
             } else if (e.target.classList.contains('delete-template-btn')) {
                 const templateId = e.target.dataset.templateId;
                 this.selectedTemplate = templateId;
                 // Koruma: geçersiz id varsa açma
                 if (templateId) {
                     this.showDeleteModal(templateId);
+                }
+            }
+        });
+
+        // Edit modal controls
+        document.addEventListener('click', async (e) => {
+            if (e.target.id === 'template-edit-cancel' || e.target.id === 'close-template-edit-modal') {
+                this.closeEditModal();
+            } else if (e.target.id === 'template-edit-copy') {
+                await this.confirmEditAndCopy();
+            } else if (e.target.id === 'template-edit-save-checkbox') {
+                const checked = e.target.checked;
+                const section = document.getElementById('template-edit-category-section');
+                if (section) section.classList.toggle('hidden', !checked);
+                if (checked && templateSaveManager && (!templateSaveManager.categories || templateSaveManager.categories.length === 0)) {
+                    await templateSaveManager.loadCategories();
+                    this.populateEditCategories();
                 }
             }
         });
