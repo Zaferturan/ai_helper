@@ -686,17 +686,8 @@ async def get_admin_users(
             # Backward-compat: total_requests alanını "Toplam Ürettiği Yanıt" olarak gönder
             total_requests = total_responses
 
-            # Kullanıcının cevapladığı benzersiz istek sayısı (ilk kopyalama sonrası)
-            answered_requests = (
-                db.query(DBRequest.id)
-                .join(DBResponse, DBResponse.request_id == DBRequest.id)
-                .filter(
-                    DBRequest.user_id == user.id,
-                    DBResponse.copied == True
-                )
-                .distinct()
-                .count()
-            )
+            # Kullanıcının cevapladığı istek sayısı (veritabanındaki answered_requests field'inden)
+            answered_requests = user.answered_requests
             
             logger.info(f"User {user.email}: total_requests={total_requests}, answered_requests={answered_requests}")
             

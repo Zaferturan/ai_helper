@@ -216,11 +216,14 @@ Bu cevabı genişlet, daha detaylı ve ikna edici hale getir."""
         if not response['success']:
             raise HTTPException(status_code=500, detail=f"Model error: {response['response_text']}")
         
-        # Save response to database
+        # Save response to database (store generation params for auditing)
         new_response = models.Response(
             request_id=generate_request.request_id,
             model_name=generate_request.model_name,
             response_text=response['response_text'],
+            temperature=generate_request.temperature,
+            top_p=generate_request.top_p,
+            repetition_penalty=generate_request.repetition_penalty,
             latency_ms=response['latency_ms']
         )
         

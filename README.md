@@ -69,7 +69,7 @@
 
 - 🐳🚀 **Docker**
 - 🐍✨ **Python 3.11+** (development için)
-- 📊🗃️ **SQLite** (production'da otomatik)
+- 📊🗃️ **PostgreSQL** (zorunlu)
 
 ## 🚀✨ Kurulum 🎯
 
@@ -84,8 +84,15 @@ cd ai_helper
 2. ⚙️🎯 **Ortam Değişkenlerini Ayarlayın**
 `.env` dosyası oluşturun:
 ```env
-# Database Configuration
-DATABASE_URL=sqlite:///./data/ai_helper.db
+# Database (PostgreSQL)
+# 1) Doğrudan DSN
+DATABASE_URL=postgresql+psycopg2://USER:PASSWORD@HOST:5432/DBNAME
+# veya 2) POSTGRES_* değişkenleri (otomatik DSN)
+POSTGRES_HOST=localhost
+POSTGRES_PORT=5432
+POSTGRES_DB=ai_helper
+POSTGRES_USER=ai_helper
+POSTGRES_PASSWORD=your-password
 
 # Ollama Configuration
 OLLAMA_HOST=http://localhost:11434
@@ -143,16 +150,19 @@ pip install -r requirements.txt
 
 3. 🚀⚡ **Backend'i Başlatın**
 ```bash
-python main.py
+source venv/bin/activate
+uvicorn main:app --host 0.0.0.0 --port 12000 --reload
 ```
-Backend `http://localhost:8000` adresinde çalışacak.
+Backend `http://localhost:12000` adresinde çalışacak.
 
 4. 🌐🎨 **Frontend'i Başlatın**
 ```bash
 cd frontend
-python -m http.server 8500
+python -m http.server 13000
 ```
-Frontend `http://localhost:8500` adresinde çalışacak.
+Frontend `http://localhost:13000` adresinde çalışacak.
+
+> Geliştirme sırasında cache'i yenilemek için `index.html` içindeki `app.js?v=...` sürümünü artırın ve sayfayı F5 ile yenileyin.
 
 ## 📖✨ Kullanım 🎯🚀
 
@@ -313,17 +323,49 @@ uvicorn main:app --reload --host 0.0.0.0 --port 8000
 cd frontend && python -m http.server 8500
 ```
 
-### 🗄️📊 Veritabanı İşlemleri 💾
+### 🗄️📊 Veritabanı İşlemleri (PostgreSQL) 💾
+PostgreSQL'e geçiş için `.env`:
+```env
+# 1) Doğrudan DSN (öncelikli)
+DATABASE_URL=postgresql+psycopg2://USER:PASSWORD@HOST:5432/DBNAME
+
+# veya 2) POSTGRES_* değişkenleri ile otomatik DSN
+POSTGRES_HOST=localhost
+POSTGRES_PORT=5432
+POSTGRES_DB=ai_helper
+POSTGRES_USER=ai_helper
+POSTGRES_PASSWORD=your-password
+```
+
+`config.py` önceliği (yalnızca PostgreSQL):
+1) `DATABASE_URL` (postgresql şeması)
+2) `POSTGRES_*` → otomatik DSN
+3) Aksi halde uygulama başlatılmaz (RuntimeError)
+Sık karşılaşılan PostgreSQL sorunları ve çözümleri:
+
+1) `422 Unprocessable Entity` (generate): Eksik alanlar. Frontend `request_id`, `model_name`, `custom_input` gönderdiğinden emin olun.
+
+2) `NOT NULL violation: responses.temperature` (generate): `endpoints.py` DB kaydı artık `temperature/top_p/repetition_penalty` alanlarını da yazar. Kodu güncellediyseniz sorun çözülür.
+
+3) `duplicate key value violates unique constraint responses_pkey`: Sequence geride kaldı. Aşağıdaki tek seferlik düzeltmeyi uygulayın:
 ```bash
-# Container içinde veritabanını kontrol et
-docker exec ai_yardimci python -c "
-import sqlite3
-conn = sqlite3.connect('/app/data/ai_helper.db')
-cursor = conn.cursor()
-cursor.execute('SELECT COUNT(*) FROM users')
-print(f'Users: {cursor.fetchone()[0]}')
-conn.close()
-"
+python - << 'PY'
+from sqlalchemy import create_engine, text
+from config import DATABASE_URL
+engine = create_engine(DATABASE_URL)
+with engine.connect() as conn:
+    for t in ['users','requests','responses','templates','template_categories','login_tokens','login_attempts','models']:
+        seq = conn.execute(text("SELECT pg_get_serial_sequence(:t,'id')"), {'t': t}).scalar()
+        if seq:
+            max_id = conn.execute(text(f"SELECT COALESCE(MAX(id),0) FROM {t}")).scalar()
+            conn.execute(text("SELECT setval(:s,:v,true)"), {'s': seq, 'v': max_id})
+            print(t, '->', seq, '=', max_id)
+PY
+```
+
+4) İstatistik sayaçları sıfır görünüyor: Mevcut veriden geri doldurun:
+```bash
+python recompute_user_counters.py
 ```
 
 ## 📊💾 Veritabanı Şeması 🗃️✨
@@ -396,7 +438,7 @@ conn.close()
 
 ### 🏭🎯 Production Ortamı 🚀
 1. 🐳🚀 **Docker**: Containerization
-2. 🗄️💾 **Database**: SQLite with volume persistence
+2. 🗄️💾 **Database**: PostgreSQL
 3. 🌐⚡ **Frontend**: Nginx (port 80)
 4. 🚀🔥 **Backend**: FastAPI (port 8000)
 5. ☁️🌍 **Cloudflare**: CDN ve SSL sertifikası
@@ -435,7 +477,7 @@ DEBUG_MODE=false
 LOG_LEVEL=INFO
 API_PORT=8000
 WEB_PORT=80
-DATABASE_URL=sqlite:///./data/ai_helper.db
+DATABASE_URL=postgresql+psycopg2://USER:PASSWORD@HOST:5432/DBNAME
 ALLOWED_ORIGINS=https://yardimci.niluferyapayzeka.tr
 ```
 
