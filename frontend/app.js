@@ -1239,6 +1239,7 @@ class TemplatesManager {
     }
 
     openEditModal(templateId) {
+        console.log('openEditModal çağrıldı:', templateId);
         const template = this.templates.find(t => t.id == templateId);
         if (!template) return;
         this.editingTemplateId = templateId;
@@ -1248,7 +1249,10 @@ class TemplatesManager {
         const saveCheckbox = document.getElementById('template-edit-save-checkbox');
         const categorySection = document.getElementById('template-edit-category-section');
         const categorySelect = document.getElementById('template-edit-category-select');
-        if (!modal || !titleInput || !textarea) return;
+        if (!modal || !titleInput || !textarea) {
+            console.warn('Edit modal elementleri bulunamadı', { modal: !!modal, title: !!titleInput, textarea: !!textarea });
+            return;
+        }
         titleInput.value = template.title || '';
         textarea.value = template.content || '';
         if (saveCheckbox) saveCheckbox.checked = false;
@@ -1257,6 +1261,10 @@ class TemplatesManager {
         // Kategori listesini doldur
         this.populateEditCategories();
         modal.classList.remove('hidden');
+        modal.classList.add('show');
+        modal.style.display = 'block';
+        modal.style.visibility = 'visible';
+        setTimeout(() => { (titleInput || textarea).focus(); }, 0);
     }
 
     populateEditCategories() {
@@ -1524,6 +1532,7 @@ class TemplatesManager {
                 this.copyTemplateAsResponse(templateId);
             } else if (e.target.classList.contains('edit-template-btn')) {
                 const templateId = e.target.dataset.templateId;
+                console.log('✏️ Düzenle tıklandı:', templateId);
                 this.openEditModal(templateId);
             } else if (e.target.classList.contains('delete-template-btn')) {
                 const templateId = e.target.dataset.templateId;
