@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>AI Yardımcı - Nilüfer Belediyesi</title>
-    <link rel="stylesheet" href="style.css?v=20251031-02">
+    <link rel="stylesheet" href="style.css?v=20251031-03">
 </head>
 <body>
     <!-- Loading Screen -->
@@ -217,8 +217,11 @@
                             </div>
                         </div>
 
-                    <!-- Yanıt Üret Butonu -->
-                        <button id="generate-btn" class="btn btn-primary">🚀 Yanıt Üret</button>
+                    <!-- Yanıt Üret Butonları -->
+                        <div class="generate-buttons-container">
+                            <button id="generate-btn" class="btn btn-primary">🚀 Yanıt Üret</button>
+                            <button id="generate-sms-btn" class="btn btn-primary">📱 SMS Yanıt Üret</button>
+                        </div>
                     </div>
 
                     <!-- Sağ sütun - Sonuçlar -->
@@ -391,6 +394,15 @@
                             </label>
                         </div>
                         
+                        <!-- Sadece SMS -->
+                        <div class="filter-group">
+                            <label class="checkbox-label">
+                                <input type="checkbox" id="only-sms-filter" class="filter-checkbox">
+                                <span class="checkmark"></span>
+                                Sadece SMS
+                            </label>
+                        </div>
+                        
                         <!-- Arama Kutusu -->
                         <div class="filter-group">
                             <label for="search-filter">Arama</label>
@@ -551,6 +563,6 @@
     </div>
 
     <!-- Scripts -->
-    <script src="app.js?v=20251031-01"></script>
+    <script src="app.js?v=20251031-08"></script>
 </body>
 </html>

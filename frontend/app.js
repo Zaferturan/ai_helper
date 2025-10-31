@@ -232,7 +232,7 @@ class TemplateSaveManager {
         }
     }
 
-    async saveTemplate(content, categoryId) {
+    async saveTemplate(content, categoryId, isSMS = false) {
         try {
             const token = localStorage.getItem(CONFIG.STORAGE_KEYS.AUTH_TOKEN);
             const response = await fetch(`${CONFIG.BACKEND_URL}/templates`, {
@@ -243,7 +243,8 @@ class TemplateSaveManager {
                 },
                 body: JSON.stringify({
                     content: content,
-                    category_id: categoryId || null
+                    category_id: categoryId || null,
+                    is_sms: isSMS
                 })
             });
 
@@ -434,6 +435,7 @@ class TemplatesManager {
         this.currentFilters = {
             category_id: '',
             only_mine: false,
+            is_sms: null, // SMS filtresi (null = tümü, true = sadece SMS, false = SMS değil)
             q: '',
             department: '' // Admin için departman filtresi
         };
@@ -581,6 +583,7 @@ class TemplatesManager {
             if (filters.q) params.append('q', filters.q);
             if (filters.category_id) params.append('category_id', filters.category_id);
             if (filters.only_mine) params.append('only_mine', 'true');
+            if (filters.is_sms !== null && filters.is_sms !== undefined) params.append('is_sms', filters.is_sms.toString());
             if (filters.department) params.append('department', filters.department);
             params.append('limit', this.pageSize.toString());
             params.append('offset', (this.currentPage * this.pageSize).toString());
@@ -720,10 +723,18 @@ class TemplatesManager {
         const isOwner = template.owner_user_id === this.getCurrentUserId();
         const isAdmin = this.getCurrentUserAdminStatus();
 
-        const snippet = template.content ? this.escapeHtml(template.content).slice(0, 100) : '';
+        const snippet = template.content ? this.escapeHtml(template.content).slice(0, 300) : '';
+        // title attribute için özel escape: HTML entity'leri kullan ama tırnak işaretlerini düzelt
+        const titleContent = template.content ? template.content.replace(/"/g, '&quot;').replace(/'/g, '&#39;') : '';
+        // SMS etiketi (ID'nin altında)
+        const smsLabel = template.is_sms ? '<div class="template-sms-label">SMS</div>' : '';
+        
         card.innerHTML = `
-            <div class="template-title-row" title="${this.escapeHtml(template.title)}">${this.escapeHtml(template.title)}</div>
-            <div class="template-snippet" title="${this.escapeHtml(template.content || '')}">${snippet}</div>
+            <div class="template-id-column">
+                <div>ID: ${template.id}</div>
+                ${smsLabel}
+            </div>
+            <div class="template-snippet" title="${titleContent}">${snippet}${template.content && template.content.length > 300 ? '...' : ''}</div>
             <div class="template-actions">
                 <button class="btn btn-primary btn-sm copy-template-btn" data-template-id="${template.id}" aria-label="Şablonu kopyala">📄 Seç ve Kopyala</button>
                 <button class="btn btn-secondary btn-sm edit-template-btn" data-template-id="${template.id}" aria-label="Şablonu düzenle">✏️ Düzenle</button>
@@ -1124,12 +1135,14 @@ class TemplatesManager {
     applyFilters() {
         const categoryFilter = document.getElementById('category-filter');
         const onlyMineFilter = document.getElementById('only-mine-filter');
+        const onlySmsFilter = document.getElementById('only-sms-filter');
         const searchFilter = document.getElementById('search-filter');
         const departmentFilter = document.getElementById('department-filter');
 
         this.currentFilters = {
             category_id: categoryFilter ? categoryFilter.value : '',
             only_mine: onlyMineFilter ? onlyMineFilter.checked : false,
+            is_sms: onlySmsFilter && onlySmsFilter.checked ? true : null,
             q: searchFilter ? searchFilter.value.trim() : '',
             department: departmentFilter ? departmentFilter.value : ''
         };
@@ -1146,17 +1159,20 @@ class TemplatesManager {
     clearFilters() {
         const categoryFilter = document.getElementById('category-filter');
         const onlyMineFilter = document.getElementById('only-mine-filter');
+        const onlySmsFilter = document.getElementById('only-sms-filter');
         const searchFilter = document.getElementById('search-filter');
         const departmentFilter = document.getElementById('department-filter');
 
         if (categoryFilter) categoryFilter.value = '';
         if (onlyMineFilter) onlyMineFilter.checked = false;
+        if (onlySmsFilter) onlySmsFilter.checked = false;
         if (searchFilter) searchFilter.value = '';
         if (departmentFilter) departmentFilter.value = '';
 
         this.currentFilters = {
             category_id: '',
             only_mine: false,
+            is_sms: null,
             q: '',
             department: ''
         };
@@ -1439,7 +1455,8 @@ class TemplatesManager {
 
             // 4) İsteğe bağlı şablon olarak kaydet (kategori kontrolü zaten yapıldı)
             if (saveCheckbox && saveCheckbox.checked && templateSaveManager && categorySelect && categorySelect.value) {
-                await templateSaveManager.saveTemplate(editedContent, parseInt(categorySelect.value));
+                const isSMS = responseManager.currentIsSMS || false;
+                await templateSaveManager.saveTemplate(editedContent, parseInt(categorySelect.value), isSMS);
             }
 
             // 5) UI state ve butonlar
@@ -1570,10 +1587,12 @@ class TemplatesManager {
         
         // Kategorileri ve şablonları yükle
         await this.loadCategories();
-        await this.loadTemplates();
         
-        // Event listener'ları ekle
+        // Event listener'ları ekle (şablon yüklemeden önce, çünkü applyFilters içinde loadTemplates çağrılacak)
         this.setupEventListeners();
+        
+        // Checkbox'ların durumuna göre filtreleri uygula (sayfa yüklendiğinde)
+        this.applyFilters();
     }
 
     setupEventListeners() {
@@ -1591,6 +1610,11 @@ class TemplatesManager {
 
         if (onlyMineFilter) {
             onlyMineFilter.addEventListener('change', () => this.applyFilters());
+        }
+        
+        const onlySmsFilter = document.getElementById('only-sms-filter');
+        if (onlySmsFilter) {
+            onlySmsFilter.addEventListener('change', () => this.applyFilters());
         }
 
         if (departmentFilter) {
@@ -2856,7 +2880,7 @@ class AIResponseManager {
         this.loadPreviousResponses();
     }
 
-    async generateResponse() {
+    async generateResponse(isSMS = false) {
         try {
             ui.showLoading();
             
@@ -2904,10 +2928,18 @@ class AIResponseManager {
                 temperature: temperature,
                 top_p: 0.9,
                 repetition_penalty: 1.2,
-                system_prompt: ""
+                system_prompt: "",
+                is_sms: isSMS
             };
 
             const response = await api.generateResponse(generateData);
+            
+            // SMS yanıtı için is_sms flag'ini sakla
+            if (isSMS) {
+                this.currentIsSMS = true;
+            } else {
+                this.currentIsSMS = false;
+            }
             
             if (response && response.response_text) {
                 // Yeni yanıtı oluştur (Gradio app.py formatında)
@@ -2916,7 +2948,8 @@ class AIResponseManager {
                     response_text: response.response_text,
                     created_at: new Date().toISOString(),
                     latency_ms: response.latency_ms || 0,
-                    model_name: model
+                    model_name: model,
+                    is_sms: isSMS || false
                 };
 
                 // Ana yanıt için response ID'yi set et
@@ -3024,7 +3057,8 @@ class AIResponseManager {
             
             // Şablon kaydetme işlemi
             if (templateValidation.content && templateValidation.categoryId) {
-                await templateSaveManager.saveTemplate(templateValidation.content, templateValidation.categoryId);
+                const isSMS = responseManager.currentIsSMS || false;
+                await templateSaveManager.saveTemplate(templateValidation.content, templateValidation.categoryId, isSMS);
             }
             
             // Durum makinesini güncelle (Gradio app.py mantığı)
@@ -3311,8 +3345,9 @@ class AIResponseManager {
                                     templateSaveManager.showToast('❌ Lütfen kategori seçin', 'error');
                                     return;
                                 }
-                                console.log('[ŞABLON KAYDET]', { text: editedText, category: catSel.value });
-                                await templateSaveManager.saveTemplate(editedText, parseInt(catSel.value));
+                                const isSMS = response.is_sms || false;
+                                console.log('[ŞABLON KAYDET]', { text: editedText, category: catSel.value, is_sms: isSMS });
+                                await templateSaveManager.saveTemplate(editedText, parseInt(catSel.value), isSMS);
                             }
                             // Tüm mini şablon alanlarını gizle
                             const prevSaves = document.querySelectorAll('.prev-template-save');
@@ -3427,6 +3462,7 @@ class AIResponseManager {
     // Gradio app.py mantığı: Buton görünürlüğünü güncelle
     updateButtonVisibility() {
         const generateBtn = document.getElementById('generate-btn');
+        const generateSmsBtn = document.getElementById('generate-sms-btn');
         const newRequestBtn = document.getElementById('new-request-btn');
         const mainCopyBtn = document.getElementById('main-copy-btn');
         
@@ -3449,6 +3485,10 @@ class AIResponseManager {
             const newRequestVisible = this.state === 'finalized' || this.yanitSayisi >= 5;
             
             generateBtn.style.display = generateVisible ? 'block' : 'none';
+            // SMS Yanıt Üret butonu da aynı mantıkla görünür/gizli
+            if (generateSmsBtn) {
+                generateSmsBtn.style.display = generateVisible ? 'block' : 'none';
+            }
             newRequestBtn.style.display = newRequestVisible ? 'block' : 'none';
             
             console.log(`Button visibility updated: generate=${generateVisible}, newRequest=${newRequestVisible}, state=${this.state}, yanitSayisi=${this.yanitSayisi}`);
@@ -3738,7 +3778,13 @@ class EventManager {
         
         // AI Response events
         if (ui.elements.generateBtn) {
-            ui.elements.generateBtn.addEventListener('click', () => responseManager.generateResponse());
+            ui.elements.generateBtn.addEventListener('click', () => responseManager.generateResponse(false));
+        }
+        
+        // SMS Yanıt Üret button
+        const generateSmsBtn = document.getElementById('generate-sms-btn');
+        if (generateSmsBtn) {
+            generateSmsBtn.addEventListener('click', () => responseManager.generateResponse(true));
         }
         
         if (ui.elements.mainCopyBtn) {
