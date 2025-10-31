@@ -11,8 +11,30 @@
  */
 
 // Configuration
+// Backend URL'i dinamik olarak belirle:
+// - Production domain'inde ise PRODUCTION_URL kullan
+// - localhost'ta ise localhost:12000 kullan
+// - Network IP'de ise aynı hostname:12000 kullan
+function getBackendURL() {
+    const hostname = window.location.hostname;
+    const PRODUCTION_URL = 'https://yardimci.niluferyapayzeka.tr';
+    
+    // Production domain kontrolü
+    if (hostname === 'yardimci.niluferyapayzeka.tr' || hostname.includes('yardimci.niluferyapayzeka.tr')) {
+        return `${PRODUCTION_URL}/api/v1`;
+    }
+    
+    // localhost kontrolü
+    if (hostname === 'localhost' || hostname === '127.0.0.1') {
+        return 'http://localhost:12000/api/v1';
+    }
+    
+    // Network IP veya diğer durumlar için aynı hostname'i kullan
+    return `http://${hostname}:12000/api/v1`;
+}
+
 const CONFIG = {
-    BACKEND_URL: 'http://localhost:12000/api/v1',
+    BACKEND_URL: getBackendURL(),
     PRODUCTION_URL: 'https://yardimci.niluferyapayzeka.tr',
     STORAGE_KEYS: {
         AUTH_TOKEN: 'auth_token',
