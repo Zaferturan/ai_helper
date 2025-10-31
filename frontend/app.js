@@ -1299,7 +1299,17 @@ class TemplatesManager {
             const editedContent = textarea ? textarea.value : '';
             if (!editedContent) {
                 templateSaveManager.showToast('⚠️ İçerik boş olamaz', 'warning');
+                this.isProcessing = false;
                 return;
+            }
+
+            // Şablon saklama seçiliyse kategori kontrolü
+            if (saveCheckbox && saveCheckbox.checked) {
+                if (!categorySelect || !categorySelect.value) {
+                    templateSaveManager.showToast('⚠️ Şablon olarak kaydetmek için lütfen bir kategori seçin', 'warning');
+                    this.isProcessing = false;
+                    return;
+                }
             }
 
             // 1) Panoya kopyala
@@ -1329,14 +1339,9 @@ class TemplatesManager {
                 }
             }
 
-            // 4) İsteğe bağlı şablon olarak kaydet
-            if (saveCheckbox && saveCheckbox.checked && templateSaveManager) {
-                // Kategori gerekli
-                if (!categorySelect || !categorySelect.value) {
-                    templateSaveManager.showToast('Lütfen bir kategori seçin', 'warning');
-                } else {
-                    await templateSaveManager.saveTemplate(editedContent, parseInt(categorySelect.value));
-                }
+            // 4) İsteğe bağlı şablon olarak kaydet (kategori kontrolü zaten yapıldı)
+            if (saveCheckbox && saveCheckbox.checked && templateSaveManager && categorySelect && categorySelect.value) {
+                await templateSaveManager.saveTemplate(editedContent, parseInt(categorySelect.value));
             }
 
             // 5) UI state ve butonlar
