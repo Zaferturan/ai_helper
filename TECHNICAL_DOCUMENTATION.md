@@ -1,4 +1,14 @@
-# AI Helper - Teknik Dokümantasyon
+# 🤖✨ AI Helper - Teknik Dokümantasyon 📚🔧
+
+<div align="center">
+
+![Version](https://img.shields.io/badge/version-2.1.0-blue.svg)
+![Python](https://img.shields.io/badge/python-3.11+-blue.svg)
+![FastAPI](https://img.shields.io/badge/FastAPI-0.100+-green.svg)
+![PostgreSQL](https://img.shields.io/badge/PostgreSQL-14+-blue.svg)
+![Docker](https://img.shields.io/badge/docker-ready-success.svg)
+
+</div>
 
 ## 📋 İçindekiler
 1. [Sistem Genel Bakış](#sistem-genel-bakış)
@@ -7,22 +17,36 @@
 4. [Authentication Flow](#authentication-flow)
 5. [Database Yapısı](#database-yapısı)
 6. [API Endpoints](#api-endpoints)
-7. [Template Sistemi](#template-sistemi) ⭐ **YENİ**
-8. [Frontend İşleyişi](#frontend-işleyişi)
-9. [Docker Deployment](#docker-deployment)
-10. [Önemli Fonksiyonlar](#önemli-fonksiyonlar)
-11. [Troubleshooting](#troubleshooting)
+7. [SMS Yanıt Üretimi](#sms-yanıt-üretimi) 📱 **YENİ**
+8. [Template Sistemi](#template-sistemi) ⭐
+9. [Frontend İşleyişi](#frontend-işleyişi)
+10. [Docker Deployment](#docker-deployment)
+11. [Önemli Fonksiyonlar](#önemli-fonksiyonlar)
+12. [Troubleshooting](#troubleshooting)
 
 ---
 
 ## Sistem Genel Bakış
 
-AI Helper, Bursa Nilüfer Belediyesi için geliştirilmiş bir yapay zeka destekli yanıt üretim sistemidir. Kullanıcılar, gelen istek/önerilere cevap taslakları hazırlayabilir, AI destekli yanıtlar üretebilir ve **şablon sistemi** ile sık kullanılan yanıtları kaydedip tekrar kullanabilir.
+AI Helper, Bursa Nilüfer Belediyesi için geliştirilmiş bir yapay zeka destekli yanıt üretim sistemidir. Kullanıcılar, gelen istek/önerilere cevap taslakları hazırlayabilir, AI destekli yanıtlar üretebilir, **SMS formatında kısa yanıtlar** oluşturabilir ve **şablon sistemi** ile sık kullanılan yanıtları kaydedip tekrar kullanabilir.
 
 ### Teknoloji Stack
-- **Backend:** FastAPI (Python 3.11)
-- **Frontend:** Vanilla JavaScript + HTML/CSS
-- **Database:** PostgreSQL (zorunlu)
+
+<div align="center">
+
+![FastAPI](https://img.shields.io/badge/FastAPI-0.100+-009688.svg?style=flat-square&logo=fastapi&logoColor=white)
+![Python](https://img.shields.io/badge/Python-3.11+-3776AB.svg?style=flat-square&logo=python&logoColor=white)
+![PostgreSQL](https://img.shields.io/badge/PostgreSQL-14+-316192.svg?style=flat-square&logo=postgresql&logoColor=white)
+![SQLAlchemy](https://img.shields.io/badge/SQLAlchemy-ORM-FF6F00.svg?style=flat-square&logo=sqlalchemy&logoColor=white)
+![JavaScript](https://img.shields.io/badge/JavaScript-ES6-F7DF1E.svg?style=flat-square&logo=javascript&logoColor=black)
+![Nginx](https://img.shields.io/badge/Nginx-Reverse%20Proxy-009639.svg?style=flat-square&logo=nginx&logoColor=white)
+![Docker](https://img.shields.io/badge/Docker-Containerization-2496ED.svg?style=flat-square&logo=docker&logoColor=white)
+
+</div>
+
+- **Backend:** FastAPI (Python 3.11+)
+- **Frontend:** Vanilla JavaScript + HTML5/CSS3
+- **Database:** PostgreSQL 14+ (zorunlu, SQLite desteği kaldırıldı)
 - **AI Models:** Ollama (lokal) + Google Gemini (cloud)
 - **Web Server:** Nginx (reverse proxy)
 - **Containerization:** Docker
@@ -36,19 +60,19 @@ AI Helper, Bursa Nilüfer Belediyesi için geliştirilmiş bir yapay zeka destek
 
 | Port | Servis | Açıklama |
 |------|--------|----------|
-| **8000** | FastAPI Backend | API endpoints, auth, business logic |
+| **12000** | FastAPI Backend | API endpoints, auth, business logic |
 | **80** | Nginx (Docker içi) | Frontend static files + API proxy |
-| **8500** | Host Port Mapping | Cloudflare → Docker:80 yönlendirmesi |
+| **13000** | Host Port Mapping | Cloudflare → Docker:80 yönlendirmesi |
 | **11434** | Ollama | Lokal AI model sunucusu |
 
 ### Mimari Şema
 
 ```
-Cloudflare (Port 8500)
+Cloudflare (Port 13000)
          ↓
 Docker Container:80 (Nginx)
          ├─→ Static Files (/, /index.html, /app.js)
-         └─→ API Proxy (/api/*) → localhost:8000 (FastAPI)
+         └─→ API Proxy (/api/*) → localhost:12000 (FastAPI)
                                       ↓
                             ┌─────────┴─────────┐
                             ↓                   ↓
@@ -60,9 +84,9 @@ Docker Container:80 (Nginx)
 
 ```dockerfile
 FROM python:3.11-slim
-├── FastAPI (Port 8000) - Backend API
+├── FastAPI (Port 12000) - Backend API
 ├── Nginx (Port 80) - Frontend + Reverse Proxy
-├── Volume: /app/data - SQLite database
+├── Volume: /app/data - PostgreSQL data
 └── Volume: /app/logs - Application logs
 ```
 
@@ -71,8 +95,9 @@ FROM python:3.11-slim
 docker run -d \
   --name ai_helper_container \
   --restart always \
-  -p 8500:80 \
-  -p 8000:8000 \
+  --network monitoring \
+  -p 13000:80 \
+  -p 12000:12000 \
   -v ai_helper_data:/app/data \
   -v ai_helper_logs:/app/logs \
   ai_helper:latest
@@ -119,8 +144,8 @@ frontend/
 
 ```
 data/
-├── ai_helper.db            # SQLite database
-└── .env                    # Production environment variables
+├── .env                    # Production environment variables
+└── (PostgreSQL external)   # PostgreSQL database (external server)
 
 logs/
 └── app.log                 # Application logs

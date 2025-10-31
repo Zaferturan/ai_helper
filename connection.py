@@ -8,7 +8,7 @@ from config import DATABASE_URL, POSTGRES_SCHEMA_NAME
 _connect_args = {}
 if DATABASE_URL.startswith("sqlite"):
     _connect_args = {"check_same_thread": False}
-elif DATABASE_URL.startswith("postgresql") and POSTGRES_SCHEMA_NAME != "public":
+elif DATABASE_URL.startswith("postgresql") and POSTGRES_SCHEMA_NAME != "ai_helper":
     # Set search_path for PostgreSQL schema using connect_args
     # Format: "-c option=value" for PostgreSQL connection options
     _connect_args = {"options": f"-csearch_path={POSTGRES_SCHEMA_NAME}"}
