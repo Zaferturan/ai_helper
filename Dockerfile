@@ -11,8 +11,10 @@ RUN apt-get update && apt-get install -y \
 WORKDIR /app
 
 # Python bağımlılıklarını kopyala ve yükle
+# requirements.txt önce kopyalanıyor (layer cache için)
 COPY requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
+# pip cache kullanılıyor (daha hızlı build)
+RUN pip install -r requirements.txt
 
 # Uygulama dosyalarını kopyala
 COPY . .
@@ -20,7 +22,7 @@ COPY . .
 # Frontend dosyalarını Nginx'e kopyala
 COPY frontend/ /usr/share/nginx/html/
 
-# Frontend URL'lerini production'a çevir
+# Frontend URL'lerini production'a çevir (yardimci ve yardimci2)
 RUN sed -i 's|http://localhost:8000/api/v1|https://yardimci.niluferyapayzeka.tr/api/v1|g' /usr/share/nginx/html/app.js && \
     sed -i 's|http://localhost:8500|https://yardimci.niluferyapayzeka.tr|g' /usr/share/nginx/html/app.js
 
@@ -28,7 +30,7 @@ RUN sed -i 's|http://localhost:8000/api/v1|https://yardimci.niluferyapayzeka.tr/
 COPY nginx.conf /etc/nginx/sites-available/default
 
 # Port'ları aç
-EXPOSE 8000 80
+EXPOSE 12000 80
 
 # Volume'ları mount et
 VOLUME ["/app/data", "/app/logs"]

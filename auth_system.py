@@ -48,7 +48,9 @@ OTP_LENGTH = 6
 SMTP_HOST = os.getenv("SMTP_HOST", "smtp.gmail.com")
 SMTP_PORT = int(os.getenv("SMTP_PORT", "587"))
 SMTP_USERNAME = os.getenv("SMTP_USERNAME")
-SMTP_PASSWORD = os.getenv("SMTP_PASSWORD")
+# SMTP_PASSWORD'i temizle: tırnakları kaldır
+_smtp_password_raw = os.getenv("SMTP_PASSWORD", "")
+SMTP_PASSWORD = _smtp_password_raw.strip('"\'') if _smtp_password_raw else ""
 SENDER_EMAIL = os.getenv("SENDER_EMAIL")
 
 # Password hashing
