@@ -1853,7 +1853,7 @@ class NavigationManager {
                 const profile = JSON.parse(userProfile);
                 const profileText = `👤 ${profile.full_name || 'Kullanıcı'}`;
                 
-                // Update both screens
+                // Update both screens - user name
                 const userProfileMain = document.getElementById('user-profile');
                 const userProfileTemplates = document.getElementById('user-profile-templates');
                 

@@ -29,7 +29,7 @@ body {
 #templates-screen .main-wrapper {
     width: 100vw;
     margin: 0 auto;
-    padding: 0;
+    padding: 0 20px;
 }
 
 @media (max-width: 768px) {
@@ -54,11 +54,10 @@ body {
 
 /* Screen Management */
 .screen {
-    min-height: 100vh;
     display: flex;
-    align-items: center;
+    align-items: flex-start;
     justify-content: center;
-    padding: 2rem 0;
+    padding: 1rem 0;
 }
 
 .screen.hidden {
@@ -294,6 +293,7 @@ textarea {
 .banner-content {
     display: flex;
     align-items: center;
+    justify-content: space-between;
     padding: 0.66rem; /* %33'e düşürüldü */
 }
 
@@ -301,7 +301,7 @@ textarea {
     background: white;
     border-radius: 12px;
     padding: 5px; /* %33'e düşürüldü */
-    margin-right: 7px; /* orantılı azaltıldı */
+    margin-right: 100px;
     box-shadow: 0 2px 4px rgba(0,0,0,0.1);
 }
 
@@ -329,23 +329,9 @@ textarea {
     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
 }
 
-/* User Info Bar */
-.user-info-bar {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 2rem;
-    padding: 1rem;
-    background: #4b9ac7;
-    border-radius: 8px;
-    color: white;
-}
+/* User Info Bar - Removed, moved to banner */
 
-/* Navigation Buttons */
-.navigation-buttons {
-    display: flex;
-    gap: 0.5rem;
-}
+/* Navigation Buttons - Now in banner-user-area */
 
 .btn-nav {
     padding: 0.5rem 1rem;
@@ -376,10 +362,33 @@ textarea {
     color: #333;
 }
 
-#user-profile {
+/* User profile styles moved to .user-name and .user-department */
+
+.banner-user-area {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    flex-shrink: 0;
+}
+
+.banner-user-info {
+    display: flex;
+    align-items: center;
+}
+
+.user-name {
     font-size: 1.1rem;
     font-weight: 600;
-    color: #333;
+    color: white;
+}
+
+.banner-navigation-buttons {
+    display: flex;
+    gap: 0.5rem;
+    margin-right: 1rem;
+    flex-shrink: 0;
+    align-self: flex-end;
+    margin-bottom: 0.5rem;
 }
 
 /* Admin Panel */
@@ -796,26 +805,40 @@ textarea {
     
     .logo-container {
         margin-right: 0;
-        margin-bottom: 0.33rem; /* %33'e düşürüldü */
+        margin-bottom: 0.5rem;
     }
     
     .logo {
         height: 33px; /* mobilde %33 */
     }
     
+    .banner-navigation-buttons {
+        flex-direction: column;
+        gap: 0.5rem;
+        width: 100%;
+        margin-right: 0;
+        margin-bottom: 0.5rem;
+    }
+    
+    .banner-navigation-buttons .btn {
+        width: 100%;
+    }
+    
     .banner-text h1 {
         font-size: 1.8rem;
     }
     
-    .user-info-bar {
+    .banner-user-area {
         flex-direction: column;
-        gap: 1rem;
-        text-align: center;
+        gap: 0.75rem;
+        margin-top: 0.5rem;
+        width: 100%;
+        align-items: stretch;
     }
     
-    .navigation-buttons {
-        flex-direction: column;
-        gap: 0.5rem;
+    
+    .banner-user-area .btn-secondary {
+        width: 100%;
     }
     
     .response-actions {
@@ -1671,7 +1694,7 @@ div[id*="prev-text-"]::after {
     }
     
     #templates-screen .main-wrapper {
-        padding: 0;
+        padding: 0 15px;
     }
     
     .templates-filters {
