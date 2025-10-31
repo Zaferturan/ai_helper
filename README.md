@@ -1,4 +1,4 @@
-# 🤖✨ AI Yardımcı - Nilüfer Belediyesi 🏛️💫
+# 🤖✨ AI Yardımcı - Yapay Zeka Destekli Yanıt Üretim Sistemi 🏛️💫
 
 <div align="center">
 
@@ -57,7 +57,7 @@
 
 ### 🔐🛡️ Güvenlik ve Authentication
 - 🔐🛡️ **Güvenli Authentication**: Magic Link + OTP ile giriş sistemi
-- 🏢🏛️ **Domain Kısıtlaması**: Sadece @nilufer.bel.tr e-posta adresleri
+- 🏢🏛️ **Domain Kısıtlaması**: Sadece @yourdomain.com e-posta adresleri
 - 👤🎯 **Profil Yönetimi**: Ad soyad ve müdürlük bilgileri
 - 🛡️⚡ **Rate Limiting**: Brute force koruması ve günlük limitler
 - 📝📊 **Login Attempt Logging**: Giriş denemelerinin kaydı
@@ -256,7 +256,7 @@ Frontend `http://localhost:8500` adresinde çalışacak.
 ### 🎯⚡ Ana Özellikler 🚀
 
 1. 📧✨ **E-posta ile Giriş**:
-   - @nilufer.bel.tr e-posta adresinizi girin
+   - @yourdomain.com e-posta adresinizi girin
    - E-posta adresinize gönderilen kodu girin
    - Profil bilgilerinizi tamamlayın
 
@@ -374,7 +374,7 @@ ai_helper/
 
 ### 👤🎯 Users Tablosu 👥
 - 🔑✨ `id`: Birincil anahtar
-- 📧✉️ `email`: E-posta adresi (unique, @nilufer.bel.tr)
+- 📧✉️ `email`: E-posta adresi (unique, @yourdomain.com)
 - 👤🎯 `full_name`: Ad soyad
 - 🏢🏛️ `department`: Müdürlük bilgisi
 - ✅⚡ `is_active`: Aktif kullanıcı durumu
@@ -571,7 +571,7 @@ ALLOWED_ORIGINS=https://your-production-domain.com
 ### 🔐🛡️ v1.6.0 - Authentication System 🔑
 - 🔑🔐 **JWT tabanlı authentication sistemi**
 - 🔗✨ **Magic Link + OTP giriş yöntemi**
-- 🏢🏛️ **Domain kısıtlaması** (@nilufer.bel.tr)
+- 🏢🏛️ **Domain kısıtlaması** (@yourdomain.com)
 - 👤🎯 **Profil yönetimi** (ad soyad, müdürlük)
 - 🛡️⚡ **Rate limiting ve brute force koruması**
 - 📧✉️ **SMTP entegrasyonu** (Google Workspace)
@@ -604,7 +604,7 @@ ALLOWED_ORIGINS=https://your-production-domain.com
 
 <div align="center">
 
-**🤖✨ AI Yardımcı** - Nilüfer Belediyesi için profesyonel cevaplar hazırlayın! 🎉🎊
+**🤖✨ AI Yardımcı** - Profesyonel cevaplar hazırlayın! 🎉🎊
 
 🚀💫 **Hayal Et, Tasarla, Kodla!** 💫🚀
 
