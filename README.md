@@ -96,10 +96,27 @@
 </div>
 
 ### 🤖🧠 AI Modeller
+
+<div align="center">
+
+![Ollama](https://img.shields.io/badge/Ollama-Local%20LLM-FF6F00.svg?style=flat-square&logo=ollama&logoColor=white)
+![Gemini](https://img.shields.io/badge/Gemini-API-4285F4.svg?style=flat-square&logo=google&logoColor=white)
+
+</div>
+
 - 🤖✨ **Ollama**: Yerel LLM entegrasyonu
 - 🧠✨ **Gemini API**: Google Gemini modelleri (gemini-2.5-flash, gemini-1.5-flash-002, vb.)
 
 ## 📋⚡ Gereksinimler 🛠️
+
+<div align="center">
+
+![Docker](https://img.shields.io/badge/Docker-Required-2496ED.svg?style=flat-square&logo=docker&logoColor=white)
+![Python](https://img.shields.io/badge/Python-3.11%2B-Required-3776AB.svg?style=flat-square&logo=python&logoColor=white)
+![PostgreSQL](https://img.shields.io/badge/PostgreSQL-14%2B-Required-316192.svg?style=flat-square&logo=postgresql&logoColor=white)
+![Nginx](https://img.shields.io/badge/Nginx-Auto-009639.svg?style=flat-square&logo=nginx&logoColor=white)
+
+</div>
 
 - 🐳🚀 **Docker** (production için)
 - 🐍✨ **Python 3.11+** (development için)
@@ -280,6 +297,11 @@ Frontend `http://localhost:8500` adresinde çalışacak.
 ### 🔌⚡ API Endpoints 🚀
 
 #### 🔐🛡️ Authentication 🔑
+
+![JWT](https://img.shields.io/badge/JWT-Auth-000000.svg?style=flat-square&logo=jsonwebtokens&logoColor=white)
+![OTP](https://img.shields.io/badge/OTP-6%20Digits-FF6F00.svg?style=flat-square)
+![Magic Link](https://img.shields.io/badge/Magic%20Link-5h%20Valid-009688.svg?style=flat-square)
+
 - 📧✨ `POST /api/v1/send`: Magic link ve OTP gönderimi
 - ✅🎯 `POST /api/v1/verify-code`: OTP doğrulama
 - 🔗⚡ `GET /api/v1/magic-link`: Magic link doğrulama
@@ -288,12 +310,21 @@ Frontend `http://localhost:8500` adresinde çalışacak.
 - 🚪🎯 `POST /api/v1/logout`: Çıkış yapma
 
 #### 🤖🚀 Core API ⚡
+
+![FastAPI](https://img.shields.io/badge/FastAPI-Endpoints-009688.svg?style=flat-square&logo=fastapi&logoColor=white)
+![REST](https://img.shields.io/badge/REST-API-4285F4.svg?style=flat-square&logo=rest&logoColor=white)
+
 - 📋🎯 `GET /api/v1/models`: Mevcut modelleri listele
 - 📝✨ `POST /api/v1/requests`: Yeni istek oluştur
 - 🚀⚡ `POST /api/v1/generate`: AI yanıtı üret (normal veya SMS modu)
 - 💬🎯 `POST /api/v1/responses/feedback`: Yanıt geri bildirimi
 
 #### 📂📋 Template API ⭐
+
+![Templates](https://img.shields.io/badge/Templates-CRUD-FF6F00.svg?style=flat-square)
+![Categories](https://img.shields.io/badge/Categories-Management-009688.svg?style=flat-square)
+![SMS](https://img.shields.io/badge/SMS-Support-4B9AC7.svg?style=flat-square)
+
 - 📋🎯 `GET /api/v1/templates`: Şablonları listele (filtreleme, arama, sayfalama)
 - 📝✨ `POST /api/v1/templates`: Yeni şablon oluştur
 - ✏️🎯 `PUT /api/v1/templates/{id}`: Şablon güncelle
@@ -303,6 +334,10 @@ Frontend `http://localhost:8500` adresinde çalışacak.
 - 🗑️🎯 `DELETE /api/v1/categories/{id}`: Kategori sil
 
 #### 👥📊 Admin API 🏛️
+
+![Admin](https://img.shields.io/badge/Admin-Only-FF6F00.svg?style=flat-square)
+![Stats](https://img.shields.io/badge/Stats-Available-009688.svg?style=flat-square)
+
 - 📊🎯 `GET /api/v1/admin/users`: Kullanıcı listesi
 - 📈✨ `GET /api/v1/admin/stats`: İstatistikler
 
@@ -425,10 +460,20 @@ ai_helper/
 ## 🚀🏭 Deployment 🐳⚡
 
 ### 🏭🎯 Production Ortamı 🚀
+
+<div align="center">
+
+![Docker](https://img.shields.io/badge/Docker-Containerization-2496ED.svg?style=flat-square&logo=docker&logoColor=white)
+![PostgreSQL](https://img.shields.io/badge/PostgreSQL-Database-316192.svg?style=flat-square&logo=postgresql&logoColor=white)
+![Nginx](https://img.shields.io/badge/Nginx-Reverse%20Proxy-009639.svg?style=flat-square&logo=nginx&logoColor=white)
+![Cloudflare](https://img.shields.io/badge/Cloudflare-CDN%20%26%20SSL-F38020.svg?style=flat-square&logo=cloudflare&logoColor=white)
+
+</div>
+
 1. 🐳🚀 **Docker**: Containerization
 2. 🗄️💾 **Database**: PostgreSQL (zorunlu)
 3. 🌐⚡ **Frontend**: Nginx (port 80)
-4. 🚀🔥 **Backend**: FastAPI (port 8000)
+4. 🚀🔥 **Backend**: FastAPI (port 12000)
 5. ☁️🌍 **Cloudflare**: CDN ve SSL sertifikası
 
 ### 🐳⚡ Docker Commands 🚀
@@ -500,6 +545,11 @@ ALLOWED_ORIGINS=https://your-production-domain.com
 ## 🔄✨ Güncellemeler 🚀💫
 
 ### 📱✨ v2.1.0 - SMS Yanıt Üretimi ve Şablon Sistemi ⭐
+
+![SMS](https://img.shields.io/badge/SMS-450%20Chars-4B9AC7.svg?style=flat-square)
+![Templates](https://img.shields.io/badge/Templates-System-FF6F00.svg?style=flat-square)
+![PostgreSQL](https://img.shields.io/badge/PostgreSQL-Required-316192.svg?style=flat-square&logo=postgresql&logoColor=white)
+
 - 📱💬 **SMS Yanıt Üretimi**: Maksimum 450 karakterlik SMS formatında yanıtlar
 - 📂📋 **Akıllı Şablon Sistemi**: Departman bazlı şablon paylaşımı ve kategori yönetimi
 - 🔍✨ **Gelişmiş Filtreleme**: Kategori, departman, SMS tipi ve arama ile filtreleme
