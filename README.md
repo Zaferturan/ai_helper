@@ -110,10 +110,10 @@ SMTP_PASSWORD=your-app-password
 SENDER_EMAIL=admin@niluferyapayzeka.tr
 
 # Gemini API Configuration
-GEMINI_API_KEY=your-gemini-api-key
+GEMINI_API_KEY=YOUR_GEMINI_API_KEY_HERE
 
 # Production URLs
-PRODUCTION_URL=https://yardimci.niluferyapayzeka.tr
+PRODUCTION_URL=https://your-domain.com
 FRONTEND_URL=http://localhost:8500
 BACKEND_URL=http://localhost:8000
 ```
@@ -131,7 +131,7 @@ docker run -d --name ai_yardimci --restart always \
   ai_helper_v3
 ```
 
-✅🎉 **Kurulum tamamlandı!** Uygulama `https://yardimci.niluferyapayzeka.tr` adresinde çalışıyor.
+✅🎉 **Kurulum tamamlandı!** Uygulama production URL'de çalışıyor.
 
 ### 🔧⚡ Geliştirme Ortamı Kurulumu 🛠️
 

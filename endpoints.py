@@ -173,7 +173,7 @@ async def check_request_has_copied_response(request_id: int, db: Session = Depen
         raise HTTPException(status_code=500, detail=f"Error checking request: {str(e)}")
 
 @router.post("/generate", response_model=api_models.GenerateResponse)
-async def generate_response(generate_request: api_models.GenerateRequest, db: Session = Depends(get_db)):
+async def generate_response(generate_request: api_models.GenerateRequest, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
     """Generate response using Ollama"""
     try:
         # Get the original request
@@ -228,6 +228,12 @@ Bu cevabı genişlet, daha detaylı ve ikna edici hale getir."""
         )
         
         db.add(new_response)
+        
+        # Request'in sahibini bul ve total_requests sayısını artır
+        request_owner = db.query(models.User).filter(models.User.id == original_request.user_id).first()
+        if request_owner:
+            request_owner.total_requests += 1
+        
         db.commit()
         db.refresh(new_response)
         
