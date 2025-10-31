@@ -68,6 +68,7 @@ class GenerateRequest(BaseModel):
     top_p: Optional[float] = 0.9
     repetition_penalty: Optional[float] = 1.2
     system_prompt: Optional[str] = ""  # Sistem promptu eklendi
+    is_sms: Optional[bool] = False  # SMS yanıtı mı? (max 450 karakter)
 
 class FeedbackRequest(BaseModel):
     response_id: int
@@ -129,6 +130,7 @@ class TemplateCreate(BaseModel):
     title: Optional[str] = None  # Boşsa otomatik üretilecek
     content: str
     category_id: Optional[int] = None
+    is_sms: Optional[bool] = False  # SMS şablonu mu?
 
 class TemplateUpdate(BaseModel):
     title: Optional[str] = None
@@ -147,6 +149,7 @@ class TemplateResponse(BaseModel):
     created_at: datetime
     updated_at: datetime
     is_active: bool
+    is_sms: bool = False  # SMS şablonu mu?
 
 class TemplateListResponse(BaseModel):
     templates: List[TemplateResponse]

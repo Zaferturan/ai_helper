@@ -181,12 +181,28 @@ async def generate_response(generate_request: api_models.GenerateRequest, db: Se
         if not original_request:
             raise HTTPException(status_code=404, detail="Request not found")
         
-        # Create prompt - daha kısa ve net
-        prompt = f"""Vatandaş talebi: {original_request.original_text}
+        # Create prompt - SMS veya normal yanıt
+        print(f"🔍 Generate Request: is_sms={generate_request.is_sms}, type={type(generate_request.is_sms)}")
+        if generate_request.is_sms:
+            prompt = f"""Vatandaş talebi: {original_request.original_text}
+
+Personel cevabı: {generate_request.custom_input}
+
+Bu cevabı kısa ve öz bir SMS formatına uygun şekilde hazırla. ÖNEMLİ KURALLAR:
+- Maksimum 450 karakter olmalı
+- Başlık veya başlık benzeri ifadeler ("Resmi Yanıt", "Yanıt:", vb.) kullanma
+- Paragraf kırılmaları yapma, tüm metni tek satırda yaz
+- Gereksiz boşluklar bırakma
+- Kısa, net ve anlaşılır olmalı
+- Sayın ilgili gibi resmi hitap ile başla ama uzatma"""
+            print("📱 SMS mode: Prompt set to SMS format")
+        else:
+            prompt = f"""Vatandaş talebi: {original_request.original_text}
 
 Personel cevabı: {generate_request.custom_input}
 
 Bu cevabı genişlet, daha detaylı ve ikna edici hale getir."""
+            print("📄 Normal mode: Prompt set to normal format")
         
         # Sistem promptunu kullan (frontend'den gelen)
         system_prompt = generate_request.system_prompt if generate_request.system_prompt else ""
@@ -216,11 +232,70 @@ Bu cevabı genişlet, daha detaylı ve ikna edici hale getir."""
         if not response['success']:
             raise HTTPException(status_code=500, detail=f"Model error: {response['response_text']}")
         
+        # SMS yanıtı için 450 karakter limiti uygula ve formatla
+        response_text = response.get('response_text', '') or ''
+        print(f"🔍 DEBUG: is_sms={generate_request.is_sms}, response_length={len(response_text) if response_text else 0}")
+        if generate_request.is_sms and response_text:
+            original_length = len(response_text)
+            print(f"📱 SMS Response detected! Original length: {original_length} chars")
+            
+            # 1. Başlık ve benzeri ifadeleri kaldır (baştan)
+            response_text = response_text.strip()
+            # "Resmi Yanıt", "Yanıt:", "**" gibi başlıkları temizle
+            lines = response_text.split('\n')
+            cleaned_lines = []
+            skip_first = True
+            for line in lines:
+                line_stripped = line.strip()
+                # Başlık benzeri ifadeleri atla
+                if skip_first and (line_stripped.startswith('**') or 
+                                   'Resmi Yanıt' in line_stripped or 
+                                   'Yanıt:' in line_stripped or
+                                   len(line_stripped) < 10):
+                    continue
+                skip_first = False
+                if line_stripped:
+                    cleaned_lines.append(line_stripped)
+            
+            # 2. Tüm metni tek satıra çevir (paragraf kırılmalarını kaldır)
+            response_text = ' '.join(cleaned_lines)
+            
+            # 3. Fazla boşlukları temizle (iki veya daha fazla boşluk -> tek boşluk)
+            import re
+            response_text = re.sub(r'\s+', ' ', response_text).strip()
+            
+            # 4. 450 karakter limiti uygula
+            if len(response_text) > 450:
+                # Son nokta, ünlem veya soru işaretinden kes (cümle sınırında)
+                trimmed = response_text[:450]
+                # Son cümle sınırını bul
+                last_period = max(
+                    trimmed.rfind('. '),
+                    trimmed.rfind('! '),
+                    trimmed.rfind('? ')
+                )
+                if last_period > 300:  # En az 300 karakter bırak
+                    response_text = trimmed[:last_period + 1] + '...'
+                else:
+                    # Cümle sınırı bulunamadıysa kelime sınırında kes
+                    last_space = trimmed.rfind(' ')
+                    if last_space > 300:
+                        response_text = trimmed[:last_space] + '...'
+                    else:
+                        # Hiçbir sınır bulunamadıysa direkt kes
+                        response_text = trimmed + '...'
+            
+            # 5. Final kontrol: Kesinlikle 450 karakterden uzun olamaz
+            if len(response_text) > 450:
+                response_text = response_text[:447] + '...'
+            
+            print(f"📱 SMS Response: Original={original_length} chars, Final={len(response_text)} chars")
+        
         # Save response to database (store generation params for auditing)
         new_response = models.Response(
             request_id=generate_request.request_id,
             model_name=generate_request.model_name,
-            response_text=response['response_text'],
+            response_text=response_text,
             temperature=generate_request.temperature,
             top_p=generate_request.top_p,
             repetition_penalty=generate_request.repetition_penalty,
@@ -241,15 +316,19 @@ Bu cevabı genişlet, daha detaylı ve ikna edici hale getir."""
             id=new_response.id,
             request_id=new_response.request_id,
             model_name=new_response.model_name,
-            response_text=new_response.response_text,
+            response_text=response_text,  # Trim edilmiş versiyonu döndür
             latency_ms=new_response.latency_ms,
             created_at=new_response.created_at
         )
     except HTTPException:
         raise
     except Exception as e:
+        import traceback
+        error_detail = traceback.format_exc()
+        print(f"❌ ERROR in generate_response: {str(e)}")
+        print(f"❌ Traceback:\n{error_detail}")
         db.rollback()
-        raise HTTPException(status_code=500, detail=f"Error generating response: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Error generating response: {str(e)}\n\nTraceback:\n{error_detail}")
 
 @router.post("/responses/feedback", response_model=api_models.FeedbackResponse)
 async def update_response_feedback(feedback: api_models.FeedbackRequest, db: Session = Depends(get_db)):
@@ -330,6 +409,7 @@ async def get_templates(
     q: Optional[str] = Query(None, description="Arama terimi (başlık ve içerikte)"),
     category_id: Optional[int] = Query(None, description="Kategori ID'si"),
     only_mine: Optional[bool] = Query(False, description="Sadece kendi şablonlarım"),
+    is_sms: Optional[bool] = Query(None, description="Sadece SMS şablonları"),
     department: Optional[str] = Query(None, description="Departman filtresi (sadece admin)"),
     limit: int = Query(50, ge=1, le=100, description="Sayfa başına kayıt sayısı"),
     offset: int = Query(0, ge=0, description="Başlangıç kaydı"),
@@ -368,6 +448,14 @@ async def get_templates(
         if only_mine:
             query = query.filter(Template.owner_user_id == current_user.id)
         
+        # SMS filtresi
+        if is_sms is not None:
+            print(f"🔍 SMS Filter: is_sms={is_sms}, type={type(is_sms)}")
+            before_count = query.count()
+            query = query.filter(Template.is_sms == is_sms)
+            after_count = query.count()
+            print(f"🔍 SMS Filter result: before={before_count}, after={after_count}")
+        
         # Toplam sayı
         total_count = query.count()
         
@@ -398,7 +486,8 @@ async def get_templates(
                 category_name=category_name,
                 created_at=template.created_at,
                 updated_at=template.updated_at,
-                is_active=template.is_active
+                is_active=template.is_active,
+                is_sms=template.is_sms
             ))
         
         return api_models.TemplateListResponse(
@@ -435,12 +524,15 @@ async def create_template(
                 raise HTTPException(status_code=404, detail="Kategori bulunamadı veya erişim yetkiniz yok")
         
         # Yeni şablon oluştur
+        is_sms_value = template_data.is_sms if template_data.is_sms is not None else False
+        print(f"🔍 Creating template: is_sms={is_sms_value}, type={type(is_sms_value)}, received={template_data.is_sms}")
         new_template = Template(
             title=title,
             content=template_data.content,
             department=current_user.department,
             owner_user_id=current_user.id,
-            category_id=template_data.category_id
+            category_id=template_data.category_id,
+            is_sms=is_sms_value
         )
         
         db.add(new_template)
@@ -464,7 +556,8 @@ async def create_template(
             category_name=category_name,
             created_at=new_template.created_at,
             updated_at=new_template.updated_at,
-            is_active=new_template.is_active
+            is_active=new_template.is_active,
+            is_sms=new_template.is_sms
         )
         
     except HTTPException:

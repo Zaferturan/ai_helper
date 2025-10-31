@@ -148,6 +148,7 @@ class Template(Base):
     department = Column(String(255), nullable=False, index=True)  # Departman bilgisi
     owner_user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
     category_id = Column(Integer, ForeignKey("template_categories.id"), nullable=True)  # Kategori (opsiyonel)
+    is_sms = Column(Boolean, default=False, index=True)  # SMS şablonu mu?
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
     is_active = Column(Boolean, default=True)  # Soft delete için
@@ -163,4 +164,5 @@ class Template(Base):
         Index('idx_templates_owner', 'owner_user_id'),
         Index('idx_templates_active', 'is_active'),
         Index('idx_templates_created', 'created_at'),
+        Index('idx_templates_is_sms', 'is_sms'),
     ) 
