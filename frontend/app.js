@@ -720,8 +720,21 @@ class TemplatesManager {
         card.className = 'template-card';
         card.dataset.templateId = template.id;
 
-        const isOwner = template.owner_user_id === this.getCurrentUserId();
+        const templateOwnerId = Number(template.owner_user_id);
+        const currentUserId = this.getCurrentUserId();
+        const userProfile = JSON.parse(localStorage.getItem(CONFIG.STORAGE_KEYS.USER_PROFILE) || 'null');
         const isAdmin = this.getCurrentUserAdminStatus();
+        
+        console.log('🔑 Template ID:', template.id);
+        console.log('👤 Owner ID:', templateOwnerId, 'Type:', typeof templateOwnerId);
+        console.log('👤 Current User ID:', currentUserId, 'Type:', typeof currentUserId);
+        console.log('👑 Is Admin:', isAdmin);
+        
+        const isOwner = templateOwnerId === currentUserId;
+        
+        console.log('✅ Is Owner:', isOwner);
+        console.log('👑 Is Admin:', isAdmin);
+        console.log('→ Show Delete Button:', isOwner || isAdmin);
 
         const snippet = template.content ? this.escapeHtml(template.content).slice(0, 300) : '';
         // title attribute için özel escape: HTML entity'leri kullan ama tırnak işaretlerini düzelt
@@ -994,7 +1007,17 @@ class TemplatesManager {
         if (userProfile) {
             try {
                 const profile = JSON.parse(userProfile);
-                return profile.user_id;
+                console.log('🔍 Profile data:', profile);
+                
+                const userId = profile?.id || profile?.user_id;
+                console.log('🆔 User ID:', userId, 'Type:', typeof userId);
+                
+                if (!userId) {
+                    console.error('❌ User ID bulunamadı!');
+                    return null;
+                }
+                
+                return Number(userId);
             } catch (e) {
                 console.error('Profile parse error:', e);
             }
@@ -2048,7 +2071,18 @@ class AuthManager {
             if (profile.email) {
                 this.appState.userEmail = profile.email;
                 this.appState.isAdmin = profile.is_admin || false;
-                this.appState.userProfile = profile;
+                // Profile'ı tam olarak kaydet - id dahil
+                this.appState.userProfile = {
+                    id: profile.id,
+                    email: profile.email,
+                    full_name: profile.full_name || '',
+                    department: profile.department || '',
+                    is_active: profile.is_active || false,
+                    profile_completed: profile.profile_completed || false,
+                    created_at: profile.created_at,
+                    last_login: profile.last_login
+                };
+                console.log('✅ Profile kaydedildi:', this.appState.userProfile);
                 this.saveToStorage();
                 return true;
             }
@@ -2221,6 +2255,7 @@ class AuthManager {
                 this.appState.authToken = response.access_token;
                 this.appState.accessToken = response.access_token; // Eksik olan bu!
                 this.appState.userProfile = {
+                    id: response.user_id || null,  // CodeVerifyResponse'dan user_id geliyor
                     email: response.email || email,
                     full_name: response.full_name || '',
                     department: response.department || '',
@@ -2451,6 +2486,7 @@ class AuthManager {
                 this.appState.authToken = response.access_token;
                 this.appState.accessToken = response.access_token; // Eksik olan bu!
                 this.appState.userProfile = {
+                    id: response.user_id || null,  // TokenConsumeResponse'dan user_id geliyor
                     email: response.email,
                     full_name: response.full_name || '',
                     department: response.department || '',
