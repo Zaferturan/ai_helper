@@ -423,7 +423,7 @@ BACKEND_URL = "http://localhost:8000"
 # 1) DATABASE_URL (postgresql şeması)
 # 2) POSTGRES_* değişkenlerinden otomatik DSN
 # Aksi halde çalışma durur (RuntimeError)
-DATABASE_URL = "postgresql+psycopg2://user:pass@host:5432/db"  # .env ile override edilir
+DATABASE_URL = "postgresql+psycopg2://USER:PASSWORD@HOST:5432/DBNAME"  # .env ile override edilir
 
 # AI Models
 OLLAMA_HOST = "http://localhost:11434"
@@ -1810,9 +1810,9 @@ showMainApp() {
 # .env dosyasını kontrol et
 SMTP_HOST=smtp.gmail.com
 SMTP_PORT=587
-SMTP_USERNAME=your-email@gmail.com
+SMTP_USERNAME=your-email@yourdomain.com
 SMTP_PASSWORD=your-app-password  # NOT: Gmail app password, not regular password
-SENDER_EMAIL=your-email@gmail.com
+SENDER_EMAIL=noreply@yourdomain.com
 ```
 
 **Gmail App Password Oluşturma:**
@@ -1891,32 +1891,40 @@ python recompute_user_counters.py
 ## .env Dosyası Örneği
 
 ```env
-# Production URL
-PRODUCTION_URL=https://your-domain.com
+# Production URLs
+PRODUCTION_URL=https://your-production-domain.com
+ALLOWED_ORIGINS=https://your-production-domain.com
 FRONTEND_URL=http://localhost:8500
 BACKEND_URL=http://localhost:8000
 
-# Database
-DATABASE_URL=sqlite:///./data/ai_helper.db
+# Database (yalnızca PostgreSQL)
+# 1) Doğrudan DSN
+DATABASE_URL=postgresql+psycopg2://USER:PASSWORD@HOST:5432/DBNAME
+# veya 2) POSTGRES_* değişkenleri ile otomatik DSN
+POSTGRES_HOST=your-database-host
+POSTGRES_PORT=5432
+POSTGRES_DB=your-database-name
+POSTGRES_USER=your-database-user
+POSTGRES_PASSWORD=your-secure-password
 
 # Ollama
-OLLAMA_HOST=http://localhost:11434
+OLLAMA_HOST=http://your-ollama-host:11434
 
 # Gemini API
-GEMINI_API_KEY=your-gemini-api-key-here
+GEMINI_API_KEY=YOUR_GEMINI_API_KEY_HERE
 GEMINI_API_URL=http://generativelanguage.googleapis.com/v1beta/models
 
 # JWT
-JWT_SECRET_KEY=your-secret-key-here-use-secrets.token_urlsafe(32)
+JWT_SECRET_KEY=your-super-secret-jwt-key-min-32-characters
 JWT_ALGORITHM=HS256
 ACCESS_TOKEN_EXPIRE_MINUTES=900
 
-# SMTP (Gmail)
+# SMTP (Google Workspace)
 SMTP_HOST=smtp.gmail.com
 SMTP_PORT=587
-SMTP_USERNAME=your-email@gmail.com
-SMTP_PASSWORD=your-gmail-app-password
-SENDER_EMAIL=your-email@gmail.com
+SMTP_USERNAME=your-email@yourdomain.com
+SMTP_PASSWORD=your-app-password
+SENDER_EMAIL=noreply@yourdomain.com
 
 # Rate Limiting
 RATE_LIMIT_LOGIN_SECONDS=5
