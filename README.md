@@ -2,9 +2,16 @@
 
 <div align="center">
 
+![Version](https://img.shields.io/badge/version-2.1.0-blue.svg)
+![Python](https://img.shields.io/badge/python-3.11+-blue.svg)
+![FastAPI](https://img.shields.io/badge/FastAPI-0.100+-green.svg)
+![PostgreSQL](https://img.shields.io/badge/PostgreSQL-14+-blue.svg)
+![Docker](https://img.shields.io/badge/docker-ready-success.svg)
+![License](https://img.shields.io/badge/license-MIT-green.svg)
+
 🎉🎊 **Vatandaş taleplerine profesyonel cevaplar hazırlayın!** 🎊🎉
 
-![Typing SVG](https://readme-typing-svg.demolab.com?font=Fira+Code&pause=1000&color=4B9AC7&center=true&vCenter=true&width=600&lines=🤖+AI+Destekli+Metin+D%C3%BCzenleme;⚡+Dinamik+Model+Se%C3%A7imi;🌐+Modern+Web+Aray%C3%BCz%C3%BC;🔐+G%C3%BCvenli+Authentication;📊+Ger%C3%A7ek+Zamanl%C4%B1+%C4%B0statistikler)
+![Typing SVG](https://readme-typing-svg.demolab.com?font=Fira+Code&pause=1000&color=4B9AC7&center=true&vCenter=true&width=600&lines=🤖+AI+Destekli+Metin+D%C3%BCzenleme;📱+SMS+Yanıt+%C3%9Cretimi;📂+Akıllı+%C5%9Eablon+Sistemi;⚡+Dinamik+Model+Se%C3%A7imi;🌐+Modern+Web+Aray%C3%BCz%C3%BC;🔐+G%C3%BCvenli+Authentication;📊+Ger%C3%A7ek+Zamanl%C4%B1+%C4%B0statistikler)
 
 </div>
 
@@ -18,58 +25,86 @@
 
 ## ✨🎯 Özellikler 🚀💫
 
+### 🤖✨ AI Özellikleri
 - 🤖✨ **AI Destekli Metin Düzenleme**: Gemini ve Ollama LLM modelleri ile metinleri daha kibar ve anlaşılır hale getirin
-- ⚡🔥 **Dinamik Model Seçimi**: Mevcut modelleri otomatik olarak alır
+- 📱💬 **SMS Yanıt Üretimi**: Maksimum 450 karakterlik kısa ve öz SMS formatında yanıtlar üretin
+- ⚡🔥 **Dinamik Model Seçimi**: Mevcut modelleri otomatik olarak alır ve listeler
 - 🔄🎨 **İki Farklı Mod**: 
   - 📝✨ İstek/öneri metninden cevap üretme
   - ✏️🎯 Kendi yazdığınız cevabı iyileştirme
-- 📊⚡ **Gerçek Zamanlı İstatistikler**: Üretim süresi, model adı, karakter sayısı
-- 🗄️💾 **Veritabanı Entegrasyonu**: Tüm istekler ve yanıtlar SQLite'da saklanır
-- 🌐🎨 **Modern Web Arayüzü**: HTML+CSS+JavaScript ile responsive tasarım
+- ⚙️🎛️ **LLM Parametre Kontrolü**: Temperature, Top-p, Repetition Penalty ayarları
+- 💡✨ **Tooltip Desteği**: Parametreler hakkında açıklayıcı bilgiler
+
+### 📂📋 Şablon Sistemi ⭐
+- 📂✨ **Akıllı Şablon Yönetimi**: Sık kullanılan yanıtları kaydedip tekrar kullanın
+- 🏢🏛️ **Departman Bazlı Paylaşım**: Aynı departmandaki kullanıcılar şablonları paylaşabilir
+- 📁🎯 **Kategori Sistemi**: Şablonları kategorilere ayırın ve organize edin
+- 📱💬 **SMS Şablonları**: SMS yanıtlarını özel olarak işaretleyip filtreleyin
+- 🔍✨ **Gelişmiş Filtreleme**: Kategori, departman, SMS tipi ve arama ile filtreleme
+- 👤🔐 **Sahiplik Kontrolü**: Sadece şablon sahibi veya admin silebilir
+- 📋🎯 **Tek Tıkla Kullanım**: Şablonları direkt yanıt alanına kopyalayın
+
+### 🌐🎨 Arayüz Özellikleri
+- 🎨✨ **Modern Banner Tasarımı**: Logo, navigasyon ve kullanıcı bilgileri entegre banner
+- 📱🎯 **Responsive Design**: Mobil ve masaüstü uyumlu tasarım
+- 🌐💻 **HTML5 + CSS3 + JavaScript**: Modern web teknolojileri
+- ⏱️⚡ **Gerçek Zamanlı Yanıt Üretimi**: Canlı yanıt gösterimi
 - 📋✨ **Yanıt Geçmişi**: Önceki yanıtları görüntüleme ve seçme
 - 📋🎯 **Panoya Kopyalama**: JavaScript ile tek tıkla yanıt kopyalama
 - ✅📊 **Yanıt Seçimi Takibi**: Hangi yanıtların seçildiğini veritabanında saklama
-- ⚙️🎛️ **LLM Parametre Kontrolü**: Temperature, Top-p, Repetition Penalty ayarları
-- 💡✨ **Tooltip Desteği**: Parametreler hakkında açıklayıcı bilgiler
+- ⏳⚡ **Loading States**: Gelişmiş yükleme durumları ve error handling
+- 🔄✨ **Cache-Busting**: Güncel dosya yükleme sistemi
+
+### 🔐🛡️ Güvenlik ve Authentication
 - 🔐🛡️ **Güvenli Authentication**: Magic Link + OTP ile giriş sistemi
 - 🏢🏛️ **Domain Kısıtlaması**: Sadece @nilufer.bel.tr e-posta adresleri
 - 👤🎯 **Profil Yönetimi**: Ad soyad ve müdürlük bilgileri
 - 🛡️⚡ **Rate Limiting**: Brute force koruması ve günlük limitler
-- 🎨✨ **Modern UI/UX**: Gelişmiş gölge efektleri ve responsive tasarım
+- 📝📊 **Login Attempt Logging**: Giriş denemelerinin kaydı
+- 🔐🎯 **Session Yönetimi**: Güvenli oturum yönetimi
+- 👑🏛️ **Admin Yetkileri**: Yönetici paneli ve istatistikler
+
+### 🗄️💾 Veritabanı ve Deployment
+- 🗄️💾 **PostgreSQL**: Production-ready veritabanı (zorunlu)
+- 📊⚡ **SQLAlchemy ORM**: Modern ORM ile veritabanı yönetimi
 - 🐳🚀 **Docker Deployment**: Kolay kurulum ve deployment
-- 👥📊 **Admin Paneli**: Kullanıcı istatistikleri ve yönetim
+- 🌐⚡ **Nginx Reverse Proxy**: Web server ve API proxy
+- ☁️🌍 **Cloudflare CDN**: SSL sertifikası ve CDN desteği
+- 💾🗃️ **Volume Mounting**: Veri ve log persistence
 
 ## 🛠️⚡ Teknolojiler 🚀💻
 
+<div align="center">
+
 ### 🐍🔥 Backend 🚀
-- 🚀✨ **FastAPI**: Modern Python web framework
-- 🗄️💾 **SQLAlchemy**: ORM ile veritabanı yönetimi
-- 📊🗃️ **SQLite**: Ana veritabanı (production-ready)
-- 🤖🧠 **Ollama**: Yerel LLM entegrasyonu
-- 🧠✨ **Gemini API**: Google Gemini modelleri entegrasyonu
-- ✅🎯 **Pydantic**: Veri doğrulama ve serileştirme
-- 🔑🔐 **JWT**: JSON Web Token authentication
-- 📧✉️ **SMTP**: E-posta gönderimi (Google Workspace)
-- 🛡️⚡ **Rate Limiting**: Brute force koruması
+![FastAPI](https://img.shields.io/badge/FastAPI-0.100+-009688.svg?style=for-the-badge&logo=fastapi&logoColor=white)
+![Python](https://img.shields.io/badge/Python-3.11+-3776AB.svg?style=for-the-badge&logo=python&logoColor=white)
+![PostgreSQL](https://img.shields.io/badge/PostgreSQL-14+-316192.svg?style=for-the-badge&logo=postgresql&logoColor=white)
+![SQLAlchemy](https://img.shields.io/badge/SQLAlchemy-ORM-FF6F00.svg?style=for-the-badge&logo=sqlalchemy&logoColor=white)
+![JWT](https://img.shields.io/badge/JWT-Authentication-000000.svg?style=for-the-badge&logo=jsonwebtokens&logoColor=white)
 
 ### 🌐🎨 Frontend ✨
-- 🌐💻 **HTML5 + CSS3 + JavaScript**: Modern web teknolojileri
-- 📱🎯 **Responsive Design**: Mobil ve masaüstü uyumlu
-- 🎨✨ **Modern UI**: Temiz ve kullanıcı dostu arayüz
-- 🌐⚡ **Nginx**: Web server ve reverse proxy
-- ✨🎨 **CSS Styling**: Özel tasarım ve gölge efektleri
+![HTML5](https://img.shields.io/badge/HTML5-E34F26.svg?style=for-the-badge&logo=html5&logoColor=white)
+![CSS3](https://img.shields.io/badge/CSS3-1572B6.svg?style=for-the-badge&logo=css3&logoColor=white)
+![JavaScript](https://img.shields.io/badge/JavaScript-F7DF1E.svg?style=for-the-badge&logo=javascript&logoColor=black)
+![Nginx](https://img.shields.io/badge/Nginx-009639.svg?style=for-the-badge&logo=nginx&logoColor=white)
 
 ### 🚀🐳 Deployment 🏭
-- 🐳🚀 **Docker**: Containerization
-- 🌐⚡ **Nginx**: Web server ve reverse proxy
-- ☁️🌍 **Cloudflare**: CDN ve SSL sertifikası
-- 💾🗃️ **Volume Mounting**: Veri ve log persistence
+![Docker](https://img.shields.io/badge/Docker-Ready-2496ED.svg?style=for-the-badge&logo=docker&logoColor=white)
+![Cloudflare](https://img.shields.io/badge/Cloudflare-F38020.svg?style=for-the-badge&logo=cloudflare&logoColor=white)
+
+</div>
+
+### 🤖🧠 AI Modeller
+- 🤖✨ **Ollama**: Yerel LLM entegrasyonu
+- 🧠✨ **Gemini API**: Google Gemini modelleri (gemini-2.5-flash, gemini-1.5-flash-002, vb.)
 
 ## 📋⚡ Gereksinimler 🛠️
 
-- 🐳🚀 **Docker**
+- 🐳🚀 **Docker** (production için)
 - 🐍✨ **Python 3.11+** (development için)
-- 📊🗃️ **PostgreSQL** (zorunlu)
+- 📊🗃️ **PostgreSQL 14+** (zorunlu)
+- 🌐⚡ **Nginx** (Docker içinde otomatik)
 
 ## 🚀✨ Kurulum 🎯
 
@@ -84,7 +119,7 @@ cd ai_helper
 2. ⚙️🎯 **Ortam Değişkenlerini Ayarlayın**
 `.env` dosyası oluşturun:
 ```env
-# Database (PostgreSQL)
+# Database (PostgreSQL) - ZORUNLU
 # 1) Doğrudan DSN
 DATABASE_URL=postgresql+psycopg2://USER:PASSWORD@HOST:5432/DBNAME
 # veya 2) POSTGRES_* değişkenleri (otomatik DSN)
@@ -126,7 +161,8 @@ docker build -t ai_helper_v3 .
 
 # Container başlat
 docker run -d --name ai_yardimci --restart always \
-  -p 8000:8000 -p 8500:80 \
+  --network monitoring \
+  -p 12000:12000 -p 13000:80 \
   -v ai_helper_data:/app/data \
   -v ai_helper_logs:/app/logs \
   ai_helper_v3
@@ -196,7 +232,7 @@ python -m http.server 8500
 ```
 Frontend `http://localhost:8500` adresinde çalışacak.
 
-> Geliştirme sırasında cache'i yenilemek için `index.html` içindeki `app.js?v=...` sürümünü artırın ve sayfayı F5 ile yenileyin.
+> 💡 **İpucu:** Geliştirme sırasında cache'i yenilemek için `index.html` içindeki `app.js?v=...` sürümünü artırın ve sayfayı F5 ile yenileyin.
 
 ## 📖✨ Kullanım 🎯🚀
 
@@ -209,22 +245,34 @@ Frontend `http://localhost:8500` adresinde çalışacak.
 
 2. 🤖🎯 **İstek/Öneri Metninden Cevap Üretme**:
    - Sol sütunda metin girişi yapın
-   - Yanıt ayarlarını düzenleyin (Temperature, Top-p, Repetition Penalty)
    - Model seçin (Gemini veya Ollama)
-   - "🚀 Yanıt Üret" butonuna tıklayın
+   - "🚀 Yanıt Üret" veya "📱 SMS Yanıt Üret" butonuna tıklayın
+   - SMS yanıtları maksimum 450 karakter olacak şekilde optimize edilir
 
 3. ✏️✨ **Kendi Cevabınızı İyileştirme**:
    - Sol sütunda kendi yazdığınız cevabı girin
    - "🚀 Yanıt Üret" butonuna tıklayın
    - AI metni daha kibar ve resmi hale getirecek
 
-4. 📋🎯 **Yanıt Geçmişi ve Seçimi**:
+4. 📱💬 **SMS Yanıt Üretimi**:
+   - "📱 SMS Yanıt Üret" butonunu kullanın
+   - Otomatik olarak maksimum 450 karakterlik kısa yanıt üretilir
+   - Paragraf kırılmaları kaldırılır, tek satır formatında hazırlanır
+
+5. 📂📋 **Şablon Yönetimi**:
+   - Üretilen yanıtları "Şablon olarak sakla" ile kaydedin
+   - Kategori seçerek organize edin
+   - SMS yanıtlarını özel olarak işaretleyin
+   - Şablonlarım sayfasından filtreleme ve arama yapın
+   - Tek tıkla şablonları kullanın
+
+6. 📋🎯 **Yanıt Geçmişi ve Seçimi**:
    - Sağ sütunda en son yanıtı görüntüleyin
    - "📋 Seç ve Kopyala" ile yanıtı panoya kopyalayın
    - Önceki yanıtları expander'larda görüntüleyin
    - Her yanıt için ayrı "📋 Seç ve Kopyala" butonu
 
-5. 👥📊 **Admin Paneli** (Admin kullanıcılar için):
+7. 👥📊 **Admin Paneli** (Admin kullanıcılar için):
    - Kullanıcı istatistikleri
    - Toplam istek ve yanıt sayıları
    - En çok kullanılan modeller
@@ -234,7 +282,7 @@ Frontend `http://localhost:8500` adresinde çalışacak.
 #### 🔐🛡️ Authentication 🔑
 - 📧✨ `POST /api/v1/send`: Magic link ve OTP gönderimi
 - ✅🎯 `POST /api/v1/verify-code`: OTP doğrulama
-- 🔗⚡ `GET /api/v1/auth`: Magic link doğrulama
+- 🔗⚡ `GET /api/v1/magic-link`: Magic link doğrulama
 - 👤🎯 `GET /api/v1/profile`: Kullanıcı profili
 - ✏️✨ `POST /api/v1/complete-profile`: Profil tamamlama
 - 🚪🎯 `POST /api/v1/logout`: Çıkış yapma
@@ -242,8 +290,17 @@ Frontend `http://localhost:8500` adresinde çalışacak.
 #### 🤖🚀 Core API ⚡
 - 📋🎯 `GET /api/v1/models`: Mevcut modelleri listele
 - 📝✨ `POST /api/v1/requests`: Yeni istek oluştur
-- 🚀⚡ `POST /api/v1/generate`: AI yanıtı üret
+- 🚀⚡ `POST /api/v1/generate`: AI yanıtı üret (normal veya SMS modu)
 - 💬🎯 `POST /api/v1/responses/feedback`: Yanıt geri bildirimi
+
+#### 📂📋 Template API ⭐
+- 📋🎯 `GET /api/v1/templates`: Şablonları listele (filtreleme, arama, sayfalama)
+- 📝✨ `POST /api/v1/templates`: Yeni şablon oluştur
+- ✏️🎯 `PUT /api/v1/templates/{id}`: Şablon güncelle
+- 🗑️⚡ `DELETE /api/v1/templates/{id}`: Şablon sil (soft delete)
+- 📁🎯 `GET /api/v1/categories`: Kategorileri listele
+- ➕✨ `POST /api/v1/categories`: Yeni kategori oluştur
+- 🗑️🎯 `DELETE /api/v1/categories/{id}`: Kategori sil
 
 #### 👥📊 Admin API 🏛️
 - 📊🎯 `GET /api/v1/admin/users`: Kullanıcı listesi
@@ -256,150 +313,26 @@ ai_helper/
 ├── 🐍 main.py               # FastAPI backend
 ├── ⚙️ config.py             # Konfigürasyon
 ├── 🔌 connection.py         # Veritabanı bağlantısı
-├── 🗄️ models.py             # SQLAlchemy modelleri
+├── 🗄️ models.py             # SQLAlchemy modelleri (Users, Templates, TemplateCategories)
 ├── 📋 api_models.py         # Pydantic modelleri
-├── 🔌 endpoints.py          # API endpoint'leri
+├── 🔌 endpoints.py           # API endpoint'leri (Template API dahil)
 ├── 🔐 auth_endpoints.py     # Authentication endpoints
-├── 🔑 auth_system.py        # Authentication logic
-├── 🤖 ollama_client.py      # Ollama entegrasyonu
-├── 🧠 gemini_client.py      # Gemini API entegrasyonu
-├── 📦 requirements.txt      # Python bağımlılıkları
-├── 🐳 Dockerfile            # Docker container build
-├── 🚀 start.sh              # Container startup script
-├── 🌐 nginx.conf            # Nginx configuration
-├── 📁 frontend/             # Frontend dosyaları
-│   ├── 🌐 index.html        # Ana HTML dosyası
-│   ├── 🎨 style.css         # CSS stilleri
-│   └── ⚡ app.js            # JavaScript kodu
-├── 💾 data/                 # Database storage directory
-├── 📝 logs/                 # Log dosyaları
-├── 🔧 .env                  # Ortam değişkenleri
-├── 📖 README.md            # Bu dosya
-└── 🗺️ ROADMAP.md           # Geliştirme yol haritası
-```
-
-## 🎯✨ Özellikler 🚀💫
-
-### 🐍🔥 Backend Özellikleri 🚀
-- 🚀✨ **FastAPI ile modern REST API**
-- 🗄️💾 **SQLAlchemy ORM ile veritabanı yönetimi**
-- 🤖🧠 **Ollama entegrasyonu**
-- 🧠✨ **Gemini API entegrasyonu**
-- ✅🎯 **Pydantic ile veri doğrulama**
-- ⚡🔥 **Asenkron HTTP istekleri**
-- 🛠️⚡ **Hata yönetimi ve logging**
-- ⚙️🎛️ **LLM parametre kontrolü** (Temperature, Top-p, Repetition Penalty)
-- 🔑🔐 **JWT tabanlı authentication sistemi**
-- 🔗✨ **Magic Link + OTP giriş yöntemi**
-- 🏢🏛️ **Domain kısıtlaması** (@nilufer.bel.tr)
-- 🛡️⚡ **Rate limiting ve brute force koruması**
-- 📧✉️ **SMTP entegrasyonu** (Google Workspace)
-- 📝📊 **Login attempt logging**
-- 🔐🎯 **Session yönetimi**
-- 👥📊 **Admin paneli ve istatistikler**
-
-### 🌐🎨 Frontend Özellikleri ✨
-- 🌐💻 **HTML5 + CSS3 + JavaScript ile modern web arayüzü**
-- 📱🎯 **Responsive tasarım** (mobil ve masaüstü uyumlu)
-- ⚡🔥 **Dinamik model seçimi** (Gemini + Ollama)
-- ⏱️⚡ **Gerçek zamanlı yanıt üretimi**
-- 📊📈 **İstatistik gösterimi**
-- 📋✨ **Yanıt geçmişi ve expander'lar**
-- 📋🎯 **JavaScript ile panoya kopyalama**
-- ✅📊 **Yanıt seçimi ve veritabanı takibi**
-- 💡✨ **Tooltip desteği** (parametre açıklamaları)
-- 🎨💫 **Modern CSS tasarım ve gölge efektleri**
-- 🔐🛡️ **Authentication sistemi** (Magic Link + OTP)
-- 👤🎯 **Profil tamamlama sayfası**
-- 🏢🏛️ **Domain kontrolü** (@nilufer.bel.tr)
-- 👥📊 **Admin paneli** (admin kullanıcılar için)
-- ⏳⚡ **Loading states ve error handling**
-- 🔄✨ **Cache-busting ile güncel dosya yükleme**
-
-### 🚀🐳 Deployment Özellikleri 🏭
-- 🐳🚀 **Docker containerization**
-- 🌐⚡ **Nginx web server ve reverse proxy**
-- 💾🗃️ **Database persistence with volumes**
-- ❤️⚡ **Health checks**
-- 🏭🎯 **Production-ready configuration**
-- ☁️🌍 **Cloudflare CDN ve SSL sertifikası**
-- 🔄⚡ **Automatic restart policy**
-- ⚙️🎛️ **Environment variable management**
-- 📝📊 **Log management**
-
-## 🔧⚡ Geliştirme 🛠️🚀
-
-### 🐳🔥 Docker ile Geliştirme ⚡
-```bash
-# Container'ı başlat
-docker run -d --name ai_yardimci --restart always \
-  -p 8000:8000 -p 8500:80 \
-  -v ai_helper_data:/app/data \
-  -v ai_helper_logs:/app/logs \
-  ai_helper_v3
-
-# Logları izle
-docker logs -f ai_yardimci
-
-# Container'a bağlan
-docker exec -it ai_yardimci bash
-
-# Container'ı durdur
-docker stop ai_yardimci && docker rm ai_yardimci
-```
-
-### 💻✨ Yerel Geliştirme 🚀
-```bash
-# Backend'i geliştirme modunda başlat
-uvicorn main:app --reload --host 0.0.0.0 --port 8000
-
-# Frontend'i geliştirme modunda başlat
-cd frontend && python -m http.server 8500
-```
-
-### 🗄️📊 Veritabanı İşlemleri (PostgreSQL) 💾
-PostgreSQL'e geçiş için `.env`:
-```env
-# 1) Doğrudan DSN (öncelikli)
-DATABASE_URL=postgresql+psycopg2://USER:PASSWORD@HOST:5432/DBNAME
-
-# veya 2) POSTGRES_* değişkenleri ile otomatik DSN
-POSTGRES_HOST=your-database-host
-POSTGRES_PORT=5432
-POSTGRES_DB=your-database-name
-POSTGRES_USER=your-database-user
-POSTGRES_PASSWORD=your-secure-password
-```
-
-`config.py` önceliği (yalnızca PostgreSQL):
-1) `DATABASE_URL` (postgresql şeması)
-2) `POSTGRES_*` → otomatik DSN
-3) Aksi halde uygulama başlatılmaz (RuntimeError)
-Sık karşılaşılan PostgreSQL sorunları ve çözümleri:
-
-1) `422 Unprocessable Entity` (generate): Eksik alanlar. Frontend `request_id`, `model_name`, `custom_input` gönderdiğinden emin olun.
-
-2) `NOT NULL violation: responses.temperature` (generate): `endpoints.py` DB kaydı artık `temperature/top_p/repetition_penalty` alanlarını da yazar. Kodu güncellediyseniz sorun çözülür.
-
-3) `duplicate key value violates unique constraint responses_pkey`: Sequence geride kaldı. Aşağıdaki tek seferlik düzeltmeyi uygulayın:
-```bash
-python - << 'PY'
-from sqlalchemy import create_engine, text
-from config import DATABASE_URL
-engine = create_engine(DATABASE_URL)
-with engine.connect() as conn:
-    for t in ['users','requests','responses','templates','template_categories','login_tokens','login_attempts','models']:
-        seq = conn.execute(text("SELECT pg_get_serial_sequence(:t,'id')"), {'t': t}).scalar()
-        if seq:
-            max_id = conn.execute(text(f"SELECT COALESCE(MAX(id),0) FROM {t}")).scalar()
-            conn.execute(text("SELECT setval(:s,:v,true)"), {'s': seq, 'v': max_id})
-            print(t, '->', seq, '=', max_id)
-PY
-```
-
-4) İstatistik sayaçları sıfır görünüyor: Mevcut veriden geri doldurun:
-```bash
-python recompute_user_counters.py
+├── 🔑 auth_system.py         # Authentication logic
+├── 🤖 ollama_client.py       # Ollama entegrasyonu
+├── 🧠 gemini_client.py       # Gemini API entegrasyonu
+├── 📦 requirements.txt       # Python bağımlılıkları
+├── 🐳 Dockerfile             # Docker container build
+├── 🚀 start.sh               # Container startup script
+├── 🌐 nginx.conf             # Nginx configuration
+├── 📁 frontend/              # Frontend dosyaları
+│   ├── 🌐 index.html         # Ana HTML dosyası
+│   ├── 🎨 style.css          # CSS stilleri
+│   └── ⚡ app.js             # JavaScript kodu (TemplateManager, AIResponseManager)
+├── 💾 data/                  # Database storage directory
+├── 📝 logs/                  # Log dosyaları
+├── 🔧 .env                   # Ortam değişkenleri
+├── 📖 README.md              # Bu dosya
+└── 📚 TECHNICAL_DOCUMENTATION.md  # Teknik dokümantasyon
 ```
 
 ## 📊💾 Veritabanı Şeması 🗃️✨
@@ -414,6 +347,26 @@ python recompute_user_counters.py
 - 🔐🎯 `last_login`: Son giriş tarihi
 - ✅✨ `profile_completed`: Profil tamamlanma durumu
 - 👑🏛️ `is_admin`: Admin yetkisi
+
+### 📋🎯 Templates Tablosu ⭐
+- 🔑✨ `id`: Birincil anahtar
+- 📝📊 `title`: Şablon başlığı
+- 💬📄 `content`: Şablon içeriği
+- 🏢🏛️ `department`: Departman bilgisi
+- 👤🎯 `owner_user_id`: Sahip kullanıcı ID'si
+- 📁🎯 `category_id`: Kategori ID'si (opsiyonel)
+- 📱💬 `is_sms`: SMS şablonu mu? (boolean, index)
+- 📅📊 `created_at`: Oluşturulma tarihi
+- 🔄📅 `updated_at`: Güncellenme tarihi
+- ✅⚡ `is_active`: Aktif durum (soft delete)
+
+### 📁🎯 TemplateCategories Tablosu ⭐
+- 🔑✨ `id`: Birincil anahtar
+- 📝📊 `name`: Kategori adı
+- 🏢🏛️ `department`: Departman bilgisi
+- 👤🎯 `owner_user_id`: Sahip kullanıcı ID'si
+- 📅📊 `created_at`: Oluşturulma tarihi
+- ✅⚡ `is_active`: Aktif durum
 
 ### 🔑🛡️ LoginTokens Tablosu 🔐
 - 🔑✨ `id`: Birincil anahtar
@@ -460,6 +413,7 @@ python recompute_user_counters.py
 - 📋✨ `copied`: Kopyalanma durumu
 - 📅📊 `created_at`: Oluşturulma tarihi
 - 🔢📊 `tokens_used`: Kullanılan token sayısı
+- 📱💬 `is_sms`: SMS yanıtı mı? (boolean)
 
 ### 🤖🧠 Models Tablosu ⚡
 - 🔑✨ `id`: Birincil anahtar
@@ -472,7 +426,7 @@ python recompute_user_counters.py
 
 ### 🏭🎯 Production Ortamı 🚀
 1. 🐳🚀 **Docker**: Containerization
-2. 🗄️💾 **Database**: PostgreSQL
+2. 🗄️💾 **Database**: PostgreSQL (zorunlu)
 3. 🌐⚡ **Frontend**: Nginx (port 80)
 4. 🚀🔥 **Backend**: FastAPI (port 8000)
 5. ☁️🌍 **Cloudflare**: CDN ve SSL sertifikası
@@ -482,7 +436,8 @@ python recompute_user_counters.py
 # Production deployment
 docker build -t ai_helper_v3 .
 docker run -d --name ai_yardimci --restart always \
-  -p 8000:8000 -p 8500:80 \
+  --network monitoring \
+  -p 12000:12000 -p 13000:80 \
   -v ai_helper_data:/app/data \
   -v ai_helper_logs:/app/logs \
   ai_helper_v3
@@ -509,7 +464,7 @@ docker stop ai_yardimci && docker rm ai_yardimci
 APP_ENV=production
 DEBUG_MODE=false
 LOG_LEVEL=INFO
-API_PORT=8000
+API_PORT=12000
 WEB_PORT=80
 DATABASE_URL=postgresql+psycopg2://USER:PASSWORD@HOST:5432/DBNAME
 ALLOWED_ORIGINS=https://your-production-domain.com
@@ -544,6 +499,15 @@ ALLOWED_ORIGINS=https://your-production-domain.com
 
 ## 🔄✨ Güncellemeler 🚀💫
 
+### 📱✨ v2.1.0 - SMS Yanıt Üretimi ve Şablon Sistemi ⭐
+- 📱💬 **SMS Yanıt Üretimi**: Maksimum 450 karakterlik SMS formatında yanıtlar
+- 📂📋 **Akıllı Şablon Sistemi**: Departman bazlı şablon paylaşımı ve kategori yönetimi
+- 🔍✨ **Gelişmiş Filtreleme**: Kategori, departman, SMS tipi ve arama ile filtreleme
+- 🎨✨ **Modern Banner UI**: Logo, navigasyon ve kullanıcı bilgileri entegre tasarım
+- 📱💬 **SMS Şablon İşaretleme**: SMS yanıtlarını özel olarak işaretleme ve filtreleme
+- 👤🔐 **Sahiplik Kontrolü**: Gelişmiş yetki yönetimi (owner/admin)
+- 🗄️💾 **PostgreSQL Zorunluluğu**: SQLite desteği kaldırıldı, production-ready database
+
 ### 🎨🔥 v2.0.0 - Modern Web Arayüzü ✨
 - 🌐💻 **HTML5 + CSS3 + JavaScript ile modern web arayüzü**
 - 🌐⚡ **Nginx web server ve reverse proxy**
@@ -553,16 +517,6 @@ ALLOWED_ORIGINS=https://your-production-domain.com
 - 🔄✨ **Cache-busting ile güncel dosya yükleme**
 - 💾🗃️ **Docker volume mounting ile veri persistence**
 - 🏭🎯 **Production-ready deployment**
-
-### 🐳🚀 v1.7.0 - Docker Compose Deployment ⚡
-- 🐳🔥 **Docker Compose multi-service orchestration**
-- 🗄️💾 **Database persistence with SQLite**
-- 🏭🎯 **Production-ready containerization**
-- ❤️⚡ **Health checks and monitoring**
-- ☁️🌍 **Cloudflare Tunnel integration**
-- 🔄⚡ **Automatic restart policy**
-- ⚙️🎛️ **Environment variable management**
-- 🚀✨ **Multi-service startup script**
 
 ### 🔐🛡️ v1.6.0 - Authentication System 🔑
 - 🔑🔐 **JWT tabanlı authentication sistemi**
@@ -576,21 +530,6 @@ ALLOWED_ORIGINS=https://your-production-domain.com
 - ☁️🌍 **Production URL desteği** (Cloudflare Tunnel)
 - 🎨💫 **Modern UI/UX ve gelişmiş gölge efektleri**
 
-### 🔐🛡️ v1.5.0 - Security & Profile 🔑
-- 🔐✨ **Authentication sistemi entegrasyonu**
-- 👤🎯 **Kullanıcı profil yönetimi**
-- 🛡️⚡ **Güvenlik önlemleri ve rate limiting**
-- 📧✉️ **E-posta gönderim sistemi**
-
-### 🎨✨ v1.4.0 - UI/UX Improvements 💫
-- 📐🎯 **İki sütunlu modern layout**
-- 📋✨ **Yanıt geçmişi ve expander'lar**
-- 📋🎯 **JavaScript ile panoya kopyalama**
-- ✅📊 **Yanıt seçimi veritabanı takibi**
-- ⚙️🎛️ **LLM parametre kontrolü** (Temperature, Top-p, Repetition Penalty)
-- 💡✨ **Tooltip desteği**
-- 🎨💫 **Modern CSS tasarım**
-
 ### 🧠🤖 v1.3.0 - AI Model Integration ⚡
 - 🧠✨ **Gemini API entegrasyonu**
 - 🤖🔥 **Çoklu model desteği** (Gemini + Ollama)
@@ -598,29 +537,16 @@ ALLOWED_ORIGINS=https://your-production-domain.com
 - ⚙️🎛️ **Sistem prompt yönetimi**
 - 🔢📊 **Token limit optimizasyonu**
 
-### 🐳🚀 v1.2.0 - Docker Deployment ⚡
-- 🐳🔥 **Docker containerization**
-- 🔄⚡ **Always restart policy**
-- ⚙️🎯 **Varsayılan ayarlar güncellendi**
-- 🔧✨ **Environment variables düzeltildi**
-
-### 🤖🧠 v1.1.0 - Ollama Integration ⚡
-- 🤖✨ **Ollama entegrasyonu**
-- 🔄🔥 **Çoklu model desteği**
-- 🎯⚡ **Gelişmiş model seçimi**
-
 ### 🚀✨ v1.0.0 - Initial Release 🎉
 - 🚀🔥 **Temel FastAPI backend**
-- 🌐💻 **Streamlit frontend**
 - 🤖🧠 **Ollama entegrasyonu**
-- 🗄️💾 **SQLite veritabanı**
+- 🗄️💾 **PostgreSQL veritabanı**
 - 🔄🎯 **İki farklı kullanım modu**
 
 ### 🔮✨ Gelecek Sürümler 🚀
 - 🔄⚡ **CI/CD pipeline**
 - 📊📈 **Advanced monitoring**
 - 🌍🎯 **Multi-language support**
-- 🛡️⚡ **API rate limiting**
 - 📱💻 **Mobile app**
 - 📈📊 **Advanced analytics**
 
@@ -631,5 +557,7 @@ ALLOWED_ORIGINS=https://your-production-domain.com
 **🤖✨ AI Yardımcı** - Nilüfer Belediyesi için profesyonel cevaplar hazırlayın! 🎉🎊
 
 🚀💫 **Hayal Et, Tasarla, Kodla!** 💫🚀
+
+Made with ❤️ by [Zafer Turan](https://github.com/Zaferturan)
 
 </div>
