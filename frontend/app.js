@@ -1258,6 +1258,8 @@ class TemplatesManager {
         if (saveCheckbox) saveCheckbox.checked = false;
         if (categorySection) categorySection.classList.add('hidden');
         if (categorySelect) categorySelect.value = '';
+        // Yeni kategori input'unu temizle
+        this.hideEditNewCategoryInput();
         // Kategori listesini doldur
         this.populateEditCategories();
         modal.classList.remove('hidden');
@@ -1285,6 +1287,76 @@ class TemplatesManager {
         const modal = document.getElementById('template-edit-modal');
         if (modal) modal.classList.add('hidden');
         this.editingTemplateId = null;
+        // Yeni kategori input'unu da temizle
+        this.hideEditNewCategoryInput();
+    }
+
+    showEditNewCategoryInput() {
+        const inputGroup = document.getElementById('template-edit-new-category-input-group');
+        const newCategoryBtn = document.getElementById('template-edit-new-category-btn');
+        const categoryInput = document.getElementById('template-edit-new-category-name');
+        
+        if (inputGroup) {
+            inputGroup.classList.remove('hidden');
+        }
+        
+        if (newCategoryBtn) {
+            newCategoryBtn.classList.add('hidden');
+        }
+        
+        if (categoryInput) {
+            categoryInput.value = '';
+            categoryInput.focus();
+        }
+    }
+
+    hideEditNewCategoryInput() {
+        const inputGroup = document.getElementById('template-edit-new-category-input-group');
+        const newCategoryBtn = document.getElementById('template-edit-new-category-btn');
+        const categoryInput = document.getElementById('template-edit-new-category-name');
+        
+        if (inputGroup) {
+            inputGroup.classList.add('hidden');
+        }
+        
+        if (newCategoryBtn) {
+            newCategoryBtn.classList.remove('hidden');
+        }
+        
+        if (categoryInput) {
+            categoryInput.value = '';
+        }
+    }
+
+    async createEditCategory() {
+        const categoryInput = document.getElementById('template-edit-new-category-name');
+        const categoryName = categoryInput ? categoryInput.value.trim() : '';
+        
+        if (!categoryName) {
+            if (templateSaveManager) {
+                templateSaveManager.showToast('⚠️ Kategori adı boş olamaz', 'warning');
+            }
+            return;
+        }
+        
+        try {
+            const newCategory = await templateSaveManager.createCategory(categoryName);
+            if (newCategory) {
+                // Kategorileri yeniden yükle ve dropdown'ı güncelle
+                await templateSaveManager.loadCategories();
+                this.populateEditCategories();
+                
+                // Yeni kategoriyi seç
+                const categorySelect = document.getElementById('template-edit-category-select');
+                if (categorySelect) {
+                    categorySelect.value = newCategory.id;
+                }
+                
+                this.hideEditNewCategoryInput();
+            }
+        } catch (error) {
+            console.error('Kategori oluşturma hatası:', error);
+        }
     }
 
     async confirmEditAndCopy() {
@@ -1561,6 +1633,12 @@ class TemplatesManager {
                     await templateSaveManager.loadCategories();
                     this.populateEditCategories();
                 }
+            } else if (e.target.id === 'template-edit-new-category-btn') {
+                this.showEditNewCategoryInput();
+            } else if (e.target.id === 'template-edit-create-category-btn') {
+                await this.createEditCategory();
+            } else if (e.target.id === 'template-edit-cancel-category-btn') {
+                this.hideEditNewCategoryInput();
             }
         });
     }
