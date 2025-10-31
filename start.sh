@@ -6,7 +6,7 @@ source /app/data/.env
 set +a
 
 # Backend'i arka planda başlat
-python -m uvicorn main:app --host 0.0.0.0 --port 8000 &
+python -m uvicorn main:app --host 0.0.0.0 --port 12000 &
 
 # Nginx'i başlat
 nginx -g "daemon off;"

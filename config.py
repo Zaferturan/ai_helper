@@ -2,7 +2,9 @@ import os
 from dotenv import load_dotenv
 
 # Load environment variables from .env file
-load_dotenv()
+# Try /app/data/.env first (container path), then default locations
+env_path = "/app/data/.env" if os.path.exists("/app/data/.env") else ".env"
+load_dotenv(env_path)
 
 # Production URL configuration
 PRODUCTION_URL = os.getenv("PRODUCTION_URL", "https://yardimci.niluferyapayzeka.tr")
@@ -70,9 +72,15 @@ LOG_FILE_PATH = os.getenv("LOG_FILE_PATH", "logs/app.log")
 # If not found, raise a clear configuration error.
 _env_database_url = os.getenv("DATABASE_URL")
 
+# Get schema name from environment (default: public)
+POSTGRES_SCHEMA_NAME = os.getenv("POSTGRES_SCHEMA_NAME") or os.getenv("POSGRSQL_SCHEMA_NAME") or "public"
+
 # Accept both 'postgresql://' and 'postgresql+psycopg2://'
 if _env_database_url and _env_database_url.startswith("postgresql"):
     DATABASE_URL = _env_database_url
+    # If schema is specified and not in URL, add it
+    if POSTGRES_SCHEMA_NAME != "public" and "?options=" not in DATABASE_URL:
+        DATABASE_URL = f"{DATABASE_URL}?options=-csearch_path%3D{POSTGRES_SCHEMA_NAME}"
 else:
     _pg_host = os.getenv("POSTGRES_HOST") or os.getenv("POSTGRESQL_HOST")
     _pg_port = os.getenv("POSTGRES_PORT") or os.getenv("POSTGRESQL_PORT") or "5432"
@@ -82,9 +90,15 @@ else:
 
     if _pg_host and _pg_db and _pg_user is not None:
         if _pg_password is not None and _pg_password != "":
-            DATABASE_URL = f"postgresql+psycopg2://{_pg_user}:{_pg_password}@{_pg_host}:{_pg_port}/{_pg_db}"
+            _base_url = f"postgresql+psycopg2://{_pg_user}:{_pg_password}@{_pg_host}:{_pg_port}/{_pg_db}"
         else:
-            DATABASE_URL = f"postgresql+psycopg2://{_pg_user}@{_pg_host}:{_pg_port}/{_pg_db}"
+            _base_url = f"postgresql+psycopg2://{_pg_user}@{_pg_host}:{_pg_port}/{_pg_db}"
+        
+        # Add schema to URL if specified
+        if POSTGRES_SCHEMA_NAME != "public":
+            DATABASE_URL = f"{_base_url}?options=-csearch_path%3D{POSTGRES_SCHEMA_NAME}"
+        else:
+            DATABASE_URL = _base_url
     else:
         raise RuntimeError(
             "PostgreSQL configuration missing. Set DATABASE_URL (postgresql) or POSTGRES_* env vars."

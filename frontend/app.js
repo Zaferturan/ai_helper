@@ -18,10 +18,14 @@
 function getBackendURL() {
     const hostname = window.location.hostname;
     const PRODUCTION_URL = 'https://yardimci.niluferyapayzeka.tr';
+    const PRODUCTION_URL_V2 = 'https://yardimci2.niluferyapayzeka.tr';
     
-    // Production domain kontrolü
+    // Production domain kontrolü (yardimci ve yardimci2)
     if (hostname === 'yardimci.niluferyapayzeka.tr' || hostname.includes('yardimci.niluferyapayzeka.tr')) {
         return `${PRODUCTION_URL}/api/v1`;
+    }
+    if (hostname === 'yardimci2.niluferyapayzeka.tr' || hostname.includes('yardimci2.niluferyapayzeka.tr')) {
+        return `${PRODUCTION_URL_V2}/api/v1`;
     }
     
     // localhost kontrolü
@@ -1834,22 +1838,44 @@ class APIClient {
             }
         };
 
-        const response = await fetch(url, { ...defaultOptions, ...options });
-        
-        if (!response.ok) {
-            // Güvenlik hataları için özel mesajlar
-            if (response.status === 403) {
-                throw new Error('Bu işlem için yetkiniz yok');
-            } else if (response.status === 401) {
-                throw new Error('Oturum süreniz dolmuş, lütfen tekrar giriş yapın');
-            } else if (response.status === 404) {
-                throw new Error('İstenen kaynak bulunamadı');
-            } else {
-                throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+        try {
+            const response = await fetch(url, { ...defaultOptions, ...options });
+            
+            if (!response.ok) {
+                // Response body'yi oku (JSON parse edilebilirse)
+                let errorDetail = response.statusText;
+                try {
+                    const errorBody = await response.json();
+                    if (errorBody.detail) {
+                        errorDetail = errorBody.detail;
+                    }
+                } catch (e) {
+                    // JSON parse edilemezse statusText kullan
+                }
+                
+                // Güvenlik hataları için özel mesajlar
+                if (response.status === 403) {
+                    throw new Error('Bu işlem için yetkiniz yok');
+                } else if (response.status === 401) {
+                    throw new Error('Oturum süreniz dolmuş, lütfen tekrar giriş yapın');
+                } else if (response.status === 404) {
+                    throw new Error('İstenen kaynak bulunamadı');
+                } else if (response.status === 500) {
+                    throw new Error(`Sunucu hatası: ${errorDetail}`);
+                } else {
+                    throw new Error(`HTTP ${response.status}: ${errorDetail}`);
+                }
             }
+            
+            return response.json();
+        } catch (error) {
+            // Network hataları veya diğer fetch hataları
+            if (error.message.includes('Failed to fetch') || error.message.includes('NetworkError') || error.message.includes('Network request failed')) {
+                console.error('Network error:', error);
+                throw new Error('Sunucuya bağlanılamadı. İnternet bağlantınızı kontrol edin.');
+            }
+            throw error;
         }
-        
-        return response.json();
     }
 
     async sendLoginCode(email) {
