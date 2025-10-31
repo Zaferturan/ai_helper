@@ -1262,8 +1262,6 @@ class TemplatesManager {
         this.populateEditCategories();
         modal.classList.remove('hidden');
         modal.classList.add('show');
-        modal.style.display = 'block';
-        modal.style.visibility = 'visible';
         setTimeout(() => { (titleInput || textarea).focus(); }, 0);
     }
 
