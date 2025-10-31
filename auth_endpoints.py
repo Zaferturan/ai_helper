@@ -675,7 +675,10 @@ async def get_admin_users(
         
         user_stats = []
         for user in users:
-            # Kullanıcının ürettiği yanıt sayısı (Yanıt Üret ile oluşan Response satırları)
+            # Kullanıcının ürettiği yanıt sayısı (veritabanındaki total_requests field'inden)
+            total_requests = user.total_requests
+
+            # Kullanıcının ürettiği Response satırları sayısı
             total_responses = (
                 db.query(DBResponse)
                 .join(DBRequest, DBRequest.id == DBResponse.request_id)
@@ -683,15 +686,14 @@ async def get_admin_users(
                 .count()
             )
 
-            # Backward-compat: total_requests alanını "Toplam Ürettiği Yanıt" olarak gönder
-            total_requests = total_responses
-
             # Kullanıcının cevapladığı istek sayısı (veritabanındaki answered_requests field'inden)
             answered_requests = user.answered_requests
             
             logger.info(f"User {user.email}: total_requests={total_requests}, answered_requests={answered_requests}")
             
             # Son aktivite (en son istek veya yanıt)
+            from datetime import timezone, datetime as dt
+            
             last_request = db.query(DBRequest).filter(DBRequest.user_id == user.id).order_by(
                 DBRequest.created_at.desc()
             ).first()
@@ -700,11 +702,23 @@ async def get_admin_users(
                 DBRequest.user_id == user.id
             ).order_by(DBResponse.created_at.desc()).first()
             
-            last_activity = max(
-                user.last_login or datetime.min,
-                last_request.created_at if last_request else datetime.min,
-                last_response.created_at if last_response else datetime.min
-            )
+            # Datetime'ları timezone-aware yap
+            def make_aware(dt_val):
+                if dt_val is None:
+                    return datetime.min.replace(tzinfo=timezone.utc)
+                if dt_val.tzinfo is None:
+                    return dt_val.replace(tzinfo=timezone.utc)
+                return dt_val
+            
+            dates = []
+            if user.last_login:
+                dates.append(make_aware(user.last_login))
+            if last_request:
+                dates.append(make_aware(last_request.created_at))
+            if last_response:
+                dates.append(make_aware(last_response.created_at))
+            
+            last_activity = max(dates) if dates else datetime.min.replace(tzinfo=timezone.utc)
             
             user_stats.append(UserStats(
                 user_id=user.id,

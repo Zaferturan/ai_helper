@@ -228,7 +228,7 @@ logs/
 
 2. **Email Sending** (Satır 274-413)
    - `send_login_credentials_email()`: Giriş emaili gönderir
-     - Magic link oluşturur: `{PRODUCTION_URL}/api/v1/magic-link?token={token}`
+     - Magic link oluşturur: `{PRODUCTION_URL}/api/v1/magic-link?token={token}` (PRODUCTION_URL .env'den okunur)
      - 6 haneli kod ekler
      - HTML + Plain text versiyonları
      - SMTP ile Gmail üzerinden gönderir
@@ -414,7 +414,7 @@ def get_db():
 
 ```python
 # URL Configuration
-PRODUCTION_URL = "https://yardimci.niluferyapayzeka.tr"
+PRODUCTION_URL = "https://your-domain.com"
 FRONTEND_URL = "http://localhost:8500"
 BACKEND_URL = "http://localhost:8000"
 
@@ -768,7 +768,7 @@ sequenceDiagram
 
 **Email İçeriği:**
 - **Seçenek 1:** Magic Link (5 saat geçerli)
-  - URL: `https://yardimci.niluferyapayzeka.tr/api/v1/magic-link?token=XXX`
+  - URL: `{PRODUCTION_URL}/api/v1/magic-link?token=XXX` (PRODUCTION_URL .env'den okunur)
 - **Seçenek 2:** 6 Haneli Kod (5 saat geçerli)
   - Kod: `AB12CD` (hexadecimal, uppercase)
 
@@ -1248,8 +1248,8 @@ COPY . .
 # 5. Frontend dosyaları Nginx'e
 COPY frontend/ /usr/share/nginx/html/
 
-# 6. Production URL replacement
-RUN sed -i 's|http://localhost:8000/api/v1|https://yardimci.niluferyapayzeka.tr/api/v1|g' /usr/share/nginx/html/app.js
+# 6. Production URL replacement (Dockerfile içinde)
+RUN sed -i 's|http://localhost:8000/api/v1|${PRODUCTION_URL}/api/v1|g' /usr/share/nginx/html/app.js
 
 # 7. Nginx konfigürasyonu
 COPY nginx.conf /etc/nginx/sites-available/default
@@ -1381,7 +1381,7 @@ async def send_login_credentials_email(
 ) -> bool:
     """
     Giriş emaili gönderir:
-    - Magic link: https://yardimci.niluferyapayzeka.tr/api/v1/magic-link?token={token}
+    - Magic link: `{PRODUCTION_URL}/api/v1/magic-link?token={token}` (PRODUCTION_URL .env'den okunur)
     - 6 haneli kod: {code}
     
     Returns:
@@ -1652,7 +1652,7 @@ function clearTextboxValues() {
 ```python
 # auth_system.py içinde login_url kontrolü
 login_url = f"{PRODUCTION_URL}/api/v1/magic-link?token={token}"
-# /magic-link olmalı, /auth DEĞİL
+# PRODUCTION_URL .env'den okunur, /magic-link olmalı, /auth DEĞİL
 ```
 
 ---
@@ -1892,7 +1892,7 @@ python recompute_user_counters.py
 
 ```env
 # Production URL
-PRODUCTION_URL=https://yardimci.niluferyapayzeka.tr
+PRODUCTION_URL=https://your-domain.com
 FRONTEND_URL=http://localhost:8500
 BACKEND_URL=http://localhost:8000
 
