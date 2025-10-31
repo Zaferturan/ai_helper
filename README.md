@@ -88,34 +88,35 @@ cd ai_helper
 # 1) Doğrudan DSN
 DATABASE_URL=postgresql+psycopg2://USER:PASSWORD@HOST:5432/DBNAME
 # veya 2) POSTGRES_* değişkenleri (otomatik DSN)
-POSTGRES_HOST=localhost
+POSTGRES_HOST=your-database-host
 POSTGRES_PORT=5432
-POSTGRES_DB=ai_helper
-POSTGRES_USER=ai_helper
-POSTGRES_PASSWORD=your-password
+POSTGRES_DB=your-database-name
+POSTGRES_USER=your-database-user
+POSTGRES_PASSWORD=your-secure-password
 
 # Ollama Configuration
-OLLAMA_HOST=http://localhost:11434
+OLLAMA_HOST=http://your-ollama-host:11434
 
 # Authentication Configuration
-JWT_SECRET_KEY=your-super-secret-jwt-key
+JWT_SECRET_KEY=your-super-secret-jwt-key-min-32-characters
 JWT_ALGORITHM=HS256
 ACCESS_TOKEN_EXPIRE_MINUTES=900
 
 # SMTP Configuration (Google Workspace)
 SMTP_HOST=smtp.gmail.com
 SMTP_PORT=587
-SMTP_USERNAME=your-email@niluferyapayzeka.tr
+SMTP_USERNAME=your-email@yourdomain.com
 SMTP_PASSWORD=your-app-password
-SENDER_EMAIL=admin@niluferyapayzeka.tr
+SENDER_EMAIL=noreply@yourdomain.com
 
 # Gemini API Configuration
 GEMINI_API_KEY=YOUR_GEMINI_API_KEY_HERE
 
 # Production URLs
-PRODUCTION_URL=https://your-domain.com
+PRODUCTION_URL=https://your-production-domain.com
 FRONTEND_URL=http://localhost:8500
 BACKEND_URL=http://localhost:8000
+ALLOWED_ORIGINS=https://your-production-domain.com
 ```
 
 3. 🚀🎯 **Docker ile Başlatın**
@@ -151,16 +152,16 @@ pip install -r requirements.txt
 3. 🚀⚡ **Backend'i Başlatın**
 ```bash
 source venv/bin/activate
-uvicorn main:app --host 0.0.0.0 --port 12000 --reload
+uvicorn main:app --host 0.0.0.0 --port 8000 --reload
 ```
-Backend `http://localhost:12000` adresinde çalışacak.
+Backend `http://localhost:8000` adresinde çalışacak.
 
 4. 🌐🎨 **Frontend'i Başlatın**
 ```bash
 cd frontend
-python -m http.server 13000
+python -m http.server 8500
 ```
-Frontend `http://localhost:13000` adresinde çalışacak.
+Frontend `http://localhost:8500` adresinde çalışacak.
 
 > Geliştirme sırasında cache'i yenilemek için `index.html` içindeki `app.js?v=...` sürümünü artırın ve sayfayı F5 ile yenileyin.
 
@@ -330,11 +331,11 @@ PostgreSQL'e geçiş için `.env`:
 DATABASE_URL=postgresql+psycopg2://USER:PASSWORD@HOST:5432/DBNAME
 
 # veya 2) POSTGRES_* değişkenleri ile otomatik DSN
-POSTGRES_HOST=localhost
+POSTGRES_HOST=your-database-host
 POSTGRES_PORT=5432
-POSTGRES_DB=ai_helper
-POSTGRES_USER=ai_helper
-POSTGRES_PASSWORD=your-password
+POSTGRES_DB=your-database-name
+POSTGRES_USER=your-database-user
+POSTGRES_PASSWORD=your-secure-password
 ```
 
 `config.py` önceliği (yalnızca PostgreSQL):
@@ -460,7 +461,7 @@ docker logs -f ai_yardimci
 docker ps
 
 # Health check
-curl https://yardimci.niluferyapayzeka.tr/api/v1/auth/health
+curl https://your-production-domain.com/api/v1/auth/health
 
 # Container'ı yeniden başlat
 docker restart ai_yardimci
@@ -478,7 +479,7 @@ LOG_LEVEL=INFO
 API_PORT=8000
 WEB_PORT=80
 DATABASE_URL=postgresql+psycopg2://USER:PASSWORD@HOST:5432/DBNAME
-ALLOWED_ORIGINS=https://yardimci.niluferyapayzeka.tr
+ALLOWED_ORIGINS=https://your-production-domain.com
 ```
 
 ## 🤝✨ Katkıda Bulunma 🚀💫
