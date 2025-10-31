@@ -149,14 +149,47 @@ venv\Scripts\activate  # Windows
 pip install -r requirements.txt
 ```
 
-3. 🚀⚡ **Backend'i Başlatın**
+3. ⚙️🎯 **`.env` Dosyası Oluşturun**
+Geliştirme için `.env` dosyası oluşturun ve gerekli değişkenleri ayarlayın:
+```env
+# Database (local veya test database)
+POSTGRES_HOST=your-database-host
+POSTGRES_PORT=5432
+POSTGRES_DB=your-database-name
+POSTGRES_USER=your-database-user
+POSTGRES_PASSWORD=your-secure-password
+
+# Ollama (local development)
+OLLAMA_HOST=http://your-ollama-host:11434
+
+# JWT Configuration
+JWT_SECRET_KEY=your-dev-secret-key-min-32-characters
+JWT_ALGORITHM=HS256
+ACCESS_TOKEN_EXPIRE_MINUTES=900
+
+# SMTP (development - test account)
+SMTP_HOST=smtp.gmail.com
+SMTP_PORT=587
+SMTP_USERNAME=your-dev-email@yourdomain.com
+SMTP_PASSWORD=your-dev-app-password
+SENDER_EMAIL=noreply@yourdomain.com
+
+# Gemini API (optional for development)
+GEMINI_API_KEY=YOUR_DEV_GEMINI_API_KEY
+
+# Development URLs
+FRONTEND_URL=http://localhost:8500
+BACKEND_URL=http://localhost:8000
+```
+
+4. 🚀⚡ **Backend'i Başlatın**
 ```bash
 source venv/bin/activate
 uvicorn main:app --host 0.0.0.0 --port 8000 --reload
 ```
 Backend `http://localhost:8000` adresinde çalışacak.
 
-4. 🌐🎨 **Frontend'i Başlatın**
+5. 🌐🎨 **Frontend'i Başlatın**
 ```bash
 cd frontend
 python -m http.server 8500
