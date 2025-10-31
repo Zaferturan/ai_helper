@@ -533,7 +533,7 @@ ALLOWED_ORIGINS=https://your-production-domain.com
 
 | 👨‍💻 **Geliştirici** |
 |:---:|
-| ![Zafer Turan](https://avatars.githubusercontent.com/u/10232886?v=4) |
+| ![Zafer Turan](https://github.com/Zaferturan.png) |
 | **Zafer Turan** |
 | 🐙 [GitHub](https://github.com/Zaferturan) |
 | 💼 [LinkedIn](https://www.linkedin.com/in/zafer-turan-224854183/) |
