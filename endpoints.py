@@ -189,12 +189,13 @@ async def generate_response(generate_request: api_models.GenerateRequest, db: Se
 Personel cevabı: {generate_request.custom_input}
 
 Bu cevabı kısa ve öz bir SMS formatına uygun şekilde hazırla. ÖNEMLİ KURALLAR:
-- Maksimum 450 karakter olmalı
+- 450 karakteri AŞMA; mümkünse 300-420 karakter arasında kal
 - Başlık veya başlık benzeri ifadeler ("Resmi Yanıt", "Yanıt:", vb.) kullanma
 - Paragraf kırılmaları yapma, tüm metni tek satırda yaz
 - Gereksiz boşluklar bırakma
 - Kısa, net ve anlaşılır olmalı
-- Sayın ilgili gibi resmi hitap ile başla ama uzatma"""
+- Asla üç nokta ("..." veya "…") ile bitirme; TAM cümle ile bitir
+- "Sayın" gibi resmi bir hitapla başla ama uzatma"""
             print("📱 SMS mode: Prompt set to SMS format")
         else:
             prompt = f"""Vatandaş talebi: {original_request.original_text}
@@ -264,30 +265,45 @@ Bu cevabı genişlet, daha detaylı ve ikna edici hale getir."""
             import re
             response_text = re.sub(r'\s+', ' ', response_text).strip()
             
-            # 4. 450 karakter limiti uygula
+            # 4. Üç nokta karakterlerini kaldır ve 450 karakter limiti uygula
+            response_text = response_text.replace('...', ' ').replace('…', ' ')
+            response_text = re.sub(r'\s+', ' ', response_text).strip()
+
+            def ensure_sentence_end(text: str) -> str:
+                text = text.strip()
+                if not text:
+                    return text
+                if text.endswith(('.', '!', '?')):
+                    return text
+                # Noktalama yoksa kısa bir nokta ekle
+                return text + '.'
+
             if len(response_text) > 450:
-                # Son nokta, ünlem veya soru işaretinden kes (cümle sınırında)
                 trimmed = response_text[:450]
-                # Son cümle sınırını bul
-                last_period = max(
-                    trimmed.rfind('. '),
-                    trimmed.rfind('! '),
-                    trimmed.rfind('? ')
-                )
-                if last_period > 300:  # En az 300 karakter bırak
-                    response_text = trimmed[:last_period + 1] + '...'
+                # Önce cümle sonu arayın
+                last_sentence_end = max(trimmed.rfind('.'), trimmed.rfind('!'), trimmed.rfind('?'))
+                if last_sentence_end >= 250:  # metnin büyük kısmı kalsın
+                    response_text = trimmed[:last_sentence_end + 1]
                 else:
-                    # Cümle sınırı bulunamadıysa kelime sınırında kes
+                    # Kelime sınırında kes ve nokta ile bitir
                     last_space = trimmed.rfind(' ')
-                    if last_space > 300:
-                        response_text = trimmed[:last_space] + '...'
+                    if last_space >= 250:
+                        response_text = ensure_sentence_end(trimmed[:last_space])
                     else:
-                        # Hiçbir sınır bulunamadıysa direkt kes
-                        response_text = trimmed + '...'
-            
-            # 5. Final kontrol: Kesinlikle 450 karakterden uzun olamaz
+                        response_text = ensure_sentence_end(trimmed)
+
+            # 5. Final temizlik: 450'yi aşma ve üç nokta bırakma
+            response_text = re.sub(r'\s+', ' ', response_text).strip()
             if len(response_text) > 450:
-                response_text = response_text[:447] + '...'
+                response_text = response_text[:450].rstrip()
+                # Son karakter noktalama değilse ekle
+                if not response_text.endswith(('.', '!', '?')):
+                    # Son kelimeyi ezmeden bir nokta ekle, toplam <= 450 kalacak şekilde
+                    response_text = response_text[:-1].rstrip() + '.'
+
+            # 6. Yanlışlıkla kalan üç nokta veya ellipsis tekrarlarını temizle
+            response_text = response_text.replace('…', ' ').replace('...', ' ')
+            response_text = re.sub(r'\s+', ' ', response_text).strip()
             
             print(f"📱 SMS Response: Original={original_length} chars, Final={len(response_text)} chars")
         
