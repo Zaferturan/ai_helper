@@ -184,21 +184,16 @@ async def generate_response(generate_request: api_models.GenerateRequest, db: Se
         # Create prompt - SMS veya normal yanıt
         print(f"🔍 Generate Request: is_sms={generate_request.is_sms}, type={type(generate_request.is_sms)}")
         if generate_request.is_sms:
-            prompt = f"""Vatandaş talebi: {original_request.original_text}
+            prompt = f"""Personel cevabı: {generate_request.custom_input}
 
-Personel cevabı: {generate_request.custom_input}
-
-Bu cevabı kısa ve öz bir SMS formatına uygun şekilde hazırla. ÖNEMLİ KURALLAR:
-- Maksimum 450 karakter, ideal 300-400 karakter arası
-- Vatandaşın talebini TEKRAR ETME, sadece cevabı yaz
-- Başlık veya başlık benzeri ifadeler ("Resmi Yanıt", "Yanıt:", vb.) kullanma
-- Paragraf kırılmaları yapma, tüm metni tek satırda yaz
-- Gereksiz boşluklar bırakma
-- Kısa, net ve anlaşılır olmalı
-- MUTLAKA tam bir cümle ile bitir, asla üç nokta ("..." veya "…") kullanma
-- Cümlenin ortasında kesme, her zaman tam cümle yaz
-- "Sayın" gibi resmi bir hitapla başla ama uzatma
-- Doğrudan cevaba odaklan, gereksiz açıklama yapma"""
+SMS MESAJI YAZ. KURALLAR:
+- "Sayın vatandaşımız, talebiniz alındı." ile başla
+- Vatandaşın söylediklerini (adres, sorun detayı vs.) ASLA tekrar etme
+- Sadece yapılan/yapılacak işlemi kısaca açıkla
+- Maksimum 350 karakter (ZORUNLU)
+- Tek paragraf, satır kırılması yok
+- TAM cümle ile bitir, "..." KULLANMA
+- Gereksiz detay verme, çok kısa tut"""
             print("📱 SMS mode: Prompt set to SMS format")
         else:
             prompt = f"""Vatandaş talebi: {original_request.original_text}
