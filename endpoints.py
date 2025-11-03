@@ -189,13 +189,16 @@ async def generate_response(generate_request: api_models.GenerateRequest, db: Se
 Personel cevabı: {generate_request.custom_input}
 
 Bu cevabı kısa ve öz bir SMS formatına uygun şekilde hazırla. ÖNEMLİ KURALLAR:
-- 450 karakteri AŞMA; mümkünse 300-420 karakter arasında kal
+- Maksimum 450 karakter, ideal 300-400 karakter arası
+- Vatandaşın talebini TEKRAR ETME, sadece cevabı yaz
 - Başlık veya başlık benzeri ifadeler ("Resmi Yanıt", "Yanıt:", vb.) kullanma
 - Paragraf kırılmaları yapma, tüm metni tek satırda yaz
 - Gereksiz boşluklar bırakma
 - Kısa, net ve anlaşılır olmalı
-- Asla üç nokta ("..." veya "…") ile bitirme; TAM cümle ile bitir
-- "Sayın" gibi resmi bir hitapla başla ama uzatma"""
+- MUTLAKA tam bir cümle ile bitir, asla üç nokta ("..." veya "…") kullanma
+- Cümlenin ortasında kesme, her zaman tam cümle yaz
+- "Sayın" gibi resmi bir hitapla başla ama uzatma
+- Doğrudan cevaba odaklan, gereksiz açıklama yapma"""
             print("📱 SMS mode: Prompt set to SMS format")
         else:
             prompt = f"""Vatandaş talebi: {original_request.original_text}
