@@ -30,7 +30,7 @@ RUN sed -i 's|http://localhost:8000/api/v1|https://yardimci.niluferyapayzeka.tr/
 COPY nginx.conf /etc/nginx/sites-available/default
 
 # Port'ları aç
-EXPOSE 12000 80
+EXPOSE 8000 80
 
 # Volume'ları mount et
 VOLUME ["/app/data", "/app/logs"]
