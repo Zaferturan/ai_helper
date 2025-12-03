@@ -30,11 +30,11 @@ function getBackendURL() {
     
     // localhost kontrolü
     if (hostname === 'localhost' || hostname === '127.0.0.1') {
-        return 'http://localhost:12000/api/v1';
+        return 'http://localhost:8000/api/v1';
     }
     
     // Network IP veya diğer durumlar için aynı hostname'i kullan
-    return `http://${hostname}:12000/api/v1`;
+    return `http://${hostname}:8000/api/v1`;
 }
 
 const CONFIG = {
@@ -2699,6 +2699,46 @@ class UIManager {
     showProfileCompletion() {
         this.hideAllScreens();
         this.elements.profileScreen.classList.remove('hidden');
+
+        // Profil ekranı açıldığında müdürlük listesini veritabanından yükle
+        try {
+            this.loadProfileDepartments();
+        } catch (e) {
+            console.error('Profil departmanları yüklenirken hata:', e);
+        }
+    }
+
+    async loadProfileDepartments() {
+        const select = document.getElementById('profile-department');
+        if (!select) return;
+
+        try {
+            console.log('🏢 Profil için departmanlar yükleniyor...');
+            const response = await fetch(`${CONFIG.BACKEND_URL}/departments`);
+            if (!response.ok) {
+                console.error('Departman isteği başarısız:', response.status, response.statusText);
+                return;
+            }
+
+            const data = await response.json();
+            const departments = data.departments || [];
+
+            // Var olan seçenekleri (ilk placeholder hariç) temizle
+            while (select.children.length > 1) {
+                select.removeChild(select.lastChild);
+            }
+
+            departments.forEach((dept) => {
+                const option = document.createElement('option');
+                option.value = dept;
+                option.textContent = dept;
+                select.appendChild(option);
+            });
+
+            console.log('✅ Profil departmanları yüklendi:', departments.length);
+        } catch (error) {
+            console.error('❌ Profil departmanları yüklenirken hata oluştu:', error);
+        }
     }
 
     // Alias for compatibility

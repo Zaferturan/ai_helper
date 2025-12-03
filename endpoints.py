@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
-from sqlalchemy import or_, func
+from sqlalchemy import or_, func, text
 from typing import List, Optional
 import models
 import api_models
@@ -184,18 +184,16 @@ async def generate_response(generate_request: api_models.GenerateRequest, db: Se
         # Create prompt - SMS veya normal yanıt
         print(f"🔍 Generate Request: is_sms={generate_request.is_sms}, type={type(generate_request.is_sms)}")
         if generate_request.is_sms:
-            prompt = f"""Vatandaş talebi: {original_request.original_text}
+            prompt = f"""Personel cevabı: {generate_request.custom_input}
 
-Personel cevabı: {generate_request.custom_input}
-
-Bu cevabı kısa ve öz bir SMS formatına uygun şekilde hazırla. ÖNEMLİ KURALLAR:
-- 450 karakteri AŞMA; mümkünse 300-420 karakter arasında kal
-- Başlık veya başlık benzeri ifadeler ("Resmi Yanıt", "Yanıt:", vb.) kullanma
-- Paragraf kırılmaları yapma, tüm metni tek satırda yaz
-- Gereksiz boşluklar bırakma
-- Kısa, net ve anlaşılır olmalı
-- Asla üç nokta ("..." veya "…") ile bitirme; TAM cümle ile bitir
-- "Sayın" gibi resmi bir hitapla başla ama uzatma"""
+SMS MESAJI YAZ. KURALLAR:
+- "Sayın vatandaşımız, talebiniz alındı." ile başla
+- Vatandaşın söylediklerini (adres, sorun detayı vs.) ASLA tekrar etme
+- Sadece yapılan/yapılacak işlemi kısaca açıkla
+- Maksimum 350 karakter (ZORUNLU)
+- Tek paragraf, satır kırılması yok
+- TAM cümle ile bitir, "..." KULLANMA
+- Gereksiz detay verme, çok kısa tut"""
             print("📱 SMS mode: Prompt set to SMS format")
         else:
             prompt = f"""Vatandaş talebi: {original_request.original_text}
@@ -807,30 +805,67 @@ async def delete_category(
 # ADMIN ENDPOINTS
 # ============================================================================
 
+@router.get("/departments")
+async def get_all_departments(
+    db: Session = Depends(get_db),
+):
+    """Tüm aktif departman listesini döndürür (herkese açık)."""
+    try:
+        # departments tablosundan aktif departmanları oku
+        result = db.execute(
+            text(
+                "SELECT name FROM departments "
+                "WHERE is_active = true "
+                "ORDER BY name"
+            )
+        ).fetchall()
+
+        department_list = [row[0] for row in result]
+
+        return {
+            "departments": department_list,
+            "total_count": len(department_list),
+        }
+
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail=f"Error getting departments: {str(e)}",
+        )
+
+
 @router.get("/admin/departments")
 async def get_departments(
     current_user: User = Depends(get_current_user),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
 ):
-    """Departman listesi - sadece admin"""
+    """Departman listesi - sadece admin.
+
+    Admin arayüzü için aynı departments tablosunu kullanır.
+    """
     try:
         if not current_user.is_admin:
             raise HTTPException(status_code=403, detail="Bu işlem için yetkiniz yok")
-        
-        # Distinct departman listesi
-        departments = db.query(User.department).distinct().filter(
-            User.department.isnot(None),
-            User.department != ""
-        ).order_by(User.department).all()
-        
-        department_list = [dept[0] for dept in departments]
-        
+
+        result = db.execute(
+            text(
+                "SELECT name FROM departments "
+                "WHERE is_active = true "
+                "ORDER BY name"
+            )
+        ).fetchall()
+
+        department_list = [row[0] for row in result]
+
         return {
             "departments": department_list,
-            "total_count": len(department_list)
+            "total_count": len(department_list),
         }
-        
+
     except HTTPException:
         raise
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Error getting departments: {str(e)}") 
+        raise HTTPException(
+            status_code=500,
+            detail=f"Error getting departments (admin): {str(e)}",
+        )
