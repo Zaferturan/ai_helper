@@ -1,0 +1,25 @@
+services:
+  ai-helper:
+    build:
+      context: .
+    image: ai_helperv2:latest
+    container_name: ai_helper_container_v2
+    restart: unless-stopped
+    ports:
+      - "8000:8000"
+      - "8500:80"
+    volumes:
+      - ai_helper_data_v2:/app/data
+      - ai_helper_logs_v2:/app/logs
+    networks:
+      - monitoring
+
+volumes:
+  ai_helper_data_v2:
+    external: true
+  ai_helper_logs_v2:
+    external: true
+
+networks:
+  monitoring:
+    external: true

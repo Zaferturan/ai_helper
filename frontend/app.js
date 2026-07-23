@@ -96,7 +96,10 @@ class TemplateSaveManager {
         this.categories.forEach(category => {
             const option = document.createElement('option');
             option.value = category.id;
-            option.textContent = category.name;
+            // Admin tüm müdürlükleri görür; karışıklığı önlemek için departman adı da yazılsın
+            option.textContent = category.department
+                ? `${category.name} (${category.department})`
+                : category.name;
             categorySelect.appendChild(option);
         });
 

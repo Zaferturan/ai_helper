@@ -20,11 +20,8 @@ RUN pip install -r requirements.txt
 COPY . .
 
 # Frontend dosyalarını Nginx'e kopyala
+# Not: app.js hostname'e göre API URL seçer; build-time sed localhost branch'ini bozmasın
 COPY frontend/ /usr/share/nginx/html/
-
-# Frontend URL'lerini production'a çevir (yardimci ve yardimci2)
-RUN sed -i 's|http://localhost:8000/api/v1|https://yardimci.niluferyapayzeka.tr/api/v1|g' /usr/share/nginx/html/app.js && \
-    sed -i 's|http://localhost:8500|https://yardimci.niluferyapayzeka.tr|g' /usr/share/nginx/html/app.js
 
 # Nginx konfigürasyonu
 COPY nginx.conf /etc/nginx/sites-available/default
