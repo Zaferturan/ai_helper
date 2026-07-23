@@ -528,14 +528,21 @@ async def create_template(
             title = template_data.content[:80] + "..." if len(template_data.content) > 80 else template_data.content
         
         # Kategori kontrolü (varsa)
+        # Admin tüm kategorilere yazabilir; diğer kullanıcılar sadece kendi departmanı
+        template_department = current_user.department
         if template_data.category_id:
             category = db.query(TemplateCategory).filter(
-                TemplateCategory.id == template_data.category_id,
-                TemplateCategory.department == current_user.department
+                TemplateCategory.id == template_data.category_id
             ).first()
-            
+
             if not category:
+                raise HTTPException(status_code=404, detail="Kategori bulunamadı")
+
+            if not current_user.is_admin and category.department != current_user.department:
                 raise HTTPException(status_code=404, detail="Kategori bulunamadı veya erişim yetkiniz yok")
+
+            # Şablon departmanı kategori ile aynı olsun (admin başka müdürlüğe kaydederse)
+            template_department = category.department
         
         # Yeni şablon oluştur
         is_sms_value = template_data.is_sms if template_data.is_sms is not None else False
@@ -543,7 +550,7 @@ async def create_template(
         new_template = Template(
             title=title,
             content=template_data.content,
-            department=current_user.department,
+            department=template_department,
             owner_user_id=current_user.id,
             category_id=template_data.category_id,
             is_sms=is_sms_value
