@@ -51,8 +51,8 @@ SMTP_USERNAME = os.getenv("SMTP_USERNAME")
 # SMTP_PASSWORD'i temizle: tırnakları kaldır
 _smtp_password_raw = os.getenv("SMTP_PASSWORD", "")
 SMTP_PASSWORD = _smtp_password_raw.strip('"\'') if _smtp_password_raw else ""
-# SENDER_EMAIL yoksa SMTP_USERNAME kullan (Gmail From adresi genelde login ile aynı olmalı)
-SENDER_EMAIL = os.getenv("SENDER_EMAIL") or SMTP_USERNAME
+# SENDER_EMAIL yoksa SMTP_USERNAME; ikisi de yoksa boş string (None SMTP hatalarını önler)
+SENDER_EMAIL = os.getenv("SENDER_EMAIL") or SMTP_USERNAME or ""
 
 # Password hashing
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
