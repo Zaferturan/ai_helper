@@ -2826,8 +2826,77 @@ class UIManager {
                 responseSettings.style.display = 'none';
             }
         }
+
+        // Model listesini API'den yükle (OpenAI gateway + Gemini + Ollama)
+        this.loadModels();
         
         console.log('=== showMainApp END ===');
+    }
+
+    async loadModels() {
+        const modelSelect = this.elements.modelSelect || document.getElementById('model-select');
+        if (!modelSelect) return;
+
+        try {
+            const token = localStorage.getItem(CONFIG.STORAGE_KEYS.AUTH_TOKEN);
+            const response = await fetch(`${CONFIG.BACKEND_URL}/models`, {
+                headers: token ? { 'Authorization': `Bearer ${token}` } : {}
+            });
+            if (!response.ok) {
+                console.warn('Model listesi alınamadı:', response.status);
+                return;
+            }
+
+            const models = await response.json();
+            if (!Array.isArray(models) || models.length === 0) return;
+
+            // OpenAI (gpt/gurubase) modellerini Gemini'nin üstüne koy (nano dahil sabit sıra)
+            const preferredOpenAI = [
+                'gpt-4.1-mini',
+                'gpt-4.1-nano',
+                'gpt-4.1',
+                'gpt-4o-mini',
+                'gpt-4o',
+                'gpt-5.4-mini',
+                'gurubase-siper'
+            ];
+            const byName = Object.fromEntries(models.map(m => [m.name, m]));
+            const openaiModels = [];
+            preferredOpenAI.forEach(name => {
+                if (byName[name]) openaiModels.push(byName[name]);
+            });
+            models.forEach(m => {
+                const n = (m.name || '').toLowerCase();
+                if (n.includes(':')) return; // ollama etiketleri
+                const isOpenAI = n.startsWith('gpt-') || n.startsWith('gurubase-') || n.startsWith('o1') || n.startsWith('o3') || n.startsWith('o4') || n.startsWith('chatgpt-');
+                if (isOpenAI && !preferredOpenAI.includes(m.name)) {
+                    openaiModels.push(m);
+                }
+            });
+            const geminiModels = models.filter(m => (m.name || '').toLowerCase().startsWith('gemini-'));
+            const openaiNames = new Set(openaiModels.map(m => m.name));
+            const geminiNames = new Set(geminiModels.map(m => m.name));
+            const otherModels = models.filter(m => !openaiNames.has(m.name) && !geminiNames.has(m.name));
+            const ordered = [...openaiModels, ...geminiModels, ...otherModels];
+
+            const previous = modelSelect.value;
+            modelSelect.innerHTML = '';
+            ordered.forEach(model => {
+                if (!model.supports_chat && model.supports_chat !== undefined) return;
+                const option = document.createElement('option');
+                option.value = model.name;
+                option.textContent = model.display_name || model.name;
+                modelSelect.appendChild(option);
+            });
+
+            if (previous && [...modelSelect.options].some(o => o.value === previous)) {
+                modelSelect.value = previous;
+            } else if (modelSelect.options.length > 0) {
+                modelSelect.selectedIndex = 0;
+            }
+        } catch (error) {
+            console.error('Model listesi yüklenirken hata:', error);
+        }
     }
 
     hideAllScreens() {
