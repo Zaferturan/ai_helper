@@ -7,18 +7,25 @@ import api_models
 from connection import get_db
 from ollama_client import OllamaClient
 from gemini_client import GeminiClient
+from openai_client import OpenAIClient
 from auth_endpoints import get_current_user
 from models import User, Template, TemplateCategory
 
 router = APIRouter()
 ollama_client = OllamaClient()
 gemini_client = GeminiClient()
+openai_client = OpenAIClient()
 
 @router.get("/models", response_model=List[api_models.ModelInfo])
 async def get_models(db: Session = Depends(get_db)):
-    """Get available models from Ollama and Gemini, sync with database"""
+    """Get available models from OpenAI gateway, Gemini and Ollama; sync with database"""
     try:
         all_models = []
+
+        # OpenAI-compatible gateway models first (Gemini listesinin üstünde)
+        if openai_client.enabled:
+            openai_models = await openai_client.get_models()
+            all_models.extend(openai_models)
         
         # Get models from Ollama
         ollama_models = ollama_client.get_models()
@@ -207,7 +214,16 @@ Bu cevabı genişlet, daha detaylı ve ikna edici hale getir."""
         system_prompt = generate_request.system_prompt if generate_request.system_prompt else ""
         
         # Determine which client to use based on model name
-        if generate_request.model_name.startswith('gemini-'):
+        if openai_client.enabled and openai_client.is_openai_model(generate_request.model_name):
+            response = await openai_client.generate_response(
+                generate_request.model_name,
+                prompt,
+                temperature=generate_request.temperature,
+                top_p=generate_request.top_p,
+                repetition_penalty=generate_request.repetition_penalty,
+                system_prompt=system_prompt,
+            )
+        elif generate_request.model_name.startswith('gemini-'):
             # Use Gemini client
             response = await gemini_client.generate_response(
                 generate_request.model_name, 
