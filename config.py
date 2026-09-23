@@ -10,6 +10,14 @@ load_dotenv(env_path)
 PRODUCTION_URL = os.getenv("PRODUCTION_URL", "https://yardimci.niluferyapayzeka.tr")
 FRONTEND_URL = os.getenv("FRONTEND_URL", "http://localhost:8500")
 BACKEND_URL = os.getenv("BACKEND_URL", "http://localhost:8000")
+ALLOWED_ORIGINS = [
+    o.strip()
+    for o in os.getenv(
+        "ALLOWED_ORIGINS",
+        f"{PRODUCTION_URL},{FRONTEND_URL}",
+    ).split(",")
+    if o.strip()
+]
 
 # Database configuration
 MYSQL_HOST = os.getenv("MYSQL_HOST", "localhost")
@@ -52,13 +60,15 @@ RATE_LIMIT_LOGIN_PER_HOUR = int(os.getenv("RATE_LIMIT_LOGIN_PER_HOUR", "5"))  # 
 RATE_LIMIT_CODE_ATTEMPTS = int(os.getenv("RATE_LIMIT_CODE_ATTEMPTS", "5"))  # 5 attempts
 
 # Rate limiting configuration
-RATE_LIMIT_LOGIN_SECONDS = 5  # 5 seconds between login requests (geçici olarak gevşetildi)
-RATE_LIMIT_DAILY_LOGINS = 50   # Max 50 login attempts per day per IP+email (geçici olarak artırıldı)
-RATE_LIMIT_LOCKOUT_MINUTES = 10  # 10 minutes lockout
+RATE_LIMIT_LOGIN_SECONDS = int(os.getenv("RATE_LIMIT_LOGIN_SECONDS", "30"))
+RATE_LIMIT_DAILY_LOGINS = int(os.getenv("RATE_LIMIT_DAILY_LOGINS", "20"))
+RATE_LIMIT_LOCKOUT_MINUTES = int(os.getenv("RATE_LIMIT_LOCKOUT_MINUTES", "15"))
+GENERATE_DAILY_QUOTA = int(os.getenv("GENERATE_DAILY_QUOTA", "200"))
 
 # Login token settings
-LOGIN_TOKEN_EXPIRE_MINUTES = 10  # 10 minutes
+LOGIN_TOKEN_EXPIRE_MINUTES = int(os.getenv("LOGIN_TOKEN_EXPIRE_MINUTES", "15"))
 CODE_LENGTH = 6
+ACCESS_TOKEN_EXPIRE_HOURS = int(os.getenv("ACCESS_TOKEN_EXPIRE_HOURS", "8"))
 
 # Logging configuration
 LOG_RETENTION_DAYS = int(os.getenv("LOG_RETENTION_DAYS", "30"))

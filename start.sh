@@ -1,12 +1,12 @@
 #!/bin/bash
 
-# .env dosyasını yükle
+# .env dosyasını yükle (secrets live in volume, never baked into image)
 set -a
 source /app/data/.env
 set +a
 
-# Backend'i arka planda başlat
-python -m uvicorn main:app --host 0.0.0.0 --port 8000 &
+# Uvicorn: loopback only — nginx on :80 is the sole public entry
+python -m uvicorn main:app --host 127.0.0.1 --port 8000 &
 
 # Nginx'i başlat
 nginx -g "daemon off;"

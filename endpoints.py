@@ -10,6 +10,16 @@ from gemini_client import GeminiClient
 from openai_client import OpenAIClient
 from auth_endpoints import get_current_user
 from models import User, Template, TemplateCategory
+from prompt_security import (
+    build_user_prompt,
+    server_system_prompt,
+    clamp_temperature,
+    is_model_allowed,
+    sanitize_model_output,
+    MAX_OUTPUT_CHARS_SMS,
+)
+from config import GENERATE_DAILY_QUOTA
+from datetime import datetime, timedelta
 
 router = APIRouter()
 ollama_client = OllamaClient()
@@ -69,7 +79,7 @@ async def get_models(db: Session = Depends(get_db)):
             for model in db_models
         ]
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Error getting models: {str(e)}")
+        raise HTTPException(status_code=500, detail="İşlem tamamlanamadı")
 
 @router.post("/requests", response_model=api_models.RequestResponse)
 async def create_request(request: api_models.RequestCreate, db: Session = Depends(get_db), current_user: models.User = Depends(get_current_user)):
@@ -100,169 +110,178 @@ async def create_request(request: api_models.RequestCreate, db: Session = Depend
         )
     except Exception as e:
         db.rollback()
-        raise HTTPException(status_code=500, detail=f"Error creating request: {str(e)}")
+        raise HTTPException(status_code=500, detail="İşlem tamamlanamadı")
 
 @router.put("/requests/{request_id}")
-async def update_request(request_id: int, db: Session = Depends(get_db)):
-    """Update request - GELİŞTİRME MODU: auth bypass"""
+async def update_request(
+    request_id: int,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """Update request — owner or admin only"""
     try:
-        # Request'i bul
         request = db.query(models.Request).filter(models.Request.id == request_id).first()
         if not request:
             raise HTTPException(status_code=404, detail="Request not found")
-
-        # GELİŞTİRME MODU: auth bypass edildi
-        
-        # Bu endpoint artık sadece request'in varlığını kontrol ediyor
+        if not current_user.is_admin and request.user_id != current_user.id:
+            raise HTTPException(status_code=403, detail="Bu isteğe erişim yetkiniz yok")
         db.commit()
         return {"message": "Request updated successfully"}
-
+    except HTTPException:
+        raise
     except Exception as e:
         db.rollback()
-        raise HTTPException(status_code=500, detail=f"Error updating request: {str(e)}")
+        raise HTTPException(status_code=500, detail="Error updating request")
 
 @router.put("/reset-copied-flags")
-async def reset_copied_flags(db: Session = Depends(get_db)):
-    """Reset copied flag for all responses - GELİŞTİRME MODU: auth bypass"""
+async def reset_copied_flags(
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """Reset copied flags for current user's responses only (admin: all)"""
     try:
-        # Tüm response'ların copied flag'ini False yap
-        db.query(models.Response).update({models.Response.copied: False})
-        
+        if current_user.is_admin:
+            db.query(models.Response).update({models.Response.copied: False})
+        else:
+            request_ids = [
+                r.id for r in db.query(models.Request.id).filter(models.Request.user_id == current_user.id).all()
+            ]
+            if request_ids:
+                db.query(models.Response).filter(models.Response.request_id.in_(request_ids)).update(
+                    {models.Response.copied: False}, synchronize_session=False
+                )
         db.commit()
-        return {"message": "All copied flags reset successfully"}
-
+        return {"message": "Copied flags reset successfully"}
     except Exception as e:
         db.rollback()
-        raise HTTPException(status_code=500, detail=f"Error resetting copied flags: {str(e)}")
+        raise HTTPException(status_code=500, detail="Error resetting copied flags")
 
 @router.put("/responses/{response_id}/mark-copied")
 async def mark_response_as_copied(response_id: int, current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
     """Mark response as copied (copied=True) and increment answered_requests counter"""
     try:
-        # Response'u bul
         response = db.query(models.Response).filter(models.Response.id == response_id).first()
         if not response:
             raise HTTPException(status_code=404, detail="Response not found")
 
-        # copied flag'ini True yap
-        response.copied = True
-        
-        # Kullanıcının answered_requests sayısını artır
-        current_user.answered_requests += 1
+        req = db.query(models.Request).filter(models.Request.id == response.request_id).first()
+        if not req or (not current_user.is_admin and req.user_id != current_user.id):
+            raise HTTPException(status_code=403, detail="Bu yanıta erişim yetkiniz yok")
 
+        response.copied = True
+        current_user.answered_requests += 1
         db.commit()
         return {"message": "Response marked as copied successfully"}
-
+    except HTTPException:
+        raise
     except Exception as e:
         db.rollback()
-        raise HTTPException(status_code=500, detail=f"Error marking response as copied: {str(e)}")
+        raise HTTPException(status_code=500, detail="Error marking response as copied")
 
 @router.get("/requests/{request_id}/has-copied-response")
-async def check_request_has_copied_response(request_id: int, db: Session = Depends(get_db)):
-    """Check if a request has any copied responses - GELİŞTİRME MODU: auth bypass"""
+async def check_request_has_copied_response(
+    request_id: int,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """Check if a request has any copied responses"""
     try:
-        # Request'i bul
         request = db.query(models.Request).filter(models.Request.id == request_id).first()
         if not request:
             raise HTTPException(status_code=404, detail="Request not found")
+        if not current_user.is_admin and request.user_id != current_user.id:
+            raise HTTPException(status_code=403, detail="Bu isteğe erişim yetkiniz yok")
 
-        # GELİŞTİRME MODU: auth bypass edildi
-        
-        # Bu request için kopyalanmış yanıt var mı kontrol et
         has_copied_response = db.query(models.Response).filter(
             models.Response.request_id == request_id,
             models.Response.copied == True
         ).first() is not None
 
         return {"has_copied": has_copied_response}
-
+    except HTTPException:
+        raise
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Error checking request: {str(e)}")
+        raise HTTPException(status_code=500, detail="Error checking request")
 
 @router.post("/generate", response_model=api_models.GenerateResponse)
 async def generate_response(generate_request: api_models.GenerateRequest, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
-    """Generate response using Ollama"""
+    """Generate response using configured LLM providers"""
     try:
-        # Get the original request
+        # Daily generate quota
+        day_start = datetime.utcnow().replace(hour=0, minute=0, second=0, microsecond=0)
+        today_count = (
+            db.query(models.Response)
+            .join(models.Request, models.Request.id == models.Response.request_id)
+            .filter(
+                models.Request.user_id == current_user.id,
+                models.Response.created_at >= day_start,
+            )
+            .count()
+        )
+        if today_count >= GENERATE_DAILY_QUOTA:
+            raise HTTPException(status_code=429, detail="Günlük yanıt üretim kotası aşıldı")
+
+        if not is_model_allowed(generate_request.model_name):
+            raise HTTPException(status_code=400, detail="Bu model kullanım için izinli değil")
+
+        temperature = clamp_temperature(generate_request.temperature)
+
+        # Get the original request (IDOR protection)
         original_request = db.query(models.Request).filter(models.Request.id == generate_request.request_id).first()
         if not original_request:
             raise HTTPException(status_code=404, detail="Request not found")
+        if not current_user.is_admin and original_request.user_id != current_user.id:
+            raise HTTPException(status_code=403, detail="Bu isteğe erişim yetkiniz yok")
         
-        # Create prompt - SMS veya normal yanıt
-        print(f"🔍 Generate Request: is_sms={generate_request.is_sms}, type={type(generate_request.is_sms)}")
-        if generate_request.is_sms:
-            prompt = f"""Personel cevabı: {generate_request.custom_input}
-
-SMS MESAJI YAZ. KURALLAR:
-- "Sayın vatandaşımız, talebiniz alındı." ile başla
-- Vatandaşın söylediklerini (adres, sorun detayı vs.) ASLA tekrar etme
-- Sadece yapılan/yapılacak işlemi kısaca açıkla
-- Maksimum 350 karakter (ZORUNLU)
-- Tek paragraf, satır kırılması yok
-- TAM cümle ile bitir, "..." KULLANMA
-- Gereksiz detay verme, çok kısa tut"""
-            print("📱 SMS mode: Prompt set to SMS format")
-        else:
-            prompt = f"""Vatandaş talebi: {original_request.original_text}
-
-Personel cevabı: {generate_request.custom_input}
-
-Bu cevabı genişlet, daha detaylı ve ikna edici hale getir."""
-            print("📄 Normal mode: Prompt set to normal format")
+        is_sms = bool(generate_request.is_sms)
+        # Server-owned system prompt — ignore client system_prompt
+        system_prompt = server_system_prompt(is_sms)
+        prompt = build_user_prompt(
+            original_request.original_text,
+            generate_request.custom_input,
+            is_sms,
+        )
         
-        # Sistem promptunu kullan (frontend'den gelen)
-        system_prompt = generate_request.system_prompt if generate_request.system_prompt else ""
-        
-        # Determine which client to use based on model name
         if openai_client.enabled and openai_client.is_openai_model(generate_request.model_name):
             response = await openai_client.generate_response(
                 generate_request.model_name,
                 prompt,
-                temperature=generate_request.temperature,
+                temperature=temperature,
                 top_p=generate_request.top_p,
                 repetition_penalty=generate_request.repetition_penalty,
                 system_prompt=system_prompt,
             )
         elif generate_request.model_name.startswith('gemini-'):
-            # Use Gemini client
             response = await gemini_client.generate_response(
                 generate_request.model_name, 
                 prompt,
-                temperature=generate_request.temperature,
+                temperature=temperature,
                 top_p=generate_request.top_p,
                 repetition_penalty=generate_request.repetition_penalty,
-                system_prompt=system_prompt  # Sistem promptunu geçir
+                system_prompt=system_prompt,
             )
         else:
-            # Use Ollama client
             response = await ollama_client.generate_response(
                 generate_request.model_name, 
                 prompt,
-                temperature=generate_request.temperature,
+                temperature=temperature,
                 top_p=generate_request.top_p,
                 repetition_penalty=generate_request.repetition_penalty,
-                system_prompt=system_prompt  # Sistem promptunu geçir
+                system_prompt=system_prompt,
             )
         
         if not response['success']:
-            raise HTTPException(status_code=500, detail=f"Model error: {response['response_text']}")
+            raise HTTPException(status_code=500, detail="Model error")
         
-        # SMS yanıtı için 450 karakter limiti uygula ve formatla
-        response_text = response.get('response_text', '') or ''
-        print(f"🔍 DEBUG: is_sms={generate_request.is_sms}, response_length={len(response_text) if response_text else 0}")
-        if generate_request.is_sms and response_text:
+        response_text = sanitize_model_output(response.get('response_text', '') or '')
+        if is_sms and response_text:
             original_length = len(response_text)
-            print(f"📱 SMS Response detected! Original length: {original_length} chars")
-            
-            # 1. Başlık ve benzeri ifadeleri kaldır (baştan)
             response_text = response_text.strip()
-            # "Resmi Yanıt", "Yanıt:", "**" gibi başlıkları temizle
             lines = response_text.split('\n')
             cleaned_lines = []
             skip_first = True
             for line in lines:
                 line_stripped = line.strip()
-                # Başlık benzeri ifadeleri atla
                 if skip_first and (line_stripped.startswith('**') or 
                                    'Resmi Yanıt' in line_stripped or 
                                    'Yanıt:' in line_stripped or
@@ -272,14 +291,9 @@ Bu cevabı genişlet, daha detaylı ve ikna edici hale getir."""
                 if line_stripped:
                     cleaned_lines.append(line_stripped)
             
-            # 2. Tüm metni tek satıra çevir (paragraf kırılmalarını kaldır)
-            response_text = ' '.join(cleaned_lines)
-            
-            # 3. Fazla boşlukları temizle (iki veya daha fazla boşluk -> tek boşluk)
             import re
+            response_text = ' '.join(cleaned_lines)
             response_text = re.sub(r'\s+', ' ', response_text).strip()
-            
-            # 4. Üç nokta karakterlerini kaldır ve 450 karakter limiti uygula
             response_text = response_text.replace('...', ' ').replace('…', ' ')
             response_text = re.sub(r'\s+', ' ', response_text).strip()
 
@@ -289,44 +303,33 @@ Bu cevabı genişlet, daha detaylı ve ikna edici hale getir."""
                     return text
                 if text.endswith(('.', '!', '?')):
                     return text
-                # Noktalama yoksa kısa bir nokta ekle
                 return text + '.'
 
-            if len(response_text) > 450:
-                trimmed = response_text[:450]
-                # Önce cümle sonu arayın
+            if len(response_text) > MAX_OUTPUT_CHARS_SMS:
+                trimmed = response_text[:MAX_OUTPUT_CHARS_SMS]
                 last_sentence_end = max(trimmed.rfind('.'), trimmed.rfind('!'), trimmed.rfind('?'))
-                if last_sentence_end >= 250:  # metnin büyük kısmı kalsın
+                if last_sentence_end >= 250:
                     response_text = trimmed[:last_sentence_end + 1]
                 else:
-                    # Kelime sınırında kes ve nokta ile bitir
                     last_space = trimmed.rfind(' ')
                     if last_space >= 250:
                         response_text = ensure_sentence_end(trimmed[:last_space])
                     else:
                         response_text = ensure_sentence_end(trimmed)
 
-            # 5. Final temizlik: 450'yi aşma ve üç nokta bırakma
             response_text = re.sub(r'\s+', ' ', response_text).strip()
-            if len(response_text) > 450:
-                response_text = response_text[:450].rstrip()
-                # Son karakter noktalama değilse ekle
+            if len(response_text) > MAX_OUTPUT_CHARS_SMS:
+                response_text = response_text[:MAX_OUTPUT_CHARS_SMS].rstrip()
                 if not response_text.endswith(('.', '!', '?')):
-                    # Son kelimeyi ezmeden bir nokta ekle, toplam <= 450 kalacak şekilde
                     response_text = response_text[:-1].rstrip() + '.'
-
-            # 6. Yanlışlıkla kalan üç nokta veya ellipsis tekrarlarını temizle
             response_text = response_text.replace('…', ' ').replace('...', ' ')
             response_text = re.sub(r'\s+', ' ', response_text).strip()
-            
-            print(f"📱 SMS Response: Original={original_length} chars, Final={len(response_text)} chars")
         
-        # Save response to database (store generation params for auditing)
         new_response = models.Response(
             request_id=generate_request.request_id,
             model_name=generate_request.model_name,
             response_text=response_text,
-            temperature=generate_request.temperature,
+            temperature=temperature,
             top_p=generate_request.top_p,
             repetition_penalty=generate_request.repetition_penalty,
             latency_ms=response['latency_ms']
@@ -334,7 +337,6 @@ Bu cevabı genişlet, daha detaylı ve ikna edici hale getir."""
         
         db.add(new_response)
         
-        # Request'in sahibini bul ve total_requests sayısını artır
         request_owner = db.query(models.User).filter(models.User.id == original_request.user_id).first()
         if request_owner:
             request_owner.total_requests += 1
@@ -346,45 +348,47 @@ Bu cevabı genişlet, daha detaylı ve ikna edici hale getir."""
             id=new_response.id,
             request_id=new_response.request_id,
             model_name=new_response.model_name,
-            response_text=response_text,  # Trim edilmiş versiyonu döndür
+            response_text=response_text,
             latency_ms=new_response.latency_ms,
             created_at=new_response.created_at
         )
     except HTTPException:
         raise
     except Exception as e:
-        import traceback
-        error_detail = traceback.format_exc()
-        print(f"❌ ERROR in generate_response: {str(e)}")
-        print(f"❌ Traceback:\n{error_detail}")
+        import logging
+        logging.getLogger(__name__).exception("generate_response failed")
         db.rollback()
-        raise HTTPException(status_code=500, detail=f"Error generating response: {str(e)}\n\nTraceback:\n{error_detail}")
+        raise HTTPException(status_code=500, detail="Error generating response")
 
 @router.post("/responses/feedback", response_model=api_models.FeedbackResponse)
-async def update_response_feedback(feedback: api_models.FeedbackRequest, db: Session = Depends(get_db)):
+async def update_response_feedback(
+    feedback: api_models.FeedbackRequest,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
     """Update response feedback (selected/copied status)"""
     try:
-        # Find the response
         response = db.query(models.Response).filter(models.Response.id == feedback.response_id).first()
         if not response:
             raise HTTPException(status_code=404, detail="Response not found")
-        
-        # Update feedback
+
+        req = db.query(models.Request).filter(models.Request.id == response.request_id).first()
+        if not req or (not current_user.is_admin and req.user_id != current_user.id):
+            raise HTTPException(status_code=403, detail="Bu yanıta erişim yetkiniz yok")
+
         response.is_selected = feedback.is_selected
         response.copied = feedback.copied
-        
         db.commit()
-        
+
         return api_models.FeedbackResponse(
             success=True,
             message="Feedback updated successfully",
-            request_id=response.request_id
         )
     except HTTPException:
         raise
     except Exception as e:
         db.rollback()
-        raise HTTPException(status_code=500, detail=f"Error updating feedback: {str(e)}")
+        raise HTTPException(status_code=500, detail="Error updating feedback")
 
 @router.get("/responses/history")
 async def get_user_response_history(
@@ -428,7 +432,7 @@ async def get_user_response_history(
             'total': len(responses)
         }
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Error getting response history: {str(e)}")
+        raise HTTPException(status_code=500, detail="İşlem tamamlanamadı")
 
 # ============================================================================
 # TEMPLATE ENDPOINTS
@@ -528,7 +532,7 @@ async def get_templates(
         )
         
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Error getting templates: {str(e)}")
+        raise HTTPException(status_code=500, detail="İşlem tamamlanamadı")
 
 @router.post("/templates", response_model=api_models.TemplateResponse)
 async def create_template(
@@ -601,7 +605,7 @@ async def create_template(
         raise
     except Exception as e:
         db.rollback()
-        raise HTTPException(status_code=500, detail=f"Error creating template: {str(e)}")
+        raise HTTPException(status_code=500, detail="İşlem tamamlanamadı")
 
 @router.delete("/templates/{template_id}")
 async def delete_template(
@@ -634,7 +638,7 @@ async def delete_template(
         raise
     except Exception as e:
         db.rollback()
-        raise HTTPException(status_code=500, detail=f"Error deleting template: {str(e)}")
+        raise HTTPException(status_code=500, detail="İşlem tamamlanamadı")
 
 @router.put("/templates/{template_id}/use")
 async def use_template(
@@ -667,7 +671,7 @@ async def use_template(
         raise
     except Exception as e:
         db.rollback()
-        raise HTTPException(status_code=500, detail=f"Error using template: {str(e)}")
+        raise HTTPException(status_code=500, detail="İşlem tamamlanamadı")
 
 # ============================================================================
 # CATEGORY ENDPOINTS
@@ -728,7 +732,7 @@ async def get_categories(
         )
         
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Error getting categories: {str(e)}")
+        raise HTTPException(status_code=500, detail="İşlem tamamlanamadı")
 
 @router.post("/categories", response_model=api_models.CategoryResponse)
 async def create_category(
@@ -777,7 +781,7 @@ async def create_category(
         raise
     except Exception as e:
         db.rollback()
-        raise HTTPException(status_code=500, detail=f"Error creating category: {str(e)}")
+        raise HTTPException(status_code=500, detail="İşlem tamamlanamadı")
 
 @router.delete("/categories/{category_id}")
 async def delete_category(
@@ -822,7 +826,7 @@ async def delete_category(
         raise
     except Exception as e:
         db.rollback()
-        raise HTTPException(status_code=500, detail=f"Error deleting category: {str(e)}")
+        raise HTTPException(status_code=500, detail="İşlem tamamlanamadı")
 
 # ============================================================================
 # ADMIN ENDPOINTS
@@ -853,7 +857,7 @@ async def get_all_departments(
     except Exception as e:
         raise HTTPException(
             status_code=500,
-            detail=f"Error getting departments: {str(e)}",
+            detail="İşlem tamamlanamadı",
         )
 
 
@@ -890,5 +894,5 @@ async def get_departments(
     except Exception as e:
         raise HTTPException(
             status_code=500,
-            detail=f"Error getting departments (admin): {str(e)}",
+            detail="İşlem tamamlanamadı",
         )

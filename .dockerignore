@@ -53,4 +53,16 @@ Dockerfile
 
 # Temporary files
 tmp/
-temp/ 
+temp/
+
+# Secrets / local data — never bake into image
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+user_sessions.json
+ai_helper_backup_*.tar.gz
+eski_chat_context*.md
+docs/PENTEST_SCOPE.md
+ 

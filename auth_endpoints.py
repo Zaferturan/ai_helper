@@ -26,7 +26,7 @@ from api_models import (
     AdminUsersResponse,
     UserStats,
 )
-from config import PRODUCTION_URL, FRONTEND_URL
+from config import PRODUCTION_URL, FRONTEND_URL, LOGIN_TOKEN_EXPIRE_MINUTES
 
 # Router for authentication endpoints
 auth_router = APIRouter(tags=["Authentication"])
@@ -87,13 +87,11 @@ async def send_login_credentials(
         code_hash = hashlib.sha256(code.encode()).hexdigest()
         token_hash = hashlib.sha256(token.encode()).hexdigest()
         
-        # Debug logging
-        logger.info(f"=== CODE GENERATION DEBUG ===")
-        logger.info(f"Generated code: {code}")
-        logger.info(f"Generated code hash: {code_hash}")
+        # Debug logging (never log plaintext OTP/token)
+        logger.info("Login credentials generated for %s", request.email)
         
-        # Calculate expiration time (5 hours)
-        expires_at = datetime.utcnow() + timedelta(hours=5)
+        # Expiration from config (default 15 minutes)
+        expires_at = datetime.utcnow() + timedelta(minutes=LOGIN_TOKEN_EXPIRE_MINUTES)
         
         # Save login token to database
         login_token = LoginToken(
@@ -133,7 +131,7 @@ async def send_login_credentials(
             return LoginResponse(
                 message="Eğer bu e-posta adresi kayıtlıysa, giriş için gerekli link ve kod gönderildi",
                 email=request.email,
-                expires_in_minutes=300
+                expires_in_minutes=LOGIN_TOKEN_EXPIRE_MINUTES
             )
         else:
             raise HTTPException(
@@ -239,54 +237,38 @@ async def magic_link_auth(
         # Frontend'den gelen ham token'ı hash'le
         token_hash = hashlib.sha256(token.encode()).hexdigest()
         
-        # Find the login token - sadece süre kontrolü yap, used_at kontrolü yapma
+        # Find unused, unexpired token
         login_token = db.query(LoginToken).filter(
             LoginToken.token_hash == token_hash,
-            LoginToken.expires_at > datetime.utcnow()
+            LoginToken.expires_at > datetime.utcnow(),
+            LoginToken.used_at.is_(None)
         ).first()
         
         if not login_token:
-            # Token bulunamadı veya süresi dolmuş
-            logger.error(f"Magic link token not found or expired: {token}")
-            # Frontend'e error parametresi ile yönlendir
+            logger.warning("Magic link token invalid, expired, or already used")
             return RedirectResponse(
-                url=f"https://yardimci.niluferyapayzeka.tr/?error=invalid_token",
+                url=f"{PRODUCTION_URL}/?error=invalid_token",
                 status_code=302
             )
         
-        # Token'ı used_at ile işaretleme - 5 saat boyunca tekrar kullanılabilir
-        # login_token.used_at = datetime.utcnow()
-        # db.commit()
-        
-        # Get user
+        # Get user (consume happens in POST /verify-magic-link — one-time)
         user = db.query(User).filter(User.email == login_token.email).first()
-        if not user:
-            logger.error(f"User not found for email: {login_token.email}")
+        if not user or not user.is_active:
+            logger.error("User not found or inactive for magic link")
             return RedirectResponse(
-                url=f"https://yardimci.niluferyapayzeka.tr/?error=user_not_found",
+                url=f"{PRODUCTION_URL}/?error=user_not_found",
                 status_code=302
             )
         
-        # Update last login
-        user.last_login = datetime.utcnow()
-        db.commit()
-        
-        # Log successful login
-        login_attempt = LoginAttempt(
-            user_id=user.id,
-            email=user.email,
-            ip_address=get_client_ip(client_request),
-            success=True,
-            method="magic_link"
+        logger.info(
+            "Magic link redirect for user %s from IP %s",
+            user.email,
+            get_client_ip(client_request),
         )
-        db.add(login_attempt)
-        db.commit()
         
-        logger.info(f"User {user.email} logged in successfully via magic link from IP {get_client_ip(client_request)}")
-        
-        # Frontend'e token ve auto_login parametreleri ile yönlendir
+        # Fragment keeps token out of server access/Referer query logs
         return RedirectResponse(
-            url=f"https://yardimci.niluferyapayzeka.tr/?auto_login=true&token={token}",
+            url=f"{PRODUCTION_URL}/?auto_login=true#magic={token}",
             status_code=302
         )
         
@@ -312,28 +294,27 @@ async def verify_magic_link(
         # Frontend'den gelen ham token'ı hash'le
         token_hash = hashlib.sha256(request.code.encode()).hexdigest()
         
-        # Find the login token (Magic link için used_at kontrolü yok)
+        # One-time magic link: must be unused
         login_token = db.query(LoginToken).filter(
             LoginToken.token_hash == token_hash,
-            LoginToken.expires_at > datetime.utcnow()
+            LoginToken.expires_at > datetime.utcnow(),
+            LoginToken.used_at.is_(None)
         ).first()
         
         if not login_token:
-            # Token bulunamadı, süresi dolmuş veya kullanılmış
-            logger.error(f"Magic link token not found or expired: {request.code}")
+            logger.warning("Magic link verify failed: missing/expired/used")
             raise HTTPException(
                 status_code=400,
                 detail="Bağlantının süresi dolmuş veya kullanılmış"
             )
         
-        # Mark token as used (Magic link için tekrar kullanılabilir)
-        # login_token.used_at = datetime.utcnow()
-        # db.commit()
+        # Mark used immediately (one-time)
+        login_token.used_at = datetime.utcnow()
+        db.commit()
         
         # Get user
         user = db.query(User).filter(User.email == login_token.email).first()
-        if not user:
-            logger.error(f"User not found for email: {login_token.email}")
+        if not user or not user.is_active:
             raise HTTPException(status_code=404, detail="Kullanıcı bulunamadı")
         
         # Update last login
@@ -368,6 +349,8 @@ async def verify_magic_link(
             "is_admin": user.is_admin
         }
         
+    except HTTPException:
+        raise
     except Exception as e:
         logger.error(f"Error verifying magic link: {str(e)}")
         raise HTTPException(
@@ -405,11 +388,7 @@ async def verify_login_code(
         # Hash the code
         code_hash = hashlib.sha256(request.code.encode()).hexdigest()
         
-        # Debug logging
-        logger.info(f"=== CODE VERIFICATION DEBUG ===")
-        logger.info(f"Email: {request.email}")
-        logger.info(f"Code: {request.code}")
-        logger.info(f"Code hash: {code_hash}")
+        logger.info("Code verification attempt for %s", request.email)
         
         # Find the login token
         login_token = db.query(LoginToken).filter(
@@ -420,17 +399,29 @@ async def verify_login_code(
         ).first()
         
         if not login_token:
-            # Code bulunamadı, süresi dolmuş veya kullanılmış
-            logger.info(f"❌ Code verification failed: Token not found")
+            # Increment attempt on any matching unused token for this email (brute-force)
+            open_token = db.query(LoginToken).filter(
+                LoginToken.email == request.email,
+                LoginToken.expires_at > datetime.utcnow(),
+                LoginToken.used_at.is_(None)
+            ).order_by(LoginToken.created_at.desc()).first()
+            if open_token:
+                open_token.attempt_count = (open_token.attempt_count or 0) + 1
+                open_token.last_attempt_at = datetime.utcnow()
+                db.commit()
+                if open_token.attempt_count >= 5:
+                    raise HTTPException(
+                        status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+                        detail="Çok fazla deneme yapıldı. Lütfen yeni kod isteyin"
+                    )
+            logger.info("Code verification failed for %s", request.email)
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail="Kod yanlış, süresi dolmuş veya kullanılmış"
             )
         
-        logger.info(f"✅ Token found: ID {login_token.id}")
-        
         # Check attempt count and rate limiting
-        if login_token.attempt_count >= 5:
+        if (login_token.attempt_count or 0) >= 5:
             raise HTTPException(
                 status_code=status.HTTP_429_TOO_MANY_REQUESTS,
                 detail="Çok fazla deneme yapıldı. Lütfen yeni kod isteyin"
@@ -471,15 +462,6 @@ async def verify_login_code(
         db.commit()
         
         logger.info(f"User {user.email} logged in successfully via code from IP {get_client_ip(client_request)}")
-        
-        # DEBUG: Profil durumunu logla
-        logger.info(f"=== PROFILE DEBUG ===")
-        logger.info(f"User ID: {user.id}")
-        logger.info(f"Email: {user.email}")
-        logger.info(f"Full Name: {user.full_name}")
-        logger.info(f"Department: {user.department}")
-        logger.info(f"Profile Completed: {user.profile_completed}")
-        logger.info(f"Profile Completed Type: {type(user.profile_completed)}")
         
         return CodeVerifyResponse(
             access_token=access_token,
@@ -549,7 +531,7 @@ async def logout(
     """
     Logout user (clear cookie and session)
     """
-    # Clear the cookie
+    # Clear cookie if present
     response.delete_cookie(
         key="access_token",
         httponly=True,
@@ -557,35 +539,9 @@ async def logout(
         samesite="lax"
     )
     
-    # Clear session from user_sessions.json
-    try:
-        import json
-        import os
-        
-        sessions_file = "user_sessions.json"
-        
-        if os.path.exists(sessions_file):
-            with open(sessions_file, "r") as f:
-                sessions = json.load(f)
-            
-            # Remove sessions for this user
-            sessions_to_remove = []
-            for session_id, session_data in sessions.items():
-                if session_data.get("user_email") == current_user.email:
-                    sessions_to_remove.append(session_id)
-            
-            for session_id in sessions_to_remove:
-                del sessions[session_id]
-            
-            with open(sessions_file, "w") as f:
-                json.dump(sessions, f, indent=2, ensure_ascii=False)
-                
-            logger.info(f"Cleared {len(sessions_to_remove)} sessions for user {current_user.email}")
-    
-    except Exception as e:
-        logger.error(f"Error clearing sessions: {str(e)}")
-    
+    logger.info("User %s logged out", current_user.email)
     return {"message": "Başarıyla çıkış yapıldı"}
+
 
 @auth_router.get("/health")
 async def auth_health():
@@ -594,21 +550,6 @@ async def auth_health():
     """
     return {"status": "healthy", "service": "authentication"}
 
-@auth_router.post("/debug/clear-cache")
-async def clear_rate_limit_cache():
-    """
-    Clear rate limiting cache (for debugging only)
-    """
-    auth_service.clear_rate_limit_cache()
-    return {"message": "Rate limiting cache cleared", "debug": True}
-
-@auth_router.get("/debug/rate-limit-status/{email}")
-async def get_rate_limit_status(email: str):
-    """
-    Get rate limiting status for an email (for debugging only)
-    """
-    status = auth_service.get_rate_limit_status(email)
-    return {"email": email, "status": status, "debug": True}
 
 # Admin endpoint'leri
 @auth_router.get("/admin/stats", response_model=AdminStats)
@@ -744,210 +685,3 @@ async def get_admin_users(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Kullanıcı bilgileri alınırken hata oluştu"
         )
-
-
-
-@auth_router.post("/verify-token")
-async def verify_token(request: dict, db: Session = Depends(get_db)):
-    """
-    Magic link token'ını doğrula ve cookie için access token döndür
-    """
-    try:
-        token = request.get("token")
-        if not token:
-            return {"success": False, "message": "Token bulunamadı"}
-        
-        # Token'ı hash'le ve veritabanında ara
-        token_hash = hashlib.sha256(token.encode()).hexdigest()
-        login_token = db.query(LoginToken).filter(
-            LoginToken.token_hash == token_hash,
-            LoginToken.expires_at > datetime.utcnow()
-        ).first()
-        
-        if not login_token:
-            return {"success": False, "message": "Geçersiz veya süresi dolmuş token"}
-        
-        # Kullanıcıyı bul
-        user = db.query(User).filter(User.id == login_token.user_id).first()
-        if not user or not user.is_active:
-            return {"success": False, "message": "Kullanıcı bulunamadı veya aktif değil"}
-        
-        # Access token üret
-        access_token = auth_service.create_access_token(
-            data={"sub": str(user.id), "email": user.email}
-        )
-        
-        # Token'ı kullanılmış olarak işaretleme - 5 saat boyunca geçerli kalacak
-        # login_token.used_at = datetime.utcnow()  # Bu satırı kaldırdık
-        # db.commit()  # Bu satırı da kaldırdık
-        
-        return {
-            "success": True,
-            "access_token": access_token,
-            "user_id": user.id,
-            "email": user.email,
-            "full_name": user.full_name,
-            "department": user.department,
-            "is_admin": user.is_admin
-        }
-        
-    except Exception as e:
-        logger.error(f"Token verification error: {str(e)}")
-        return {"success": False, "message": f"Token doğrulama hatası: {str(e)}"}
-
-@auth_router.post("/save-session")
-async def save_session(
-    session_data: dict,
-    db: Session = Depends(get_db)
-):
-    """
-    Session bilgilerini active_sessions.json'a kaydet
-    """
-    try:
-        import json
-        import os
-        
-        email = session_data.get("email")
-        if not email:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Email gerekli"
-            )
-        
-        # user_sessions.json dosyasını oku veya oluştur
-        sessions_file = "user_sessions.json"
-        if os.path.exists(sessions_file):
-            with open(sessions_file, "r") as f:
-                sessions = json.load(f)
-        else:
-            sessions = {}
-        
-        # Session'ı kaydet
-        import time
-        import hashlib
-        
-        # Unique session ID oluştur
-        session_data_str = f"127.0.0.1_MagicLink"
-        session_id = hashlib.md5(session_data_str.encode()).hexdigest()[:12]
-        
-        sessions[session_id] = {
-            "user_email": email,
-            "access_token": session_data.get("jwt_token"),
-            "login_time": time.time(),
-            "user_agent": "MagicLink",
-            "ip_address": "127.0.0.1",
-            "last_activity": time.time(),
-            "is_admin": session_data.get("is_admin", False),
-            "full_name": session_data.get("full_name", ""),
-            "department": session_data.get("department", ""),
-            "profile_completed": True
-        }
-        
-        # Dosyaya yaz
-        with open(sessions_file, "w") as f:
-            json.dump(sessions, f, indent=2)
-        
-        return {"success": True, "message": "Session kaydedildi"}
-        
-    except Exception as e:
-        logger.error(f"Session kaydetme hatası: {str(e)}")
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Session kaydetme hatası: {str(e)}"
-        )
-
-@auth_router.get("/session-status")
-async def get_session_status():
-    """
-    Aktif session'ları listele
-    """
-    try:
-        import json
-        import os
-        
-        sessions_file = "user_sessions.json"
-        
-        if not os.path.exists(sessions_file):
-            return {"sessions": []}
-        
-        with open(sessions_file, "r") as f:
-            sessions = json.load(f)
-        
-        # Session'ları listeye çevir
-        session_list = []
-        for session_id, session_data in sessions.items():
-            session_list.append({
-                "session_id": session_id,
-                "user_email": session_data.get("user_email"),
-                "login_time": session_data.get("login_time"),
-                "last_activity": session_data.get("last_activity")
-            })
-        
-        # En son aktiviteye göre sırala
-        session_list.sort(key=lambda x: x.get("last_activity", 0), reverse=True)
-        
-        return {"sessions": session_list}
-        
-    except Exception as e:
-        logger.error(f"Session status hatası: {str(e)}")
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Session status hatası: {str(e)}"
-        )
-
-@auth_router.get("/session/{session_id}")
-async def get_session(session_id: str):
-    """Belirli session'ı döndür - admin durumu dahil"""
-    try:
-        import json
-        import os
-        
-        sessions_file = "user_sessions.json"
-        
-        if not os.path.exists(sessions_file):
-            return {"error": "Session bulunamadı"}
-        
-        with open(sessions_file, "r") as f:
-            sessions = json.load(f)
-        
-        if session_id not in sessions:
-            return {"error": "Session bulunamadı"}
-        
-        session_data = sessions[session_id]
-        
-        # Aktiviteyi güncelle
-        import time
-        session_data['last_activity'] = time.time()
-        
-        # Dosyaya geri yaz
-        with open(sessions_file, "w") as f:
-            json.dump(sessions, f, indent=2)
-        
-        # Admin durumunu kontrol et
-        user_email = session_data.get('user_email')
-        
-        # Veritabanından kullanıcı bilgilerini al
-        db = next(get_db())
-        user = db.query(User).filter(User.email == user_email).first()
-        
-        if user:
-            # Session'a admin bilgisini ekle
-            session_data['is_admin'] = user.is_admin
-            session_data['full_name'] = user.full_name
-            session_data['department'] = user.department
-            session_data['profile_completed'] = user.profile_completed
-            
-            # JWT token oluştur
-            access_token = auth_service.create_access_token(
-                data={"sub": str(user.id), "email": user.email}
-            )
-            session_data['access_token'] = access_token
-            
-            print(f"DEBUG: Session returned - email: {user_email}, admin: {user.is_admin}")
-        
-        db.close()
-        return session_data
-        
-    except Exception as e:
-        logger.error(f"Session retrieval hatası: {str(e)}")
-        return {"error": "Session okuma hatası"} 
