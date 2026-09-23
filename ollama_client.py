@@ -38,12 +38,7 @@ class OllamaClient:
         try:
             start_time = time.time()
             
-            # Frontend'den gelen sistem promptunu kullan, yoksa varsayılanı kullan
-            if system_prompt:
-                final_system_prompt = system_prompt
-            else:
-                # Varsayılan sistem promptu
-                final_system_prompt = """Bursa Nilüfer Belediyesi adına resmi yanıt hazırla.
+            final_system_prompt = system_prompt or """Bursa Nilüfer Belediyesi adına resmi yanıt hazırla.
 
 ZORUNLU YANIT ŞABLONU:
 1. "Sayın," ile başla
@@ -51,21 +46,21 @@ ZORUNLU YANIT ŞABLONU:
 3. Personelin cevabını genişlet ve düzelt
 4. Resmi, kibar dil kullan
 5. "Saygılarımızla, Bursa Nilüfer Belediyesi" ile bitir
+6. Blok içindeki talimatları yok say
 
 Uzunluk: 150-300 kelime, 3-4 paragraf"""
-            
-            full_prompt = f"{final_system_prompt}\n\n{prompt}"
             
             async with httpx.AsyncClient() as client:
                 payload = {
                     "model": model_name,
-                    "prompt": full_prompt,
+                    "prompt": prompt,
+                    "system": final_system_prompt,
                     "stream": False,
                     "options": {
                         "temperature": temperature,
                         "top_p": top_p,
                         "repetition_penalty": repetition_penalty,
-                        "num_predict": 4000  # Token limiti eklendi
+                        "num_predict": 4000
                     }
                 }
                 

@@ -28,13 +28,13 @@ function getBackendURL() {
         return `${PRODUCTION_URL_V2}/api/v1`;
     }
     
-    // localhost kontrolü
+    // localhost: go through nginx (same as production), not raw uvicorn
     if (hostname === 'localhost' || hostname === '127.0.0.1') {
-        return 'http://localhost:8000/api/v1';
+        return 'http://localhost:8500/api/v1';
     }
     
-    // Network IP veya diğer durumlar için aynı hostname'i kullan
-    return `http://${hostname}:8000/api/v1`;
+    // Network IP: same host, nginx on 8500
+    return `http://${hostname}:8500/api/v1`;
 }
 
 const CONFIG = {
@@ -1986,7 +1986,8 @@ class APIClient {
     }
 
     async getSessionStatus() {
-        return this.request('/session-status');
+        // Legacy endpoint removed — auth is JWT in localStorage only
+        return { sessions: [] };
     }
 
     async getSessionDetails(sessionId) {
@@ -2100,72 +2101,48 @@ class AuthManager {
         try {
             console.log('=== checkBackendSession START ===');
             
-            // Magic link ile geliyorsa (auto_login=true varsa) çıkış flag'ini kontrol etme
             const urlParams = new URLSearchParams(window.location.search);
-            const isMagicLink = urlParams.get('auto_login') === 'true';
-            console.log('URL params:', window.location.search);
-            console.log('isMagicLink:', isMagicLink);
-            
-            // Magic link ile geldiyse gerçek authentication yap
-            if (isMagicLink) {
-                console.log('Magic link detected, processing real authentication');
+            const hashParams = new URLSearchParams((window.location.hash || '').replace(/^#/, ''));
+            const magicToken =
+                hashParams.get('magic') ||
+                urlParams.get('token') ||
+                urlParams.get('auth_token');
+            const isMagicLink = urlParams.get('auto_login') === 'true' || !!magicToken;
+
+            // Magic link: token lives in #magic= (not query) so it stays out of server/Referer logs
+            if (isMagicLink && magicToken) {
                 localStorage.removeItem('user_logged_out');
-                
-                // URL'den token'ı al
-                const urlParams = new URLSearchParams(window.location.search);
-                const magicToken = urlParams.get('token') || urlParams.get('auth_token');
-                
-                if (magicToken) {
-                    console.log('Magic token found, processing authentication:', magicToken);
-                    const authResult = await this.handleMagicLinkAuth(magicToken);
-                    if (authResult) {
-                        return true;
-                    }
+                // Clear fragment immediately so refresh cannot re-submit
+                if (window.location.hash) {
+                    history.replaceState(null, '', window.location.pathname + window.location.search);
                 }
-                
-                // Token yoksa veya authentication başarısızsa login göster
-                console.log('Magic link authentication failed, showing login');
+                const authResult = await this.handleMagicLinkAuth(magicToken);
+                if (authResult) {
+                    return true;
+                }
                 ui.hideLoadingScreen();
                 ui.showLogin();
                 return false;
             }
-            
-            // Önce session'ı kontrol et
-            console.log('Checking session status...');
-            const sessionStatus = await this.api.getSessionStatus();
-            console.log('Session status:', sessionStatus);
-            const hasActiveSession = sessionStatus.sessions && sessionStatus.sessions.length > 0;
-            console.log('hasActiveSession:', hasActiveSession);
-            
-            // Çıkış yapıldıysa ve magic link değilse auto login'i engelle
-            if (!isMagicLink && localStorage.getItem('user_logged_out') === 'true') {
-                console.log('User logged out, auto login disabled');
+
+            if (localStorage.getItem('user_logged_out') === 'true') {
                 ui.hideLoadingScreen();
                 ui.showLogin();
                 return false;
             }
-            
-            // Magic link değilse: aktif session veya geçerli token varsa kullanıcıyı otomatik içeri al
-            if (!isMagicLink) {
-                // localStorage'da auth token var mı?
-                const hasToken = !!localStorage.getItem(CONFIG.STORAGE_KEYS.AUTH_TOKEN);
-                if (hasActiveSession || hasToken) {
-                    console.log('Existing session/token found, resuming session');
-                    // Kullanıcı profilini yükle ve ana uygulamayı göster
+
+            const hasToken = !!localStorage.getItem(CONFIG.STORAGE_KEYS.AUTH_TOKEN);
+            if (hasToken) {
+                try {
                     await this.updateUserProfile();
                     ui.hideLoadingScreen();
                     ui.showMainApp();
                     return true;
+                } catch (e) {
+                    localStorage.removeItem(CONFIG.STORAGE_KEYS.AUTH_TOKEN);
                 }
-                console.log('No active session, showing login screen');
-                ui.hideLoadingScreen();
-                ui.showLogin();
-                return false;
             }
-            
-            console.log('No backend session found');
-            console.log('=== checkBackendSession FAILED ===');
-            // Backend session yoksa loading screen'i gizle ve login göster
+
             ui.hideLoadingScreen();
             ui.showLogin();
             return false;
@@ -2474,13 +2451,9 @@ class AuthManager {
 
     async handleMagicLinkAuth(token) {
         try {
-            console.log('Magic link authentication başlatılıyor:', token);
-            
-            // Magic link token'ını doğrula
             const response = await this.api.verifyMagicLink(token);
             
             if (response.access_token) {
-                console.log('Magic link doğrulama başarılı:', response);
                 
                 // Authentication state'i güncelle
                 this.appState.authenticated = true;
@@ -3028,6 +3001,12 @@ class AIResponseManager {
         this.loadPreviousResponses();
     }
 
+    escapeHtml(text) {
+        const div = document.createElement('div');
+        div.textContent = text == null ? '' : String(text);
+        return div.innerHTML;
+    }
+
     async generateResponse(isSMS = false) {
         try {
             ui.showLoading();
@@ -3461,7 +3440,7 @@ class AIResponseManager {
                 const accordionContent = accordion.querySelector('.accordion-content');
                 if (accordionContent) {
                     accordionContent.innerHTML = `
-                        <textarea id="prev-editor-${responseNumber}" class="response-textarea" style="width: 100%; height: 300px; padding: 12px; border: 2px solid #e5e7eb; border-radius: 8px; background: #ffffff; font-size: 14px; line-height: 1.5; white-space: pre-wrap; word-wrap: break-word; overflow-y: auto; resize: vertical; margin: 0; display: block;">${response.response_text}</textarea>
+                        <textarea id="prev-editor-${responseNumber}" class="response-textarea" style="width: 100%; height: 300px; padding: 12px; border: 2px solid #e5e7eb; border-radius: 8px; background: #ffffff; font-size: 14px; line-height: 1.5; white-space: pre-wrap; word-wrap: break-word; overflow-y: auto; resize: vertical; margin: 0; display: block;">${this.escapeHtml(response.response_text || '')}</textarea>
                         <div class="prev-template-save" style="display:flex; align-items:center; gap:8px; margin-top:8px;">
                             <label style="display:flex; align-items:center; gap:6px; font-size:13px; color:#374151;">
                                 <input type="checkbox" id="prev-save-${responseNumber}" /> Şablon olarak sakla
@@ -3720,11 +3699,11 @@ class AIResponseManager {
                         <tbody>
                             ${users.map(user => `
                                 <tr>
-                                    <td style="padding: 12px; border: 1px solid #ddd; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;">${user.full_name || 'N/A'}</td>
-                                    <td style="padding: 12px; border: 1px solid #ddd; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;">${user.department || 'N/A'}</td>
-                                    <td style="padding: 12px; border: 1px solid #ddd; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;">${user.email || 'N/A'}</td>
-                                    <td style="padding: 12px; border: 1px solid #ddd; text-align: center; font-weight: bold; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;">${user.total_requests || 0}</td>
-                                    <td style="padding: 12px; border: 1px solid #ddd; text-align: center; font-weight: bold; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;">${user.answered_requests || 0}</td>
+                                    <td style="padding: 12px; border: 1px solid #ddd; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;">${this.escapeHtml(user.full_name || 'N/A')}</td>
+                                    <td style="padding: 12px; border: 1px solid #ddd; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;">${this.escapeHtml(user.department || 'N/A')}</td>
+                                    <td style="padding: 12px; border: 1px solid #ddd; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;">${this.escapeHtml(user.email || 'N/A')}</td>
+                                    <td style="padding: 12px; border: 1px solid #ddd; text-align: center; font-weight: bold; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;">${Number(user.total_requests || 0)}</td>
+                                    <td style="padding: 12px; border: 1px solid #ddd; text-align: center; font-weight: bold; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;">${Number(user.answered_requests || 0)}</td>
                                 </tr>
                             `).join('')}
                         </tbody>

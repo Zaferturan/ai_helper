@@ -26,8 +26,8 @@ COPY frontend/ /usr/share/nginx/html/
 # Nginx konfigürasyonu
 COPY nginx.conf /etc/nginx/sites-available/default
 
-# Port'ları aç
-EXPOSE 8000 80
+# Port — only nginx publicly mapped via compose (8500:80)
+EXPOSE 80
 
 # Volume'ları mount et
 VOLUME ["/app/data", "/app/logs"]

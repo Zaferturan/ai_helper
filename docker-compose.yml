@@ -6,13 +6,18 @@ services:
     container_name: ai_helper_container_v2
     restart: unless-stopped
     ports:
-      - "8000:8000"
+      # Public: nginx only. Uvicorn stays internal (127.0.0.1:8000 in container).
       - "8500:80"
     volumes:
       - ai_helper_data_v2:/app/data
       - ai_helper_logs_v2:/app/logs
     networks:
       - monitoring
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://127.0.0.1:80/ >/dev/null || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
 
 volumes:
   ai_helper_data_v2:
