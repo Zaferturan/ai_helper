@@ -27,7 +27,10 @@ gemini_client = GeminiClient()
 openai_client = OpenAIClient()
 
 @router.get("/models", response_model=List[api_models.ModelInfo])
-async def get_models(db: Session = Depends(get_db)):
+async def get_models(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
     """Get available models from OpenAI gateway, Gemini and Ollama; sync with database"""
     try:
         all_models = []
