@@ -3,8 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AI Yardımcı - Nilüfer Belediyesi</title>
-    <link rel="stylesheet" href="style.css?v=20251031-17">
+    <title>İstek Öneri Yardımcısı - Nilüfer Belediyesi</title>
+    <link rel="stylesheet" href="style.css?v=20261023-help1">
 </head>
 <body>
     <!-- Loading Screen -->
@@ -20,22 +20,29 @@
             <div class="login-card">
                 <div class="login-header">
                     <img src="logo.png" alt="Nilüfer Belediyesi" class="logo">
-                    <h1>AI Yardımcı</h1>
-                    <p>Nilüfer Belediyesi Yapay Zeka Asistanı</p>
+                    <h1>İstek Öneri Yardımcısı</h1>
                 </div>
                 
                 <div class="login-content">
-                    <h2>E-posta ile Giriş</h2>
-                    <p class="instruction">E-posta adresinizi girin, size giriş kodu gönderelim.</p>
+                    <p class="instruction instruction-emphasis">Bilgisayar/epostanızı açarken kullandığınız kullanıcı adı ve şifreyi kullanın.</p>
                     
-                    <div class="form-group">
-                        <input type="email" id="email-input" placeholder="ornek@nilufer.bel.tr" required>
-                    </div>
-                    
-                    <button id="send-btn" class="btn btn-primary">
-                        <span id="send-text">📧 Bağlantı ve Kod Gönder</span>
-                        <span id="send-spinner" class="spinner hidden">📧 Gönderiliyor...</span>
-                    </button>
+                    <form id="ad-login-form" autocomplete="on">
+                        <div class="form-group">
+                            <label for="username-input">Kullanıcı adı</label>
+                            <input type="text" id="username-input" name="username" autocomplete="username"
+                                   placeholder="ornek.kullanici" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="password-input">Şifre</label>
+                            <input type="password" id="password-input" name="password" autocomplete="current-password"
+                                   required>
+                        </div>
+                        
+                        <button type="submit" id="login-btn" class="btn btn-primary">
+                            <span id="login-text">Giriş Yap</span>
+                            <span id="login-spinner" class="spinner hidden">Giriş yapılıyor...</span>
+                        </button>
+                    </form>
                     
                     <div id="login-error" class="error-message hidden"></div>
                 </div>
@@ -43,31 +50,8 @@
         </div>
     </div>
 
-    <!-- Code Verification Screen -->
-    <div id="code-screen" class="screen hidden">
-        <div class="main-wrapper">
-            <div class="login-card">
-                <div class="login-header">
-                    <h1>Kod Doğrulama</h1>
-                    <p>E-postanıza gönderilen kodu girin</p>
-                    <div class="email-info" style="display: none; color: #666; font-size: 14px; margin-top: 10px;"></div>
-                </div>
-                
-                <div class="login-content">
-                    <div class="form-group">
-                        <input type="text" id="code-input" placeholder="6 haneli kod" maxlength="6" required>
-                    </div>
-                    
-                    <button id="verify-btn" class="btn btn-primary">
-                        <span id="verify-text">✅ Kodu Doğrula</span>
-                        <span id="verify-spinner" class="spinner hidden">✅ Doğrulanıyor...</span>
-                    </button>
-                    
-                    <div id="code-error" class="error-message hidden"></div>
-                </div>
-            </div>
-        </div>
-    </div>
+    <!-- Code Verification Screen (legacy, unused) -->
+    <div id="code-screen" class="screen hidden" aria-hidden="true"></div>
 
     <!-- Profile Completion Screen -->
     <div id="profile-screen" class="screen hidden">
@@ -111,13 +95,19 @@
                         <button id="templates-btn" class="btn btn-nav">📂 Şablonlarım</button>
                     </div>
                     <div class="banner-text">
-                        <h1>AI Yardımcı</h1>
+                        <h1>İstek Öneri Yardımcısı</h1>
                         <p>Nilüfer Belediyesi - Yapay Zeka Destekli Yanıt Üretim Sistemi</p>
                     </div>
                     <div class="banner-user-area">
                         <div class="banner-user-info">
                             <div class="user-name" id="user-profile">👤 Kullanıcı</div>
                         </div>
+                        <a href="/istek_oneri_yardimcisi_klavuz.pdf"
+                           class="btn-help"
+                           target="_blank"
+                           rel="noopener noreferrer"
+                           aria-label="Kullanım kılavuzu"
+                           data-tooltip="Kullanım kılavuzu (PDF)">?</a>
                         <button id="logout-btn" class="btn btn-secondary">🚪 Çıkış Yap</button>
                     </div>
                 </div>
@@ -125,7 +115,7 @@
 
             <!-- Admin İstatistikler Akordeonu -->
             <div id="admin-panel" class="admin-panel hidden">
-                <div class="accordion-header" onclick="toggleAdminPanel()">
+                <div class="accordion-header" data-action="toggle-admin-panel" role="button" tabindex="0">
                     <h3>📊 İstatistikler</h3>
                     <span class="accordion-icon">▼</span>
                 </div>
@@ -159,7 +149,7 @@
 
                         <!-- Yanıt Ayarları Akordeonu -->
                         <div id="response-settings" class="settings-accordion">
-                            <div class="accordion-header" onclick="toggleSettings()">
+                            <div class="accordion-header" data-action="toggle-settings" role="button" tabindex="0">
                                 <h3>⚙️ Yanıt Ayarları</h3>
                                 <span class="accordion-icon">▼</span>
                             </div>
@@ -211,10 +201,10 @@
                                 <div id="main-response" class="response-content">Henüz yanıt üretilmedi...</div>
                             </div>
                             <!-- Şablon Kaydetme Alanı -->
-                            <div id="save-template-section" class="save-template-section" style="display: none;">
+                            <div id="save-template-section" class="save-template-section hidden">
                                 <div class="template-save-header">
                                     <label class="checkbox-label">
-                                        <input type="checkbox" id="save-as-template" class="template-checkbox" style="display: none;">
+                                        <input type="checkbox" id="save-as-template" class="template-checkbox is-visually-hidden">
                                         <span class="checkmark"></span>
                                         ☑ Şablon olarak sakla
                                     </label>
@@ -256,7 +246,7 @@
                             <!-- Önceki yanıtlar için accordion'lar (Gradio app.py'den) -->
                             <div class="previous-accordions">
                                 <div id="prev-accordion-1" class="previous-accordion hidden">
-                                    <div class="accordion-header" onclick="toggleAccordion('prev-content-1')">
+                                    <div class="accordion-header" data-action="toggle-accordion" data-target="prev-content-1" role="button" tabindex="0">
                                         <span class="accordion-title">📄 Yanıt #1</span>
                                         <span class="accordion-icon">▼</span>
                                     </div>
@@ -267,7 +257,7 @@
                                 </div>
                                 
                                 <div id="prev-accordion-2" class="previous-accordion hidden">
-                                    <div class="accordion-header" onclick="toggleAccordion('prev-content-2')">
+                                    <div class="accordion-header" data-action="toggle-accordion" data-target="prev-content-2" role="button" tabindex="0">
                                         <span class="accordion-title">📄 Yanıt #2</span>
                                         <span class="accordion-icon">▼</span>
                                     </div>
@@ -278,7 +268,7 @@
                                 </div>
                                 
                                 <div id="prev-accordion-3" class="previous-accordion hidden">
-                                    <div class="accordion-header" onclick="toggleAccordion('prev-content-3')">
+                                    <div class="accordion-header" data-action="toggle-accordion" data-target="prev-content-3" role="button" tabindex="0">
                                         <span class="accordion-title">📄 Yanıt #3</span>
                                         <span class="accordion-icon">▼</span>
                                     </div>
@@ -289,7 +279,7 @@
                                 </div>
                                 
                                 <div id="prev-accordion-4" class="previous-accordion hidden">
-                                    <div class="accordion-header" onclick="toggleAccordion('prev-content-4')">
+                                    <div class="accordion-header" data-action="toggle-accordion" data-target="prev-content-4" role="button" tabindex="0">
                                         <span class="accordion-title">📄 Yanıt #4</span>
                                         <span class="accordion-icon">▼</span>
                                     </div>
@@ -327,6 +317,12 @@
                         <div class="banner-user-info">
                             <div class="user-name" id="user-profile-templates">👤 Kullanıcı</div>
                         </div>
+                        <a href="/istek_oneri_yardimcisi_klavuz.pdf"
+                           class="btn-help"
+                           target="_blank"
+                           rel="noopener noreferrer"
+                           aria-label="Kullanım kılavuzu"
+                           data-tooltip="Kullanım kılavuzu (PDF)">?</a>
                         <button id="logout-btn-templates" class="btn btn-secondary">🚪 Çıkış Yap</button>
                     </div>
                 </div>
@@ -492,10 +488,10 @@
                         </div>
                         <div class="form-group">
                             <label for="template-edit-text">İçerik</label>
-                            <textarea id="template-edit-text" style="width:100%; height:240px;"></textarea>
+                            <textarea id="template-edit-text" class="template-edit-textarea"></textarea>
                         </div>
 
-                        <div class="template-save-header" style="margin-top:8px;">
+                        <div class="template-save-header mt-8">
                             <label class="checkbox-label">
                                 <input type="checkbox" id="template-edit-save-checkbox" class="template-checkbox">
                                 <span class="checkmark"></span>
@@ -523,7 +519,7 @@
                             </div>
                         </div>
 
-                        <div class="modal-actions" style="margin-top:12px;">
+                        <div class="modal-actions mt-12">
                             <button id="template-edit-copy" class="btn btn-primary">📋 Seç ve Kopyala</button>
                             <button id="template-edit-cancel" class="btn btn-secondary">İptal</button>
                         </div>
@@ -539,6 +535,6 @@
     </div>
 
     <!-- Scripts -->
-    <script src="app.js?v=20251031-11"></script>
+    <script src="app.js?v=20261023-help1"></script>
 </body>
 </html>

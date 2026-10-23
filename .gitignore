@@ -1,5 +1,18 @@
-# Environment variables
+# Environment variables / secrets (never commit)
 .env
+.env.*
+.env_*
+.env.backup
+.env*.backup
+!.env.example
+!.env*.example
+*.pem
+*.key
+*.p12
+*.pfx
+credentials.json
+secrets.json
+**/secrets/
 
 # Python
 __pycache__/
@@ -54,6 +67,9 @@ Thumbs.db
 
 # Logs
 *.log
+
+# ZAP / pen-test generated reports
+docs/zap-reports/
 
 # Streamlit
 .streamlit/

@@ -11,35 +11,15 @@
  */
 
 // Configuration
-// Backend URL'i dinamik olarak belirle:
-// - Production domain'inde ise PRODUCTION_URL kullan
-// - localhost'ta ise localhost:12000 kullan
-// - Network IP'de ise aynı hostname:12000 kullan
+// Always same-origin /api/v1 (nginx proxies to uvicorn). Avoids Failed to fetch
+// when the public host is not in a hard-coded domain list (mixed content / wrong port).
 function getBackendURL() {
-    const hostname = window.location.hostname;
-    const PRODUCTION_URL = 'https://yardimci.niluferyapayzeka.tr';
-    const PRODUCTION_URL_V2 = 'https://yardimci2.niluferyapayzeka.tr';
-    
-    // Production domain kontrolü (yardimci ve yardimci2)
-    if (hostname === 'yardimci.niluferyapayzeka.tr' || hostname.includes('yardimci.niluferyapayzeka.tr')) {
-        return `${PRODUCTION_URL}/api/v1`;
-    }
-    if (hostname === 'yardimci2.niluferyapayzeka.tr' || hostname.includes('yardimci2.niluferyapayzeka.tr')) {
-        return `${PRODUCTION_URL_V2}/api/v1`;
-    }
-    
-    // localhost: go through nginx (same as production), not raw uvicorn
-    if (hostname === 'localhost' || hostname === '127.0.0.1') {
-        return 'http://localhost:8500/api/v1';
-    }
-    
-    // Network IP: same host, nginx on 8500
-    return `http://${hostname}:8500/api/v1`;
+    return `${window.location.origin}/api/v1`;
 }
 
 const CONFIG = {
     BACKEND_URL: getBackendURL(),
-    PRODUCTION_URL: 'https://yardimci.niluferyapayzeka.tr',
+    PRODUCTION_URL: window.location.origin,
     STORAGE_KEYS: {
         AUTH_TOKEN: 'auth_token',
         USER_EMAIL: 'user_email',
@@ -109,23 +89,15 @@ class TemplateSaveManager {
 
     showTemplateSaveSection() {
         const saveSection = document.getElementById('save-template-section');
-        const checkbox = document.getElementById('save-as-template');
         if (saveSection) {
-            saveSection.style.display = 'block';
-        }
-        if (checkbox) {
-            checkbox.style.display = 'block';
+            saveSection.classList.remove('hidden');
         }
     }
 
     hideTemplateSaveSection() {
         const saveSection = document.getElementById('save-template-section');
-        const checkbox = document.getElementById('save-as-template');
         if (saveSection) {
-            saveSection.style.display = 'none';
-        }
-        if (checkbox) {
-            checkbox.style.display = 'none';
+            saveSection.classList.add('hidden');
         }
         this.hideCategorySection();
     }
@@ -349,7 +321,7 @@ class TemplateSaveManager {
             <div class="toast-content">
                 <span class="toast-icon">${icons[type] || icons.success}</span>
                 <span class="toast-message">${this.escapeHtml(message)}</span>
-                <button class="toast-close" onclick="this.parentElement.parentElement.remove()">&times;</button>
+                <button type="button" class="toast-close" data-action="toast-close" aria-label="Kapat">&times;</button>
             </div>
         `;
 
@@ -813,8 +785,8 @@ class TemplatesManager {
                     <div class="skeleton-category"></div>
                 </div>
                 <div class="template-actions">
-                    <div class="skeleton-title" style="width: 80px; height: 32px;"></div>
-                    <div class="skeleton-title" style="width: 80px; height: 32px;"></div>
+                    <div class="skeleton-title skeleton-btn-placeholder"></div>
+                    <div class="skeleton-title skeleton-btn-placeholder"></div>
                 </div>
             </div>
             <div class="skeleton-content"></div>
@@ -875,7 +847,7 @@ class TemplatesManager {
                     <div class="error-icon">⚠️</div>
                     <h3>Bağlantı sorunu</h3>
                     <p>${message}</p>
-                    <button class="btn btn-primary retry-btn" onclick="templatesManager.retryLastRequest()">
+                    <button type="button" class="btn btn-primary retry-btn" data-action="retry-templates">
                         🔄 Tekrar Dene
                     </button>
                 </div>
@@ -970,7 +942,7 @@ class TemplatesManager {
             <div class="toast-content">
                 <span class="toast-icon">${icons[type] || icons.success}</span>
                 <span class="toast-message">${this.escapeHtml(message)}</span>
-                <button class="toast-close" onclick="this.parentElement.parentElement.remove()">&times;</button>
+                <button type="button" class="toast-close" data-action="toast-close" aria-label="Kapat">&times;</button>
             </div>
         `;
 
@@ -1240,7 +1212,7 @@ class TemplatesManager {
             } else {
                 const mainResponse = document.getElementById('main-response');
                 if (mainResponse) {
-                    mainResponse.innerHTML = `<textarea id=\"main-response-editor\" class=\"response-textarea\" readonly style=\"width:100%; height:300px; padding:12px; border:2px solid #e5e7eb; border-radius:8px; background:#f5f5f5; font-size:14px; line-height:1.5; white-space:pre-wrap; word-wrap:break-word; overflow-y:auto; resize:vertical; margin:0; display:block;\">${this.escapeHtml ? this.escapeHtml(template.content) : template.content}</textarea>`;
+                    mainResponse.innerHTML = `<textarea id="main-response-editor" class="response-textarea response-editor-textarea is-readonly" readonly>${this.escapeHtml ? this.escapeHtml(template.content) : template.content}</textarea>`;
                 }
             }
             
@@ -1928,6 +1900,30 @@ class APIClient {
         }
     }
 
+    async adLogin(username, password) {
+        const url = `${this.baseURL}/ad-login`;
+        const response = await fetch(url, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ username, password }),
+        });
+        let detail = response.statusText;
+        try {
+            const body = await response.json();
+            if (body && body.detail) {
+                detail = typeof body.detail === 'string' ? body.detail : JSON.stringify(body.detail);
+            }
+            if (response.ok) {
+                return body;
+            }
+        } catch (e) {
+            /* ignore parse errors */
+        }
+        const err = new Error(detail || `HTTP ${response.status}`);
+        err.status = response.status;
+        throw err;
+    }
+
     async sendLoginCode(email) {
         return this.request('/send', {
             method: 'POST',
@@ -2183,34 +2179,70 @@ class AuthManager {
         }
     }
 
-    async sendCode(email) {
+    async loginWithAd(username, password) {
         try {
-            // Spinner'ı göster
-            this.showSpinner('send');
-            
-            const response = await this.api.sendLoginCode(email);
-            
-            // Başarılı olursa kod girişi ekranını göster
-            if (response) {
-                ui.showCodeInput(email);
+            this.showSpinner('login');
+            this.hideErrorMessage();
+            const loginErr = document.getElementById('login-error');
+            if (loginErr) {
+                loginErr.classList.add('hidden');
+                loginErr.textContent = '';
             }
-            
+
+            const response = await this.api.adLogin(username, password);
+            if (!response || !response.access_token) {
+                throw new Error('Giriş yanıtı geçersiz');
+            }
+
+            this.appState.authenticated = true;
+            this.appState.userEmail = response.email;
+            this.appState.isAdmin = response.is_admin || false;
+            this.appState.authToken = response.access_token;
+            this.appState.accessToken = response.access_token;
+            this.appState.userProfile = {
+                id: response.user_id || null,
+                email: response.email,
+                full_name: response.full_name || '',
+                department: response.department || '',
+                profile_completed: response.profile_completed || false
+            };
+
+            this.saveToStorage();
+            localStorage.removeItem('user_logged_out');
+
+            const passwordInput = document.getElementById('password-input');
+            if (passwordInput) passwordInput.value = '';
+
+            this.hideSpinner('login');
+
+            if (!response.profile_completed) {
+                ui.hideLoadingScreen();
+                ui.showProfileCompletion();
+            } else {
+                ui.hideLoadingScreen();
+                ui.showMainApp();
+                await this.updateUserProfile();
+            }
             return response;
         } catch (error) {
-            console.error('Send code error:', error);
-            
-            // E-posta domain hatası için özel mesaj
-            if (error.message.includes('400')) {
-                this.showErrorMessage('❌ Sadece @nilufer.bel.tr e-posta adresleri kullanılabilir!');
+            console.error('AD login error:', error);
+            const status = error.status;
+            if (status === 401) {
+                this.showErrorMessage('Kullanıcı adı veya şifre hatalı.');
+            } else if (status === 403) {
+                this.showErrorMessage('Bu uygulamayı kullanmaya yetkili değilsiniz.');
+            } else if (status === 429) {
+                this.showErrorMessage('Çok fazla deneme. Lütfen biraz sonra tekrar deneyin.');
             } else {
-                this.showErrorMessage('❌ E-posta gönderilirken hata oluştu. Lütfen tekrar deneyin.');
+                this.showErrorMessage(error.message || 'Giriş başarısız. Lütfen tekrar deneyin.');
             }
-            
-            // Spinner'ı gizle
-            this.hideSpinner('send');
-            
+            this.hideSpinner('login');
             throw error;
         }
+    }
+
+    async sendCode(email) {
+        return this.loginWithAd(email, '');
     }
 
     async verifyCode(email, code) {
@@ -2309,31 +2341,33 @@ class AuthManager {
     }
 
     showErrorMessage(message) {
-        // Mevcut hata mesajını temizle
         this.hideErrorMessage();
-        
-        // Yeni hata mesajı oluştur
+        const loginErr = document.getElementById('login-error');
+        if (loginErr) {
+            // Stay visible until the next login attempt (cleared in loginWithAd)
+            loginErr.textContent = message;
+            loginErr.classList.remove('hidden');
+            return;
+        }
         const errorDiv = document.createElement('div');
         errorDiv.id = 'error-message';
         errorDiv.className = 'error-message';
         errorDiv.textContent = message;
-        
-        // E-posta input'unun altına ekle
-        const emailInput = document.getElementById('email-input');
-        if (emailInput && emailInput.parentNode) {
-            emailInput.parentNode.insertBefore(errorDiv, emailInput.nextSibling);
+        const anchor = document.getElementById('username-input') || document.getElementById('email-input');
+        if (anchor && anchor.parentNode) {
+            anchor.parentNode.insertBefore(errorDiv, anchor.nextSibling);
         }
-        
-        // 5 saniye sonra otomatik gizle
-        setTimeout(() => {
-            this.hideErrorMessage();
-        }, 5000);
     }
 
     hideErrorMessage() {
         const errorDiv = document.getElementById('error-message');
         if (errorDiv) {
             errorDiv.remove();
+        }
+        const loginErr = document.getElementById('login-error');
+        if (loginErr) {
+            loginErr.classList.add('hidden');
+            loginErr.textContent = '';
         }
     }
 
@@ -2641,6 +2675,10 @@ class UIManager {
             loginScreen: document.getElementById('login-screen'),
             profileScreen: document.getElementById('profile-screen'),
             mainScreen: document.getElementById('main-screen'),
+            usernameInput: document.getElementById('username-input'),
+            passwordInput: document.getElementById('password-input'),
+            loginForm: document.getElementById('ad-login-form'),
+            loginBtn: document.getElementById('login-btn'),
             emailInput: document.getElementById('email-input'),
             sendBtn: document.getElementById('send-btn'),
             codeInput: document.getElementById('code-input'),
@@ -3117,8 +3155,10 @@ class AIResponseManager {
     displayResponse(text, readOnly = false) {
         if (ui.elements.mainResponse) {
             // Düzenlenebilir textarea render et
+            const roClass = readOnly ? ' is-readonly' : '';
+            const roAttr = readOnly ? 'readonly' : '';
             ui.elements.mainResponse.innerHTML = `
-                <textarea id=\"main-response-editor\" class=\"response-textarea\" ${readOnly ? 'readonly' : ''} style=\"width:100%; height:300px; padding:12px; border:2px solid #e5e7eb; border-radius:8px; background:${readOnly ? '#f5f5f5' : '#ffffff'}; font-size:14px; line-height:1.5; white-space:pre-wrap; word-wrap:break-word; overflow-y:auto; resize:vertical; margin:0; display:block;\">${this.escapeHtml ? this.escapeHtml(text) : text}</textarea>
+                <textarea id="main-response-editor" class="response-textarea response-editor-textarea${roClass}" ${roAttr}>${this.escapeHtml ? this.escapeHtml(text) : text}</textarea>
             `;
         }
     }
@@ -3414,7 +3454,7 @@ class AIResponseManager {
         const previousResponses = this.previousResponses.slice(1);
         
         // Başlık ekle (Gradio app.py'den)
-        container.innerHTML = '<h3 style="font-family: \'Segoe UI\', Tahoma, Geneva, Verdana, sans-serif; font-weight: 600; margin-bottom: 1rem;">📚 Önceki Yanıtlar</h3>';
+        container.innerHTML = '<h3 class="previous-responses-heading">📚 Önceki Yanıtlar</h3>';
         
         // Maksimum 4 önceki yanıt göster (Gradio app.py'den)
         const maxPrevious = Math.min(previousResponses.length, 4);
@@ -3440,21 +3480,21 @@ class AIResponseManager {
                 const accordionContent = accordion.querySelector('.accordion-content');
                 if (accordionContent) {
                     accordionContent.innerHTML = `
-                        <textarea id="prev-editor-${responseNumber}" class="response-textarea" style="width: 100%; height: 300px; padding: 12px; border: 2px solid #e5e7eb; border-radius: 8px; background: #ffffff; font-size: 14px; line-height: 1.5; white-space: pre-wrap; word-wrap: break-word; overflow-y: auto; resize: vertical; margin: 0; display: block;">${this.escapeHtml(response.response_text || '')}</textarea>
-                        <div class="prev-template-save" style="display:flex; align-items:center; gap:8px; margin-top:8px;">
-                            <label style="display:flex; align-items:center; gap:6px; font-size:13px; color:#374151;">
+                        <textarea id="prev-editor-${responseNumber}" class="response-textarea response-editor-textarea">${this.escapeHtml(response.response_text || '')}</textarea>
+                        <div class="prev-template-save">
+                            <label class="prev-template-save-label">
                                 <input type="checkbox" id="prev-save-${responseNumber}" /> Şablon olarak sakla
                             </label>
-                            <select id="prev-category-${responseNumber}" class="category-select" style="display:none; padding:6px 8px; border:1px solid #e5e7eb; border-radius:6px;">
+                            <select id="prev-category-${responseNumber}" class="category-select prev-category-select">
                                 <option value="">Kategori seçiniz</option>
                             </select>
-                            <button id="prev-newcat-btn-${responseNumber}" class="btn btn-secondary btn-sm" style="display:none;">+ Yeni</button>
-                            <div id="prev-newcat-group-${responseNumber}" style="display:none; gap:6px; align-items:center;">
-                                <input id="prev-newcat-${responseNumber}" type="text" class="category-input" placeholder="Kategori adı" style="padding:6px 8px; border:1px solid #e5e7eb; border-radius:6px;"/>
-                                <button id="prev-createcat-${responseNumber}" class="btn btn-primary btn-sm">Oluştur</button>
-                                <button id="prev-cancelcat-${responseNumber}" class="btn btn-secondary btn-sm">İptal</button>
+                            <button type="button" id="prev-newcat-btn-${responseNumber}" class="btn btn-secondary btn-sm prev-newcat-btn">+ Yeni</button>
+                            <div id="prev-newcat-group-${responseNumber}" class="prev-newcat-group">
+                                <input id="prev-newcat-${responseNumber}" type="text" class="category-input prev-newcat-input" placeholder="Kategori adı"/>
+                                <button type="button" id="prev-createcat-${responseNumber}" class="btn btn-primary btn-sm">Oluştur</button>
+                                <button type="button" id="prev-cancelcat-${responseNumber}" class="btn btn-secondary btn-sm">İptal</button>
                             </div>
-                            <button id="prev-copy-btn-${responseNumber}" class="prev-copy-btn" style="margin-left:auto; padding: 8px 16px; background: #4b9ac7; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 14px; transition: background-color 0.3s ease;" onmouseover="this.style.background='#e25b6b'" onmouseout="this.style.background='#4b9ac7'">📋 Seç ve Kopyala #${responseNumber}</button>
+                            <button type="button" id="prev-copy-btn-${responseNumber}" class="prev-copy-btn">📋 Seç ve Kopyala #${responseNumber}</button>
                         </div>
                     `;
                     
@@ -3673,37 +3713,37 @@ class AIResponseManager {
             
             // HTML'i oluştur - Gradio app formatına göre
             const statsHtml = `
-                <div style="background: white; border: 1px solid #e0e0e0; border-radius: 12px; padding: 1.5rem; margin: 1rem 0; box-shadow: 0 2px 4px rgba(0,0,0,0.05), 0 4px 8px rgba(0,0,0,0.1);">
-                    <div style="display: flex; gap: 2rem; margin-bottom: 2rem;">
-                        <div style="background: #e3f2fd; padding: 1rem; border-radius: 8px; text-align: center; flex: 1;">
-                            <h4 style="font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; font-weight: 600;">Toplam Üretilen Yanıt</h4>
-                            <div style="font-size: 2rem; font-weight: bold; color: #1976d2; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;">${totalGeneratedResponses}</div>
+                <div class="admin-stats-wrap">
+                    <div class="admin-stats-row">
+                        <div class="admin-stat-card is-blue">
+                            <h4>Toplam Üretilen Yanıt</h4>
+                            <div class="admin-stat-value">${totalGeneratedResponses}</div>
                         </div>
-                        <div style="background: #e8f5e8; padding: 1rem; border-radius: 8px; text-align: center; flex: 1;">
-                            <h4 style="font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; font-weight: 600;">Toplam Cevaplanan İstek Öneri</h4>
-                            <div style="font-size: 2rem; font-weight: bold; color: #2e7d32; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;">${totalAnsweredRequests}</div>
+                        <div class="admin-stat-card is-green">
+                            <h4>Toplam Cevaplanan İstek Öneri</h4>
+                            <div class="admin-stat-value">${totalAnsweredRequests}</div>
                         </div>
                     </div>
                     
-                    <h3 style="font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; font-weight: 600;">👥 Kullanıcı Detayları</h3>
-                    <table style="width: 100%; border-collapse: collapse; margin-top: 1rem;">
+                    <h3 class="admin-stats-heading">👥 Kullanıcı Detayları</h3>
+                    <table class="admin-users-table">
                         <thead>
-                            <tr style="background: #f5f5f5;">
-                                <th style="padding: 12px; border: 1px solid #ddd; text-align: left; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; font-weight: 600;">Ad Soyad</th>
-                                <th style="padding: 12px; border: 1px solid #ddd; text-align: left; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; font-weight: 600;">Müdürlük</th>
-                                <th style="padding: 12px; border: 1px solid #ddd; text-align: left; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; font-weight: 600;">E-posta</th>
-                                <th style="padding: 12px; border: 1px solid #ddd; text-align: center; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; font-weight: 600;">Toplam Ürettiği Yanıt</th>
-                                <th style="padding: 12px; border: 1px solid #ddd; text-align: center; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; font-weight: 600;">Cevapladığı İstek Sayısı</th>
+                            <tr>
+                                <th>Ad Soyad</th>
+                                <th>Müdürlük</th>
+                                <th>E-posta</th>
+                                <th class="is-center">Toplam Ürettiği Yanıt</th>
+                                <th class="is-center">Cevapladığı İstek Sayısı</th>
                             </tr>
                         </thead>
                         <tbody>
                             ${users.map(user => `
                                 <tr>
-                                    <td style="padding: 12px; border: 1px solid #ddd; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;">${this.escapeHtml(user.full_name || 'N/A')}</td>
-                                    <td style="padding: 12px; border: 1px solid #ddd; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;">${this.escapeHtml(user.department || 'N/A')}</td>
-                                    <td style="padding: 12px; border: 1px solid #ddd; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;">${this.escapeHtml(user.email || 'N/A')}</td>
-                                    <td style="padding: 12px; border: 1px solid #ddd; text-align: center; font-weight: bold; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;">${Number(user.total_requests || 0)}</td>
-                                    <td style="padding: 12px; border: 1px solid #ddd; text-align: center; font-weight: bold; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;">${Number(user.answered_requests || 0)}</td>
+                                    <td>${this.escapeHtml(user.full_name || 'N/A')}</td>
+                                    <td>${this.escapeHtml(user.department || 'N/A')}</td>
+                                    <td>${this.escapeHtml(user.email || 'N/A')}</td>
+                                    <td class="is-center">${Number(user.total_requests || 0)}</td>
+                                    <td class="is-center">${Number(user.answered_requests || 0)}</td>
                                 </tr>
                             `).join('')}
                         </tbody>
@@ -3736,7 +3776,54 @@ class EventManager {
     }
 
     setupEventListeners() {
-        // Login events
+        // CSP-safe delegated actions (replaces inline onclick)
+        document.addEventListener('click', (e) => {
+            const closeBtn = e.target.closest('[data-action="toast-close"]');
+            if (closeBtn) {
+                const toast = closeBtn.closest('.toast');
+                if (toast) toast.remove();
+                return;
+            }
+            const retryBtn = e.target.closest('[data-action="retry-templates"]');
+            if (retryBtn && typeof templatesManager !== 'undefined') {
+                templatesManager.retryLastRequest();
+                return;
+            }
+            const el = e.target.closest('[data-action]');
+            if (!el) return;
+            const action = el.getAttribute('data-action');
+            if (action === 'toggle-admin-panel') {
+                toggleAdminPanel();
+            } else if (action === 'toggle-settings') {
+                toggleSettings();
+            } else if (action === 'toggle-accordion') {
+                const target = el.getAttribute('data-target');
+                if (target) toggleAccordion(target);
+            }
+        });
+        document.addEventListener('keydown', (e) => {
+            if (e.key !== 'Enter' && e.key !== ' ') return;
+            const el = e.target.closest('[data-action][role="button"]');
+            if (!el) return;
+            e.preventDefault();
+            el.click();
+        });
+
+        // AD login
+        if (ui.elements.loginForm) {
+            ui.elements.loginForm.addEventListener('submit', (e) => {
+                e.preventDefault();
+                const username = (ui.elements.usernameInput && ui.elements.usernameInput.value || '').trim();
+                const password = ui.elements.passwordInput && ui.elements.passwordInput.value || '';
+                if (!username || !password) {
+                    authManager.showErrorMessage('Kullanıcı adı ve şifre gerekli.');
+                    return;
+                }
+                authManager.loginWithAd(username, password);
+            });
+        }
+
+        // Legacy email/OTP listeners (no-ops if elements missing)
         if (ui.elements.sendBtn) {
             ui.elements.sendBtn.addEventListener('click', () => {
                 const email = ui.elements.emailInput.value;
@@ -3978,7 +4065,7 @@ function showCopySuccess(textarea) {
     // Geçici mesaj göster
     const parent = textarea.parentElement;
     const successMsg = document.createElement('div');
-    successMsg.innerHTML = '<p style="color: #3B82F6; font-weight: bold; margin: 5px 0;">✅ Kopyalandı!</p>';
+    successMsg.innerHTML = '<p class="copy-success-msg">✅ Kopyalandı!</p>';
     parent.appendChild(successMsg);
     
     setTimeout(() => {

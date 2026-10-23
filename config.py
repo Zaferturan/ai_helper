@@ -46,6 +46,9 @@ JWT_SECRET_KEY = os.getenv("JWT_SECRET_KEY", "")
 JWT_ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 60 * 15  # 15 hours (until 18:00)
 
+# nilufer_auth (AD) — Docker network: http://auth-api:8000
+AUTH_API_URL = (os.getenv("AUTH_API_URL") or "http://auth-api:8000").rstrip("/")
+
 # SMTP configuration for login emails
 SMTP_HOST = os.getenv("SMTP_HOST", "smtp.gmail.com")
 SMTP_PORT = int(os.getenv("SMTP_PORT", "587"))

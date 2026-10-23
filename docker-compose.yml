@@ -8,13 +8,16 @@ services:
     ports:
       # Public: nginx only. Uvicorn stays internal (127.0.0.1:8000 in container).
       - "8500:80"
+    environment:
+      AUTH_API_URL: ${AUTH_API_URL:-http://auth-api:8000}
     volumes:
       - ai_helper_data_v2:/app/data
       - ai_helper_logs_v2:/app/logs
     networks:
+      - yapayzeka
       - monitoring
     healthcheck:
-      test: ["CMD-SHELL", "curl -sf http://127.0.0.1:80/ >/dev/null || exit 1"]
+      test: ["CMD-SHELL", "python -c \"import urllib.request; urllib.request.urlopen('http://127.0.0.1:80/', timeout=3)\""]
       interval: 30s
       timeout: 5s
       retries: 3
@@ -26,5 +29,7 @@ volumes:
     external: true
 
 networks:
+  yapayzeka:
+    external: true
   monitoring:
     external: true

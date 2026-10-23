@@ -10,13 +10,17 @@ import hashlib
 import secrets
 import os
 
+import httpx
+
 from connection import get_db
 from models import User, LoginToken, LoginAttempt, Request as DBRequest, Response as DBResponse
 from auth_system import auth_service, get_current_user, get_client_ip, security
 from api_models import (
-    LoginRequest, 
-    LoginResponse, 
-    CodeVerifyRequest, 
+    LoginRequest,
+    LoginResponse,
+    AdLoginRequest,
+    AdLoginResponse,
+    CodeVerifyRequest,
     CodeVerifyResponse,
     TokenConsumeRequest,
     TokenConsumeResponse,
@@ -26,7 +30,7 @@ from api_models import (
     AdminUsersResponse,
     UserStats,
 )
-from config import PRODUCTION_URL, FRONTEND_URL, LOGIN_TOKEN_EXPIRE_MINUTES
+from config import PRODUCTION_URL, FRONTEND_URL, LOGIN_TOKEN_EXPIRE_MINUTES, AUTH_API_URL
 
 # Router for authentication endpoints
 auth_router = APIRouter(tags=["Authentication"])
@@ -34,18 +38,149 @@ auth_router = APIRouter(tags=["Authentication"])
 # Logging
 logger = logging.getLogger(__name__)
 
+
+def _email_login_disabled() -> None:
+    raise HTTPException(
+        status_code=status.HTTP_410_GONE,
+        detail="E-posta ile giriş kapatıldı. Active Directory kullanıcı adı ve şifrenizle giriş yapın.",
+    )
+
+
+@auth_router.post("/ad-login", response_model=AdLoginResponse)
+async def ad_login(
+    body: AdLoginRequest,
+    db: Session = Depends(get_db),
+    client_request: Request = None,
+):
+    """AD login via nilufer_auth (auth-api). Link/create local user by mail."""
+    ip_address = get_client_ip(client_request)
+    username = (body.username or "").strip()
+    password = body.password or ""
+    if not username or not password:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail="Kullanıcı adı ve şifre gerekli",
+        )
+
+    if not auth_service.check_rate_limit_login(ip_address, username.lower()):
+        raise HTTPException(
+            status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+            detail="Çok fazla deneme. Lütfen biraz sonra tekrar deneyin",
+        )
+
+    try:
+        async with httpx.AsyncClient(timeout=15.0) as client:
+            r = await client.post(
+                f"{AUTH_API_URL}/v1/login",
+                json={"username": username, "password": password},
+            )
+    except httpx.RequestError as exc:
+        logger.error("auth-api unreachable: %s", type(exc).__name__)
+        raise HTTPException(
+            status_code=status.HTTP_502_BAD_GATEWAY,
+            detail="Kimlik doğrulama servisine ulaşılamadı",
+        ) from exc
+
+    if r.status_code == 401:
+        auth_service.log_login_attempt(db, username, ip_address, False, "ad")
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Kullanıcı adı veya şifre hatalı",
+        )
+    if r.status_code == 403:
+        auth_service.log_login_attempt(db, username, ip_address, False, "ad_forbidden")
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Bu uygulamayı kullanmaya yetkili değilsiniz",
+        )
+    if r.status_code == 429:
+        raise HTTPException(
+            status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+            detail="Çok fazla deneme. Lütfen biraz sonra tekrar deneyin",
+        )
+    if r.status_code != 200:
+        logger.warning("auth-api login unexpected status=%s", r.status_code)
+        raise HTTPException(
+            status_code=status.HTTP_502_BAD_GATEWAY,
+            detail="Kimlik doğrulama servisi hata verdi",
+        )
+
+    try:
+        payload = r.json()
+    except ValueError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_502_BAD_GATEWAY,
+            detail="Kimlik doğrulama yanıtı okunamadı",
+        ) from exc
+
+    ad_user = payload.get("user") or {}
+    email = (ad_user.get("mail") or "").strip().lower()
+    display_name = (ad_user.get("display_name") or "").strip()
+    sam = (ad_user.get("sam") or username).strip()
+
+    if not email or "@" not in email:
+        logger.warning("AD login ok but mail missing sam=%s", sam)
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="AD hesabınızda e-posta tanımlı değil. BT ile iletişime geçin.",
+        )
+
+    user = db.query(User).filter(func.lower(User.email) == email).first()
+    if not user:
+        user = User(
+            email=email,
+            full_name=display_name or sam,
+            department="",
+            is_active=True,
+            profile_completed=False,
+        )
+        db.add(user)
+        db.commit()
+        db.refresh(user)
+        logger.info("Created local user from AD login email=%s sam=%s", email, sam)
+    else:
+        if not user.is_active:
+            auth_service.log_login_attempt(db, email, ip_address, False, "ad_inactive")
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Hesabınız pasif. Yönetici ile iletişime geçin.",
+            )
+        if display_name and (not user.full_name or not user.full_name.strip()):
+            user.full_name = display_name
+        user.last_login = datetime.utcnow()
+        db.commit()
+
+    if user.last_login is None:
+        user.last_login = datetime.utcnow()
+        db.commit()
+
+    access_token = auth_service.create_access_token(
+        data={"sub": str(user.id), "email": user.email}
+    )
+    auth_service.log_login_attempt(db, user.email, ip_address, True, "ad")
+    logger.info("AD login ok user_id=%s email=%s sam=%s ip=%s", user.id, user.email, sam, ip_address)
+
+    return AdLoginResponse(
+        access_token=access_token,
+        token_type="bearer",
+        user_id=user.id,
+        email=user.email,
+        full_name=user.full_name,
+        department=user.department,
+        profile_completed=bool(user.profile_completed),
+        is_admin=bool(user.is_admin),
+    )
+
+
 @auth_router.post("/send", response_model=LoginResponse)
 async def send_login_credentials(
     request: LoginRequest,
     db: Session = Depends(get_db),
     client_request: Request = None
 ):
-    """
-    Giriş için gerekli link ve kodu gönder
-    Sadece @nilufer.bel.tr e-posta adresleri kullanılabilir
-    """
-    
-    # Get client IP
+    """Eski e-posta girişi — kapatıldı (AD kullanın)."""
+    _email_login_disabled()
+    # unreachable — kept for OpenAPI shape; original body follows historically
     ip_address = get_client_ip(client_request)
     user_agent = client_request.headers.get("user-agent", "")
     
@@ -155,7 +290,7 @@ async def consume_login_token(
     """
     Token ile giriş yap (POST method)
     """
-    
+    _email_login_disabled()
     try:
         # Frontend'den gelen ham token'ı hash'le
         token_hash = hashlib.sha256(request.code.encode()).hexdigest()
@@ -232,7 +367,7 @@ async def magic_link_auth(
     Magic link ile giriş yap (GET method)
     Token'ı doğrula ve frontend'e yönlendir
     """
-    
+    _email_login_disabled()
     try:
         # Frontend'den gelen ham token'ı hash'le
         token_hash = hashlib.sha256(token.encode()).hexdigest()
@@ -289,7 +424,7 @@ async def verify_magic_link(
     Magic link token'ını doğrula (POST method)
     Frontend için JSON response döndür
     """
-    
+    _email_login_disabled()
     try:
         # Frontend'den gelen ham token'ı hash'le
         token_hash = hashlib.sha256(request.code.encode()).hexdigest()
@@ -380,10 +515,8 @@ async def verify_login_code(
     db: Session = Depends(get_db),
     client_request: Request = None
 ):
-    """
-    6 haneli kod ile giriş yap
-    """
-    
+    """Eski OTP girişi — kapatıldı (AD kullanın)."""
+    _email_login_disabled()
     try:
         # Hash the code
         code_hash = hashlib.sha256(request.code.encode()).hexdigest()

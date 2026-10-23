@@ -6,6 +6,10 @@ from datetime import datetime
 class LoginRequest(BaseModel):
     email: EmailStr
 
+class AdLoginRequest(BaseModel):
+    username: str
+    password: str
+
 class CodeVerifyRequest(BaseModel):
     email: EmailStr
     code: str
@@ -22,6 +26,16 @@ class LoginResponse(BaseModel):
 class CodeVerifyResponse(BaseModel):
     access_token: str
     token_type: str
+    user_id: int
+    email: str
+    full_name: Optional[str] = None
+    department: Optional[str] = None
+    profile_completed: bool = False
+    is_admin: bool = False
+
+class AdLoginResponse(BaseModel):
+    access_token: str
+    token_type: str = "bearer"
     user_id: int
     email: str
     full_name: Optional[str] = None
